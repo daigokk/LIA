@@ -1,0 +1,145 @@
+#pragma once
+
+#include "settings.h"
+#include "ImuGuiWindowBase.h"
+
+class RawPlotWindow : public ImuGuiWindowBase
+{
+public:
+    RawPlotWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "Raw waveform")
+    {
+		this->pSettings = pSettings;
+    }
+	void show(void);
+private:
+    Settings* pSettings;
+};
+
+inline void RawPlotWindow::show()
+{
+    ImGui::SetNextWindowPos(ImVec2(0, 625), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
+    ImGui::Begin(this->name);
+    auto windowSize = ImGui::GetWindowSize();
+    // プロット描画
+    if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
+        ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
+        ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_FirstUseEver);
+        ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
+        //ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
+
+class MeasurementPlotWindow : public ImuGuiWindowBase
+{
+public:
+    MeasurementPlotWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "Measurement values")
+    {
+        this->pSettings = pSettings;
+    }
+    void show(void);
+private:
+    Settings* pSettings;
+};
+
+inline void MeasurementPlotWindow::show()
+{
+    ImGui::SetNextWindowPos(ImVec2(550, 625), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
+    ImGui::Begin(this->name);
+    static float historySecMax = MEASUREMENT_DT * pSettings->times.size();
+    static float historySec = 10;
+    ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
+    // プロット描画
+    if (ImPlot::BeginPlot("##Measurement values", ImVec2(-1, -1))) {
+        double t = pSettings->times[pSettings->idx];
+        ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
+        ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::PlotLine(
+            "x", &(pSettings->times[0]), &(pSettings->xs[0]),
+            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+        );
+        ImPlot::PlotLine(
+            "y", &(pSettings->times[0]), &(pSettings->ys[0]),
+            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+        );
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
+
+
+class XYPlotWindow : public ImuGuiWindowBase
+{
+public:
+    XYPlotWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "XY")
+    {
+        this->pSettings = pSettings;
+        for (size_t i = 0; i < XY_SIZE; i++)
+        {
+            _xs[i] = 0; _ys[i] = 0;
+        }
+    }
+    void show(void);
+private:
+    Settings* pSettings;
+    std::array<double, XY_SIZE> _xs, _ys;
+};
+
+inline void XYPlotWindow::show()
+{
+    ImGui::SetNextWindowPos(ImVec2(450, 0), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(625, 625), ImGuiCond_FirstUseEver);
+    ImGui::Begin(this->name);
+    // プロット描画
+    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+        int tail = pSettings->idx + 1, head = tail - XY_SIZE, _size = XY_SIZE;
+        if (pSettings->nofm < XY_SIZE)
+        {
+            head = 0; tail = pSettings->nofm; _size = pSettings->nofm;
+            for (size_t i = 0; i < _size; i++)
+            {
+                _xs[i] = pSettings->xs[head + i];
+                _ys[i] = pSettings->ys[head + i];
+            }
+        }
+        else if (0 <= head && tail <= MEASUREMENT_SIZE)
+        {
+            for (size_t i = 0; i < _size; i++)
+            {
+                _xs[i] = pSettings->xs[head + i];
+                _ys[i] = pSettings->ys[head + i];
+            }
+        }
+        else
+        {
+            size_t pffsetIdx = -head;
+            head += MEASUREMENT_SIZE;
+            for (size_t i = 0; i < pffsetIdx; i++)
+            {
+                _xs[i] = pSettings->xs[head + i];
+                _ys[i] = pSettings->ys[head + i];
+            }
+            for (size_t i = 0; i < tail; i++)
+            {
+                _xs[pffsetIdx + i] = pSettings->xs[i];
+                _ys[pffsetIdx + i] = pSettings->ys[i];
+            }
+        }
+        ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit);
+
+        ImPlot::PlotLine("##XY", _xs.data(), _ys.data(), _size);
+        ImPlot::PlotScatter("##NOW", &(pSettings->xs[pSettings->idx]), &(pSettings->ys[pSettings->idx]), 1);
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
