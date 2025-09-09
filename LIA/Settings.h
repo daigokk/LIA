@@ -59,8 +59,7 @@ public:
     double offsetPhase = 0, offsetX = 0, offsetY = 0;
     // Plot
     double rangeSecTimeSeries = 10.0;
-    double limit = 1.5;
-    double rawLimit = 1.5;
+    float limit = 1.5, rawLimit = 1.5;
     size_t nofm = 0;
     size_t offset = 0;
     size_t idx = 0;

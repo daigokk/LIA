@@ -2,6 +2,7 @@
 
 #include "settings.h"
 #include "ImuGuiWindowBase.h"
+#include <IMGUI/imgui_internal.h>
 
 class RawPlotWindow : public ImuGuiWindowBase
 {
@@ -9,9 +10,9 @@ public:
     RawPlotWindow(GLFWwindow* window, Settings* pSettings)
         : ImuGuiWindowBase(window, "Raw waveform")
     {
-		this->pSettings = pSettings;
+        this->pSettings = pSettings;
     }
-	void show(void);
+    void show(void);
 private:
     Settings* pSettings;
 };
@@ -21,12 +22,12 @@ inline void RawPlotWindow::show()
     ImGui::SetNextWindowPos(ImVec2(0, 625), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
-    auto windowSize = ImGui::GetWindowSize();
+    ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, 3.0f, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_FirstUseEver);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
         ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
         //ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
         ImPlot::EndPlot();
@@ -55,6 +56,7 @@ inline void MeasurementPlotWindow::show()
     static float historySecMax = MEASUREMENT_DT * pSettings->times.size();
     static float historySec = 10;
     ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
+    //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Measurement values", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
@@ -98,6 +100,7 @@ inline void XYPlotWindow::show()
     ImGui::SetNextWindowPos(ImVec2(450, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(625, 625), ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
+    //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         int tail = pSettings->idx + 1, head = tail - XY_SIZE, _size = XY_SIZE;
@@ -135,7 +138,7 @@ inline void XYPlotWindow::show()
         }
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
 
         ImPlot::PlotLine("##XY", _xs.data(), _ys.data(), _size);
         ImPlot::PlotScatter("##NOW", &(pSettings->xs[pSettings->idx]), &(pSettings->ys[pSettings->idx]), 1);
