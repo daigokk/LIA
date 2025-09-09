@@ -30,7 +30,7 @@ inline void ControlWindow::show(void)
     ImGui::Text("%s", pSettings->sn.data());
 
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Freq. (kHz)", &(this->_freqkHz), 1.0, 1.0, "%.0f"))
+    if (ImGui::InputDouble("Freq. (kHz)", &(this->_freqkHz), 1.0, 1.0, "%3.0f"))
     {
         if (this->_freqkHz < 10.0) this->_freqkHz = 10.0;
         if (this->_freqkHz > 100.0) this->_freqkHz = 100.0;
@@ -40,10 +40,10 @@ inline void ControlWindow::show(void)
 #endif // DAQ
     }
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp1), 0.1, 0.1, "%.1f"))
+    if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp1), 0.1, 0.1, "%4.1f"))
     {
         if (pSettings->amp1 < 0.1) pSettings->amp1 = 0.1;
-        if (pSettings->amp1 > 2.0) pSettings->amp1 = 2.0;
+        if (pSettings->amp1 > 5.0) pSettings->amp1 = 5.0;
 #ifdef DAQ
         pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
@@ -52,16 +52,16 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Fg secondly"))
     {
         ImGui::SetNextItemWidth(170.0f);
-        if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp2), 0.1, 0.1, "%.2f"))
+        if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp2), 0.1, 0.1, "%4.2f"))
         {
             if (pSettings->amp2 < 0.0) pSettings->amp2 = 0.0;
-            if (pSettings->amp2 > 2.0) pSettings->amp2 = 2.0;
+            if (pSettings->amp2 > 5.0) pSettings->amp2 = 5.0;
 #ifdef DAQ
             pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
         }
         ImGui::SetNextItemWidth(170.0);
-        if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%.0f"))
+        if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
         {
 #ifdef DAQ
             pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
@@ -71,15 +71,15 @@ inline void ControlWindow::show(void)
     }
     ImGui::Separator();
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%.0f"))
+    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%3.0f"))
     {
 
     }
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1, 0.1, "%.2f"))
+    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1, 0.1, "%4.2f"))
     {
         if (pSettings->limit < 0.1) pSettings->limit = 0.1;
-        if (pSettings->limit > 2.0) pSettings->limit = 2.0;
+        if (pSettings->limit > 3.0) pSettings->limit = 3.0;
     }
     ImGui::Separator();
     if (ImGui::Button("Auto offset", ImVec2(300.0f, 100.0f))) {

@@ -35,11 +35,11 @@ inline void RawPlotWindow::show()
     ImGui::End();
 }
 
-class MeasurementPlotWindow : public ImuGuiWindowBase
+class TimeChartWindow : public ImuGuiWindowBase
 {
 public:
-    MeasurementPlotWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "Measurement values")
+    TimeChartWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "Time chart")
     {
         this->pSettings = pSettings;
     }
@@ -48,7 +48,7 @@ private:
     Settings* pSettings;
 };
 
-inline void MeasurementPlotWindow::show()
+inline void TimeChartWindow::show()
 {
     ImGui::SetNextWindowPos(ImVec2(550, 625), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);

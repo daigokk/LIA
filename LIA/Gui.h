@@ -42,13 +42,17 @@ class Gui
 {
 public:
 	bool initialized = true;
+    ControlWindow* controlWindow = nullptr;
+    RawPlotWindow* rawPlotWindow = nullptr;
+    TimeChartWindow* timeChartWindow = nullptr;
+    XYPlotWindow* xyPlotWindow = nullptr;
     Gui(Settings* pSettings)
     {
         if (!this->initGLFW()) { this->initialized = false; return; }
         if (!this->initImGui()) { this->initialized = false; return; }
         this->controlWindow = new ControlWindow(this->window, pSettings);
         this->rawPlotWindow = new RawPlotWindow(this->window, pSettings);
-        this->measurementPlotWindow = new MeasurementPlotWindow(this->window, pSettings);
+        this->timeChartWindow = new TimeChartWindow(this->window, pSettings);
         this->xyPlotWindow = new XYPlotWindow(this->window, pSettings);
     }
 	~Gui()
@@ -91,14 +95,9 @@ public:
 	{
 		this->controlWindow->show();
         this->rawPlotWindow->show();
-        this->measurementPlotWindow->show();
+        this->timeChartWindow->show();
 		this->xyPlotWindow->show();
-
 	};
-    ControlWindow* controlWindow = nullptr;
-    RawPlotWindow* rawPlotWindow = nullptr;
-    MeasurementPlotWindow* measurementPlotWindow = nullptr;
-	XYPlotWindow* xyPlotWindow = nullptr;
 
 private:
     const char* glsl_version = "#version 460";
@@ -111,7 +110,6 @@ private:
     int windowHeight = 1000;
 	int windowPosX = 0;
 	int windowPosY = 30;
-    
 };
 
 inline bool Gui::initGLFW()
