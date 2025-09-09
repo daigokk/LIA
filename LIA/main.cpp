@@ -60,8 +60,7 @@ void thStop(volatile flag_t* pFlagMeasurement)
 
 void measurement(Settings* pSettings)
 {
-    // Psdオブジェクトをヒープ上に作成し、スタック使用量を削減
-    std::unique_ptr<Psd> psd = std::make_unique<Psd>(pSettings);
+   static Psd psd(pSettings);
     Timer timer;
 #ifdef DAQ
     //Daq_wf daq;
@@ -101,7 +100,7 @@ void measurement(Settings* pSettings)
         daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());// , pSettings->rawData2.data());
         daq.ad_start();
 #endif // DAQ
-        psd->calc(t);
+        psd.calc(t);
     }
     pSettings->flagMeasurement.trigger = false;
     pSettings->flagMeasurement.status = false;

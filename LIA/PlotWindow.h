@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "settings.h"
 #include "ImuGuiWindowBase.h"
@@ -23,7 +23,7 @@ inline void RawPlotWindow::show()
     ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, 3.0f, "%4.1f V");
-    // ƒvƒƒbƒg•`‰æ
+    // ãƒ—ãƒ­ãƒƒãƒˆæç”»
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
@@ -57,8 +57,8 @@ inline void TimeChartWindow::show()
     static float historySec = 10;
     ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
-    // ƒvƒƒbƒg•`‰æ
-    if (ImPlot::BeginPlot("##Measurement values", ImVec2(-1, -1))) {
+    // ãƒ—ãƒ­ãƒƒãƒˆæç”»
+    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
@@ -101,7 +101,7 @@ inline void XYPlotWindow::show()
     ImGui::SetNextWindowSize(ImVec2(625, 625), ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
-    // ƒvƒƒbƒg•`‰æ
+    // ãƒ—ãƒ­ãƒƒãƒˆæç”»
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         int tail = pSettings->idx + 1, head = tail - XY_SIZE, _size = XY_SIZE;
         if (pSettings->nofm < XY_SIZE)

@@ -93,10 +93,12 @@ public:
     void swapBuffers(void){ glfwSwapBuffers(this->window); };
 	void show()
 	{
-		this->controlWindow->show();
-        this->rawPlotWindow->show();
-        this->timeChartWindow->show();
-		this->xyPlotWindow->show();
+        {
+            this->controlWindow->show();
+            this->rawPlotWindow->show();
+            this->timeChartWindow->show();
+            this->xyPlotWindow->show();
+        }
 	};
 
 private:

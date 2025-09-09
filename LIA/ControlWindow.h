@@ -49,6 +49,26 @@ inline void ControlWindow::show(void)
 #endif // DAQ
     }
     ImGui::Separator();
+    ImGui::SetNextItemWidth(170.0f);
+    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%3.0f"))
+    {
+
+    }
+    ImGui::SetNextItemWidth(170.0f);
+    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1, 0.1, "%4.2f"))
+    {
+        if (pSettings->limit < 0.1) pSettings->limit = 0.1;
+        if (pSettings->limit > 3.0) pSettings->limit = 3.0;
+    }
+    ImGui::Separator();
+    if (ImGui::Button("Auto offset", ImVec2(300.0f, 100.0f))) {
+        pSettings->flagAutoOffset = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Off", ImVec2(100.0f, 100.0f))) {
+        pSettings->offsetX = 0.0f; pSettings->offsetY = 0.0f;
+    }
+    ImGui::Separator();
     if (ImGui::TreeNode("Fg secondly"))
     {
         ImGui::SetNextItemWidth(170.0f);
@@ -70,39 +90,20 @@ inline void ControlWindow::show(void)
         ImGui::TreePop();
     }
     ImGui::Separator();
-    ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%3.0f"))
-    {
-
-    }
-    ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1, 0.1, "%4.2f"))
-    {
-        if (pSettings->limit < 0.1) pSettings->limit = 0.1;
-        if (pSettings->limit > 3.0) pSettings->limit = 3.0;
-    }
-    ImGui::Separator();
-    if (ImGui::Button("Auto offset", ImVec2(300.0f, 100.0f))) {
-        pSettings->flagAutoOffset = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Off", ImVec2(100.0f, 100.0f))) {
-        pSettings->offsetX = 0.0f; pSettings->offsetY = 0.0f;
-    }
-    ImGui::Separator();
-    ImGui::Text("FPS: %4.0f", ImGui::GetIO().Framerate);
-    ImGui::Text("X: %+4.2f V, Y: %+4.2f V", pSettings->xs[pSettings->idx], pSettings->ys[pSettings->idx]);
+    ImGui::Text("X: %5.2f V, Y: %5.2f V", pSettings->xs[pSettings->idx], pSettings->ys[pSettings->idx]);
     ImGui::Text(
-        "Amp:%4.2fV,Phase:%+4.0f Deg.",
+        "Amp:%4.2fV,Phase:%3.0fDeg.",
         pow(pow(pSettings->xs[pSettings->idx], 2) + pow(pSettings->ys[pSettings->idx], 2), 0.5),
         atan2(pSettings->ys[pSettings->idx], pSettings->xs[pSettings->idx]) / PI * 180
     );
+    ImGui::Separator();
     ImGui::Text("Offset");
-    ImGui::Text("X: %+4.2f V, Y: %+4.2f V", pSettings->offsetX, pSettings->offsetY);
+    ImGui::Text("X: %5.2f V, Y: %5.2f V", pSettings->offsetX, pSettings->offsetY);
     int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
-    ImGui::Text("Time: %02d:%02d:%04.1f", hours, mins, secs);
+    ImGui::Separator(); 
+    ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
 
     ImGui::End();
 }

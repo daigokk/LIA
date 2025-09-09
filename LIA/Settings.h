@@ -16,7 +16,7 @@
 
 #define RAW_TIME_DEFAULT 5e-5
 //#define RAW_SIZE_RESERVE 16384
-#define RAW_SIZE 5000
+#define RAW_SIZE 8000
 #define MEASUREMENT_DT 2e-3
 #define MEASUREMENT_SEC (60*10)
 #define MEASUREMENT_SIZE (size_t)(MEASUREMENT_SEC/MEASUREMENT_DT)
@@ -161,7 +161,8 @@ public:
         oldFreq = pSettings->freq;
         size_t halfPeriodSize = (0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (int)(RAW_SIZE / halfPeriodSize);
-        for (size_t i = 0; i < size; i++)
+//#pragma omp parallel for
+        for (int i = 0; i < size; i++)
         {
             this->_sin[i] = 2 * std::sin(2 * PI * oldFreq * i * pSettings->rawDt);
             this->_cos[i] = 2 * std::cos(2 * PI * oldFreq * i * pSettings->rawDt);
@@ -171,7 +172,8 @@ public:
     {
         if (oldFreq != pSettings->freq) init();
         double _x = 0, _y = 0;
-        for (size_t i = 0; i < size; i++)
+//#pragma omp parallel for reduction(+:_x, _y)
+        for (int i = 0; i < size; i++)
         {
             _x += pSettings->rawData1[i] * this->_sin[i];
             _y += pSettings->rawData1[i] * this->_cos[i];
