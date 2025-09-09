@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# LIA temporary files
+imgui.ini
+lia.ini
+result.csv
