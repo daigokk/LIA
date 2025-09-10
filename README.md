@@ -6,6 +6,20 @@
   - The LIAs utilize a technique known as phase-sensitive detection (PSD) or synchronous detection, as illustrated in the accompanying figure and [Youtube (In Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   ![PSD](./docs/images/PSD.png)
     $A=\sqrt{x^2+y^2}$, $\theta=\arctan{\frac{y}{x}}$
+    ```
+    void psd::calc(double* pX, double* pY) {
+        *pX = 0;
+        *pY = 0;
+        // Multiplier
+        for (int i = 0; i < size; i++) {
+            pX += rawData[i] * sine[i];
+            pY += rawData[i] * cosine[i];
+        }
+        // Low pass filter
+        pX /= size;
+        pY /= size;
+    }
+    ```
 ## Usage
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
   
