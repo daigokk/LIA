@@ -10,9 +10,9 @@
   ![Circuit](./docs/images/Circuit.svg)
   ![Photo of Circuit](./docs/images/PhotoOfCircuit.jpg)
   - The AD620 and INA128/129 are regarded as effective instrument amplifiers.
-  - The provision of power for the amplifier and sensors as like coils can be facilitated by the AD.
+  - The provision of power for sensors, such as coils, and the amplifier can be facilitated by the AD.
   - However, it is imperative to exercise caution with regard to the power supply limitations inherent to the AD. For instance, the maximum voltage from AD is ±5V, and the current is constrained by the capabilities of the USB connection or any additional AC adapters connected.
-  - Input voltage range of the AD is ±25V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
+  - Due to input voltage range of the AD is ±25V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
 ## Used software
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
