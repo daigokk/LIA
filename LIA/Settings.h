@@ -16,7 +16,7 @@
 
 #define RAW_TIME_DEFAULT 5e-5
 //#define RAW_SIZE_RESERVE 16384
-#define RAW_SIZE 8000
+#define RAW_SIZE 5000
 #define MEASUREMENT_DT 2e-3
 #define MEASUREMENT_SEC (60*10)
 #define MEASUREMENT_SIZE (size_t)(MEASUREMENT_SEC/MEASUREMENT_DT)
@@ -51,8 +51,13 @@ public:
 #ifdef DAQ
     daq_dwf* pDaq = nullptr;
 #endif // DAQ
+    // Window
+    int windowWidth = 1500;
+    int windowHeight = 1000;
+    int windowPosX = 0;
+    int windowPosY = 30;
     // Fg
-    double freq = 100e3, amp1 = 1.0, amp2 = 0.0, phase2 = 0.0;
+    float freq = 100e3, amp1 = 1.0, amp2 = 0.0, phase2 = 0.0;
     // Scope
     double rawDt = 1e-8;
     // Lia
@@ -71,6 +76,10 @@ public:
     Settings()
     {
         ini::IniFile liaIni("lia.ini");
+        windowWidth = (int)conv(liaIni["Window"]["windowWidth"].as<std::string>(), windowWidth);
+        windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
+        windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
+        windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
         freq = conv(liaIni["Fg"]["freq"].as<std::string>(), freq);
         amp1 = conv(liaIni["Fg"]["amp1"].as<std::string>(), amp1);
         offsetPhase = conv(liaIni["Lia"]["offsetPhase"].as<std::string>(), offsetPhase);
@@ -128,6 +137,10 @@ public:
         //outputFile2.close();
 
         ini::IniFile liaIni;
+        liaIni["Window"]["windowWidth"] = this->windowWidth;
+        liaIni["Window"]["windowHeight"] = this->windowHeight;
+        liaIni["Window"]["windowPosX"] = this->windowPosX;
+        liaIni["Window"]["windowPosY"] = this->windowPosY;
         liaIni["Fg"]["freq"] = this->freq;
         liaIni["Fg"]["amp1"] = this->amp1;
         liaIni["Lia"]["offsetPhase"] = this->offsetPhase;
@@ -159,8 +172,8 @@ public:
     void init()
     {
         oldFreq = pSettings->freq;
-        size_t halfPeriodSize = (0.5 / oldFreq / pSettings->rawDt);
-        size = halfPeriodSize * (int)(RAW_SIZE / halfPeriodSize);
+        size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
+        size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
 //#pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
@@ -172,7 +185,7 @@ public:
     {
         if (oldFreq != pSettings->freq) init();
         double _x = 0, _y = 0;
-//#pragma omp parallel for reduction(+:_x, _y)
+//#pragma omp parallel for reduction(+:_x, _y) // daigokk: For OpenMP, This process is too small.
         for (int i = 0; i < size; i++)
         {
             _x += pSettings->rawData1[i] * this->_sin[i];

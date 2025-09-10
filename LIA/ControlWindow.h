@@ -4,7 +4,6 @@
 #include "ImuGuiWindowBase.h"
 #include <iostream>
 #include <cmath>
-#define PI acos(-1)
 
 class ControlWindow : public ImuGuiWindowBase
 {
@@ -40,10 +39,10 @@ inline void ControlWindow::show(void)
 #endif // DAQ
     }
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp1), 0.1, 0.1, "%4.1f"))
+    if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp1), 0.1f, 0.1f, "%4.1f"))
     {
-        if (pSettings->amp1 < 0.1) pSettings->amp1 = 0.1;
-        if (pSettings->amp1 > 5.0) pSettings->amp1 = 5.0;
+        if (pSettings->amp1 < 0.1f) pSettings->amp1 = 0.1f;
+        if (pSettings->amp1 > 5.0f) pSettings->amp1 = 5.0f;
 #ifdef DAQ
         pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
@@ -55,10 +54,10 @@ inline void ControlWindow::show(void)
 
     }
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1, 0.1, "%4.2f"))
+    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1f, 0.1f, "%4.2f"))
     {
-        if (pSettings->limit < 0.1) pSettings->limit = 0.1;
-        if (pSettings->limit > 3.0) pSettings->limit = 3.0;
+        if (pSettings->limit < 0.1f) pSettings->limit = 0.1f;
+        if (pSettings->limit > 3.0f) pSettings->limit = 3.0f;
     }
     ImGui::Separator();
     if (ImGui::Button("Auto offset", ImVec2(300.0f, 100.0f))) {
@@ -72,16 +71,16 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Fg secondly"))
     {
         ImGui::SetNextItemWidth(170.0f);
-        if (ImGui::InputDouble("Volt. (V)", &(pSettings->amp2), 0.1, 0.1, "%4.2f"))
+        if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp2), 0.1f, 0.1f, "%4.2f"))
         {
-            if (pSettings->amp2 < 0.0) pSettings->amp2 = 0.0;
-            if (pSettings->amp2 > 5.0) pSettings->amp2 = 5.0;
+            if (pSettings->amp2 < 0.0f) pSettings->amp2 = 0.0f;
+            if (pSettings->amp2 > 5.0f) pSettings->amp2 = 5.0f;
 #ifdef DAQ
             pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
         }
-        ImGui::SetNextItemWidth(170.0);
-        if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
+        ImGui::SetNextItemWidth(170.0f);
+        if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
         {
 #ifdef DAQ
             pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);

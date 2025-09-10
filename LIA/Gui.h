@@ -34,20 +34,29 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 void window_size_callback(GLFWwindow* window, int widtt, int height)
 {
-    std::cout << std::format("Window w:{}, h:{}", widtt, height) << std::endl;
+    //std::cout << std::format("Window w:{}, h:{}", widtt, height) << std::endl;
 }
 
 
 class Gui
 {
+private:
+    const char* glsl_version = "#version 460";
+    GLFWwindow* window = nullptr;
+    ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
+    float monitorScale = 1.0;
+    int monitorWidth = 0;
+    int monitorHeight = 0;
 public:
 	bool initialized = true;
     ControlWindow* controlWindow = nullptr;
     RawPlotWindow* rawPlotWindow = nullptr;
     TimeChartWindow* timeChartWindow = nullptr;
     XYPlotWindow* xyPlotWindow = nullptr;
+    Settings* pSettings = nullptr;
     Gui(Settings* pSettings)
     {
+        this->pSettings = pSettings;
         if (!this->initGLFW()) { this->initialized = false; return; }
         if (!this->initImGui()) { this->initialized = false; return; }
         this->controlWindow = new ControlWindow(this->window, pSettings);
@@ -57,6 +66,8 @@ public:
     }
 	~Gui()
     {
+        glfwGetWindowSize(window, &(pSettings->windowWidth), &(pSettings->windowHeight));
+        glfwGetWindowPos(window, &(pSettings->windowPosX), &(pSettings->windowPosY));
         ImPlot::DestroyContext();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -100,18 +111,6 @@ public:
             this->xyPlotWindow->show();
         }
 	};
-
-private:
-    const char* glsl_version = "#version 460";
-    GLFWwindow* window = nullptr;
-    ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
-    float monitorScale = 1.0;
-    int monitorWidth = 0;
-    int monitorHeight = 0;
-    int windowWidth = 1500;
-    int windowHeight = 1000;
-	int windowPosX = 0;
-	int windowPosY = 30;
 };
 
 inline bool Gui::initGLFW()
@@ -129,17 +128,17 @@ inline bool Gui::initGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_POSITION_X, this->windowPosX);
-    glfwWindowHint(GLFW_POSITION_Y, this->windowPosY);
+    glfwWindowHint(GLFW_POSITION_X, pSettings->windowPosX);
+    glfwWindowHint(GLFW_POSITION_Y, pSettings->windowPosY);
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     int xpos, ypos;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &monitorWidth, &monitorHeight);
-    std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
+    //std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
 
     this->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
     this->window = glfwCreateWindow(
-        (int)(windowWidth * this->monitorScale),
-        (int)(windowHeight * this->monitorScale),
+        (int)(pSettings->windowWidth * this->monitorScale),
+        (int)(pSettings->windowHeight * this->monitorScale),
         "Lock-in amplifier", NULL, NULL
     );
     if (!this->window)
