@@ -21,7 +21,7 @@
     }
     ```
 ## Usage
-  - The establishment of a connection between AD's "W1" and "1+" and between "1-" and "Ground" will result in the visualization of the real component X and imaginary component Y of the sinusoidal wave output from "W1" on the "XY Plot."
+  - The establishment of a connection between "W1" and "1+" and between "1-" and "Ground" of the AD will result in the visualization of the real component X and imaginary component Y of the sinusoidal wave output from "W1" on the "XY Plot."
   - The frequency and amplitude of the sine wave output from "W1" can be modulated through the "Freq." and "Volts" parameters on the "Control Panel."
   - The waveform entered in "W1" will be displayed on the "Raw plot."
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
