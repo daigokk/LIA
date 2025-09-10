@@ -1,7 +1,7 @@
 # Software Lock-in Amplifier using Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## What is this?
-  - This software facilitates the construction of a software lock-in amplifier (LIA) within the Windows using the Digilent Analog Discovery 2 or 3.
+  - This software facilitates the construction of a software Lock-In Amplifier (LIA) within the Windows using the Digilent Analog Discovery 2 or 3.
   - The LIA is an instrument that has the capacity to measure the amplitude and phase of sine wave voltages.
   - It utilizes a technique known as phase-sensitive detection (PSD) or Synchronous Detection, as shown in the figure below.
   ![Hard copy](./docs/images/PSD.png)
