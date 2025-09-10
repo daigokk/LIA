@@ -23,7 +23,7 @@
   | Variable register | 100Ω | https://akizukidenshi.com/catalog/g/g117821/ |
   | $L_1$, Sensor coil| Approximately 50Ω at the operating frequency | https://akizukidenshi.com/catalog/g/g116967/ |
   | $L_2$, Reference coil | Same as above | https://akizukidenshi.com/catalog/g/g116967/ |
-  | Core axcial cable | Characteristic impedance 50Ω | https://akizukidenshi.com/catalog/g/g116943/|
+  | Coaxial cable | Characteristic impedance 50Ω | https://akizukidenshi.com/catalog/g/g116943/|
   
   - The AD620 and INA128/129 are regarded as effective instrument amplifiers.
   - The provision of power for sensors, such as coils, and the amplifier can be facilitated by the AD.
