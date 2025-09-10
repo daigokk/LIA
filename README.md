@@ -12,12 +12,12 @@
         *pY = 0;
         // Multiplier
         for (int i = 0; i < size; i++) {
-            pX += rawData[i] * sine[i];
-            pY += rawData[i] * cosine[i];
+            *pX += rawData[i] * sine[i];
+            *pY += rawData[i] * cosine[i];
         }
         // Low pass filter
-        pX /= size;
-        pY /= size;
+        *pX /= size;
+        *pY /= size;
     }
     ```
 ## Usage
