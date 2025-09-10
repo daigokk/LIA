@@ -8,6 +8,7 @@
     $A=\sqrt{x^2+y^2}$, $\theta=\arctan{\frac{y}{x}}$
 ## Usage
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
+  
   ![Circuit](./docs/images/Circuit.svg)
   ![Photo of Circuit](./docs/images/PhotoOfCircuit.jpg)
 
