@@ -70,7 +70,8 @@ public:
     size_t idx = 0;
     volatile flag_t flagMeasurement;
     std::string sn = "None";
-    std::array<double, RAW_SIZE> rawTime, rawData1;// , rawData2;
+    bool flagRawData2 = false;
+    std::array<double, RAW_SIZE> rawTime, rawData1;//, rawData2;
     std::array<double, MEASUREMENT_SIZE> times, xs, ys, x2s, y2s;
     bool flagAutoOffset = false;
     Settings()
@@ -80,15 +81,15 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
-        freq = conv(liaIni["Fg"]["freq"].as<std::string>(), freq);
-        amp1 = conv(liaIni["Fg"]["amp1"].as<std::string>(), amp1);
+        freq = (float)conv(liaIni["Fg"]["freq"].as<std::string>(), freq);
+        amp1 = (float)conv(liaIni["Fg"]["amp1"].as<std::string>(), amp1);
         offsetPhase = conv(liaIni["Lia"]["offsetPhase"].as<std::string>(), offsetPhase);
         offsetX = conv(liaIni["Lia"]["offsetX"].as<std::string>(), offsetX);
         offsetY = conv(liaIni["Lia"]["offsetY"].as<std::string>(), offsetY);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         
-        limit = conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
-        rawLimit = conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
+        rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
 
         for (size_t i = 0; i < rawTime.size(); i++)
         {
@@ -119,7 +120,7 @@ public:
         }
         for (size_t i = 0; i < _size; i++)
         {
-            double idx = (offsetIdx + i) % this->times.size();
+            size_t idx = (offsetIdx + i) % this->times.size();
             outputFile << times[idx] << ',' << xs[idx] << ',' << ys[idx] << std::endl;
         }
         outputFile.close();

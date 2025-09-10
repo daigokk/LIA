@@ -12,11 +12,11 @@ public:
         : ImuGuiWindowBase(window, "Control panel")
     {
 		this->pSettings = pSettings;
-		this->_freqkHz = pSettings->freq * 1e-3;
+		this->_freqkHz = pSettings->freq * 1e-3f;
     }
     void show(void);
 private:
-    double _freqkHz = 0;
+    float _freqkHz = 0;
 	Settings* pSettings = nullptr;
 };
 
@@ -29,11 +29,11 @@ inline void ControlWindow::show(void)
     ImGui::Text("%s", pSettings->sn.data());
 
     ImGui::SetNextItemWidth(170.0f);
-    if (ImGui::InputDouble("Freq. (kHz)", &(this->_freqkHz), 1.0, 1.0, "%3.0f"))
+    if (ImGui::InputFloat("Freq. (kHz)", &(this->_freqkHz), 1.0f, 1.0f, "%3.0f"))
     {
-        if (this->_freqkHz < 10.0) this->_freqkHz = 10.0;
-        if (this->_freqkHz > 100.0) this->_freqkHz = 100.0;
-        pSettings->freq = this->_freqkHz * 1e3;
+        if (this->_freqkHz < 10.0f) this->_freqkHz = 10.0f;
+        if (this->_freqkHz > 100.0f) this->_freqkHz = 100.0f;
+        pSettings->freq = this->_freqkHz * 1e3f;
 #ifdef DAQ
         pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ

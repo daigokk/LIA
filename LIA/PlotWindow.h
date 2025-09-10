@@ -29,7 +29,6 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
         ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
-        //ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -53,7 +52,7 @@ inline void TimeChartWindow::show()
     ImGui::SetNextWindowPos(ImVec2(550, 625), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
-    static float historySecMax = MEASUREMENT_DT * pSettings->times.size();
+    static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     static float historySec = 10;
     ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
@@ -103,11 +102,11 @@ inline void XYPlotWindow::show()
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        int tail = pSettings->idx + 1, head = tail - XY_SIZE, _size = XY_SIZE;
+        int tail = (int)(pSettings->idx + 1), head = (int)(tail - XY_SIZE), _size = (int)XY_SIZE;
         if (pSettings->nofm < XY_SIZE)
         {
             head = 0; tail = pSettings->nofm; _size = pSettings->nofm;
-            for (size_t i = 0; i < _size; i++)
+            for (int i = 0; i < _size; i++)
             {
                 _xs[i] = pSettings->xs[head + i];
                 _ys[i] = pSettings->ys[head + i];
@@ -115,7 +114,7 @@ inline void XYPlotWindow::show()
         }
         else if (0 <= head && tail <= MEASUREMENT_SIZE)
         {
-            for (size_t i = 0; i < _size; i++)
+            for (int i = 0; i < _size; i++)
             {
                 _xs[i] = pSettings->xs[head + i];
                 _ys[i] = pSettings->ys[head + i];
@@ -123,17 +122,17 @@ inline void XYPlotWindow::show()
         }
         else
         {
-            size_t pffsetIdx = -head;
+            int offsetIdx = -head;
             head += MEASUREMENT_SIZE;
-            for (size_t i = 0; i < pffsetIdx; i++)
+            for (int i = 0; i < offsetIdx; i++)
             {
                 _xs[i] = pSettings->xs[head + i];
                 _ys[i] = pSettings->ys[head + i];
             }
-            for (size_t i = 0; i < tail; i++)
+            for (int i = 0; i < tail; i++)
             {
-                _xs[pffsetIdx + i] = pSettings->xs[i];
-                _ys[pffsetIdx + i] = pSettings->ys[i];
+                _xs[offsetIdx + i] = pSettings->xs[i];
+                _ys[offsetIdx + i] = pSettings->ys[i];
             }
         }
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);

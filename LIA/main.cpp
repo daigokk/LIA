@@ -75,9 +75,9 @@ void measurement(Settings* pSettings)
     daq.powerSupply(5);
     daq.fg(pSettings->amp1, pSettings->freq, 0, 0.0, 0.0);
 
-    daq.adSettings.ch = 0; daq.adSettings.numCh = 2; daq.adSettings.range = 2.5;
+    daq.adSettings.ch = 0; daq.adSettings.numCh = 1; daq.adSettings.range = 2.5;
     daq.adSettings.triggerDigCh = -1; daq.adSettings.waitAd = 0;
-    daq.adSettings.numSampsPerChan = pSettings->rawTime.size();
+    daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
     daq.ad_init(daq.adSettings);
     daq.ad_start();
