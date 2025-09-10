@@ -5,7 +5,7 @@
   - The LIA is an instrument that has the capacity to measure the amplitude and phase of sine wave voltages.
   - It utilizes a technique known as phase-sensitive detection (PSD) or Synchronous Detection, as shown in the figure below.
   ![PSD](./docs/images/PSD.png)
-    $A=\sqrt{x^2+y^3}$, $\theta=\arctan{frac{y}{x}}$
+    $A=\sqrt{x^2+y^3}$, $\theta=\arctan{\frac{y}{x}}$
 ## Usage
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
   ![Circuit](./docs/images/Circuit.svg)
