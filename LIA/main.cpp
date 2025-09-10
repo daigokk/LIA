@@ -2,7 +2,7 @@
 #include <thread>
 #include <cstring>
 
-#define DAQ
+//#define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -89,7 +89,7 @@ void measurement(Settings* pSettings)
         double t = pSettings->nofm * MEASUREMENT_DT;
         t = timer.sleepUntil(t);
 #ifndef DAQ
-        double phase = pSettings->offsetPhase / 180 * PI;
+        double phase = 2 * PI * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
             double wt = 2 * PI * pSettings->freq * i * pSettings->rawDt;

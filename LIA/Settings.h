@@ -20,7 +20,7 @@
 #define MEASUREMENT_DT 2e-3
 #define MEASUREMENT_SEC (60*10)
 #define MEASUREMENT_SIZE (size_t)(MEASUREMENT_SEC/MEASUREMENT_DT)
-#define XY_HISTORY_SEC 5.0
+#define XY_HISTORY_SEC 10.0
 #define XY_SIZE (size_t)(XY_HISTORY_SEC/MEASUREMENT_DT)
 
 
@@ -51,9 +51,11 @@ public:
 #ifdef DAQ
     daq_dwf* pDaq = nullptr;
 #endif // DAQ
+    // Monitor
+    float monitorScale;
     // Window
     int windowWidth = 1500;
-    int windowHeight = 1000;
+    int windowHeight = 900;
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg

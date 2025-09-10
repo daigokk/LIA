@@ -7,6 +7,9 @@
 
 class ControlWindow : public ImuGuiWindowBase
 {
+private:
+    float _freqkHz = 0;
+    Settings* pSettings = nullptr;
 public:
     ControlWindow(GLFWwindow* window, Settings* pSettings)
         : ImuGuiWindowBase(window, "Control panel")
@@ -15,20 +18,19 @@ public:
 		this->_freqkHz = pSettings->freq * 1e-3f;
     }
     void show(void);
-private:
-    float _freqkHz = 0;
-	Settings* pSettings = nullptr;
 };
 
 inline void ControlWindow::show(void)
 {
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(450, 625), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
-    ImGui::SetNextItemWidth(170.0f);
+    ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", pSettings->sn.data());
 
-    ImGui::SetNextItemWidth(170.0f);
+    ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("Freq. (kHz)", &(this->_freqkHz), 1.0f, 1.0f, "%3.0f"))
     {
         if (this->_freqkHz < 10.0f) this->_freqkHz = 10.0f;
@@ -38,7 +40,7 @@ inline void ControlWindow::show(void)
         pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
     }
-    ImGui::SetNextItemWidth(170.0f);
+    ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp1), 0.1f, 0.1f, "%4.1f"))
     {
         if (pSettings->amp1 < 0.1f) pSettings->amp1 = 0.1f;
@@ -48,29 +50,31 @@ inline void ControlWindow::show(void)
 #endif // DAQ
     }
     ImGui::Separator();
-    ImGui::SetNextItemWidth(170.0f);
+    ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%3.0f"))
     {
 
     }
-    ImGui::SetNextItemWidth(170.0f);
+    ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1f, 0.1f, "%4.2f"))
     {
         if (pSettings->limit < 0.1f) pSettings->limit = 0.1f;
         if (pSettings->limit > 3.0f) pSettings->limit = 3.0f;
     }
     ImGui::Separator();
-    if (ImGui::Button("Auto offset", ImVec2(300.0f, 100.0f))) {
+    static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
+    if (ImGui::Button("Auto offset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Off", ImVec2(100.0f, 100.0f))) {
+    static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
+    if (ImGui::Button("Off", offSize)) {
         pSettings->offsetX = 0.0f; pSettings->offsetY = 0.0f;
     }
     ImGui::Separator();
     if (ImGui::TreeNode("Fg secondly"))
     {
-        ImGui::SetNextItemWidth(170.0f);
+        ImGui::SetNextItemWidth(nextItemWidth);
         if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp2), 0.1f, 0.1f, "%4.2f"))
         {
             if (pSettings->amp2 < 0.0f) pSettings->amp2 = 0.0f;
@@ -79,7 +83,7 @@ inline void ControlWindow::show(void)
             pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
 #endif // DAQ
         }
-        ImGui::SetNextItemWidth(170.0f);
+        ImGui::SetNextItemWidth(nextItemWidth);
         if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
         {
 #ifdef DAQ

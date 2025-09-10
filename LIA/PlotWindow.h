@@ -19,8 +19,10 @@ private:
 
 inline void RawPlotWindow::show()
 {
-    ImGui::SetNextWindowPos(ImVec2(0, 625), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
+    static ImVec2 windowPos = ImVec2(0, 600 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 300 * pSettings->monitorScale);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, 3.0f, "%4.1f V");
     // プロット描画
@@ -49,8 +51,10 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    ImGui::SetNextWindowPos(ImVec2(550, 625), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(550, 375), ImGuiCond_FirstUseEver);
+    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 300 * pSettings->monitorScale);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     static float historySec = 10;
@@ -96,8 +100,10 @@ private:
 
 inline void XYPlotWindow::show()
 {
-    ImGui::SetNextWindowPos(ImVec2(450, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(625, 625), ImGuiCond_FirstUseEver);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0);
+    static ImVec2 windowSize = ImVec2(600 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画

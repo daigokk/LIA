@@ -44,7 +44,6 @@ private:
     const char* glsl_version = "#version 460";
     GLFWwindow* window = nullptr;
     ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
-    float monitorScale = 1.0;
     int monitorWidth = 0;
     int monitorHeight = 0;
 public:
@@ -135,10 +134,10 @@ inline bool Gui::initGLFW()
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &monitorWidth, &monitorHeight);
     //std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
 
-    this->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
+    pSettings->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
     this->window = glfwCreateWindow(
-        (int)(pSettings->windowWidth * this->monitorScale),
-        (int)(pSettings->windowHeight * this->monitorScale),
+        (int)(pSettings->windowWidth * pSettings->monitorScale),
+        (int)(pSettings->windowHeight * pSettings->monitorScale),
         "Lock-in amplifier", NULL, NULL
     );
     if (!this->window)
@@ -180,10 +179,8 @@ inline bool Gui::initImGui()
 
     // Setup scaling
     ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(this->monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
-    style.FontScaleDpi = this->monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
-
-
+    style.ScaleAllSizes(pSettings->monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = pSettings->monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(this->window, true);
