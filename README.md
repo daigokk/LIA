@@ -11,13 +11,13 @@
         *pX = 0;
         *pY = 0;
         // Multiplier
-        for (int i = 0; i < size; i++) {
-            *pX += rawData[i] * sine[i];
-            *pY += rawData[i] * cosine[i];
+        for (int i = 0; i < this->size; i++) {
+            *pX += this->rawData[i] * this->sine[i];
+            *pY += this->rawData[i] * this->cosine[i];
         }
         // Low pass filter
-        *pX /= size;
-        *pY /= size;
+        *pX /= this->size;
+        *pY /= this->size;
     }
     ```
 ## Usage
