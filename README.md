@@ -14,7 +14,7 @@
 
   | Parts | Type |  |
   | ---- | ---- | ---- |
-  | DAQ | Digilent Analog Discovery 3 | https://akizukidenshi.com/catalog/g/g118129/ |
+  | DAQ | Digilent Analog Discovery 3 | [https://akizukidenshi.com/catalog/g/g118129/](https://digilent.com/shop/analog-discovery-3/) |
   | L-shaped Pin Socket | 2×15 | https://akizukidenshi.com/catalog/g/g113419/ |
   | Prototyping board |  47×36mm  | https://akizukidenshi.com/catalog/g/g111960/ |
   | Instrument amplifier | Analog Devices AD620ANZ | https://akizukidenshi.com/catalog/g/g113693/ |
