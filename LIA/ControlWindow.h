@@ -89,7 +89,7 @@ inline void ControlWindow::show(void)
         ImGui::TreePop();
     }
     ImGui::Separator();
-    ImGui::Text("X: %5.2f V, Y: %5.2f V", pSettings->xs[pSettings->idx], pSettings->ys[pSettings->idx]);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->xs[pSettings->idx], pSettings->ys[pSettings->idx]);
     ImGui::Text(
         "Amp:%4.2fV,Phase:%3.0fDeg.",
         pow(pow(pSettings->xs[pSettings->idx], 2) + pow(pSettings->ys[pSettings->idx], 2), 0.5),
@@ -97,7 +97,7 @@ inline void ControlWindow::show(void)
     );
     ImGui::Separator();
     ImGui::Text("Offset");
-    ImGui::Text("X: %5.2f V, Y: %5.2f V", pSettings->offsetX, pSettings->offsetY);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offsetX, pSettings->offsetY);
     int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
