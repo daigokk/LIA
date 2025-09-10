@@ -18,7 +18,7 @@
   | L-shaped Pin Socket | 2×15 | https://akizukidenshi.com/catalog/g/g113419/ |
   | Prototyping board |  47×36mm  | https://akizukidenshi.com/catalog/g/g111960/ |
   | Instrument amplifier | Analog Devices AD620ANZ | https://akizukidenshi.com/catalog/g/g113693/ |
-  | Register for gain 40dB | 510Ω | [See "Gain Selection" on page 15.](https://www.analog.com/media/en/technical-documentation/data-sheets/AD620.pdf) |
+  | Register for gain 40dB | 510Ω | [See "Gain Selection" on page 15 of the datasheet.](https://www.analog.com/media/en/technical-documentation/data-sheets/AD620.pdf) |
   | Bypass capacitor | 0.1uF×2 | https://akizukidenshi.com/catalog/g/g110149/ |
   | Variable register | 100Ω | https://akizukidenshi.com/catalog/g/g117821/ |
   | $L_1$, Sensor coil| Approximately 50Ω at the operating frequency | https://akizukidenshi.com/catalog/g/g116967/ |
