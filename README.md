@@ -1,5 +1,5 @@
 # Software Lock-in Amplifier using Digilent Analog Discovery
-![Hard copy](./docs/image/HardCopy.png)
+![Hard copy](./docs/images/HardCopy.png)
 - Used software
   - Digilent Waveforms SDK
   - GLFW
