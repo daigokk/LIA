@@ -10,6 +10,7 @@
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
   ![Circuit](./docs/images/Circuit.svg)
   ![Photo of Circuit](./docs/images/PhotoOfCircuit.jpg)
+
   |  部品名  |  型番  |   |
   | ---- | ---- | ---- |
   |  DAQ  |  Digilent Analog Discovery 3  | https://akizukidenshi.com/catalog/g/g118129/ |
@@ -21,6 +22,7 @@
   | 基準コイル | 使用周波数で50Ω位になるインダクタンス | https://akizukidenshi.com/catalog/g/g116967/ |
   | センサコイル | 同上 | https://akizukidenshi.com/catalog/g/g116967/ |
   | 同軸ケーブル | 特性インピーダンス50Ω | https://akizukidenshi.com/catalog/g/g116943/|
+  
   - The AD620 and INA128/129 are regarded as effective instrument amplifiers.
   - The provision of power for sensors, such as coils, and the amplifier can be facilitated by the AD.
   - However, it is imperative to exercise caution with regard to the power supply limitations inherent to the AD. For instance, the maximum voltage from AD is ±5V, and the current is constrained by the capabilities of the USB connection or any additional AC adapters connected.
