@@ -1,7 +1,7 @@
 # Software Lock-in Amplifier using Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## What is this?
-  - This software facilitates the construction of a software lock-in amplifier within the Windows operating system using Digilent Analog Discovery 2 or 3.
+  - This software facilitates the construction of a software lock-in amplifier within the Windows using Digilent Analog Discovery 2 or 3.
 ## Principle of Phase Sensitive Detection or Synchronous Detection
   ![Hard copy](./docs/images/PSD.png)
 ## Usage
