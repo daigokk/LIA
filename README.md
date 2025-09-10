@@ -6,7 +6,7 @@
   ![Hard copy](./docs/images/PSD.png)
 ## Usage
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
-  - ![Circuit](./docs/images/Circuit.png)
+  - ![Circuit](./docs/images/Circuit.svg)
 ## Used software
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
