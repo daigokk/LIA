@@ -28,7 +28,7 @@
 
   | Parts | Type |  |
   | ---- | ---- | ---- |
-  | DAQ | Digilent Analog Discovery 3 | [Analog Discovery 3: 125 MS/s USB Oscilloscope, Waveform Generator, Logic Analyzer, and Variable Power Supply](https://digilent.com/shop/analog-discovery-3/) |
+  | DAQ | Digilent Analog Discovery 3 | [Analog Discovery 3: 125 MS/s USB Oscilloscope, Waveform Generator, Logic Analyzer, and Variable Power Supply](https://digilent.com/reference/test-and-measurement/analog-discovery-3/start) |
   | L-shaped Pin Socket | 2×15 | https://akizukidenshi.com/catalog/g/g113419/ |
   | Prototyping board |  47×36mm  | https://akizukidenshi.com/catalog/g/g111960/ |
   | Instrument amplifier | Analog Devices AD620ANZ | https://akizukidenshi.com/catalog/g/g113693/ |
