@@ -3,7 +3,7 @@
 ## What is this?
   - This software facilitates the construction of a software lock-in amplifier (LIA) within the Windows using the Digilent Analog Discovery 2 or 3.
   - The LIA is an instrument that has the capacity to measure the amplitude and phase of sine wave voltages.
-  - It utilizes a technique known as phase-sensitive detection (PSD) or Synchronous Detection.
+  - It utilizes a technique known as phase-sensitive detection (PSD) or Synchronous Detection, as shown in the figure below.
   ![Hard copy](./docs/images/PSD.png)
 ## Usage
   - The subsequent diagram illustrates the circuit configuration for Eddy Current Testing (ECT).
