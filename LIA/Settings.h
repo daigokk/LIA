@@ -14,13 +14,13 @@
 
 #define PI std::acos(-1)
 
-#define RAW_TIME_DEFAULT 5e-5
+#define RAW_TIME_DEFAULT 5e-5f
 //#define RAW_SIZE_RESERVE 16384
 #define RAW_SIZE 5000
 #define MEASUREMENT_DT 2e-3
 #define MEASUREMENT_SEC (60*10)
 #define MEASUREMENT_SIZE (size_t)(MEASUREMENT_SEC/MEASUREMENT_DT)
-#define XY_HISTORY_SEC 10.0
+#define XY_HISTORY_SEC 10.0f
 #define XY_SIZE (size_t)(XY_HISTORY_SEC/MEASUREMENT_DT)
 
 
@@ -38,12 +38,6 @@ double conv(std::string str, double defval)
     }
     return defval;
 }
-
-typedef struct flag
-{
-    bool status = false, trigger = false;
-    bool save = false;
-} flag_t;
 
 class Settings
 {
@@ -70,7 +64,7 @@ public:
     size_t nofm = 0;
     size_t offset = 0;
     size_t idx = 0;
-    volatile flag_t flagMeasurement;
+    volatile bool statusMeasurement, statusServer;
     std::string sn = "None";
     bool flagRawData2 = false;
     std::array<double, RAW_SIZE> rawTime, rawData1;//, rawData2;

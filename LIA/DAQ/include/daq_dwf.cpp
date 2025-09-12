@@ -107,7 +107,6 @@ void daq_dwf::init(int idxDevice)
 	this->errChk(FDwfDeviceOpen(idxDevice, &this->hdwf));
 	this->errChk(FDwfEnumDeviceName(idxDevice, this->type));
 	this->errChk(FDwfEnumSN(idxDevice, this->serialNo));
-	printf("%s(%s) is selected.\n", this->type, this->serialNo);
 }
 
 double daq_dwf::ad_init(const settings_t _settings)
@@ -472,7 +471,7 @@ void daq_dwf::psd(const double freq, const double rate, const int num, const dou
 		}
 	}
 
-	std::size_t n_end = (int)((1 / freq*rate) * (n / (int)(1 / freq*rate)));
+	int n_end = (int)((1 / freq*rate) * (n / (int)(1 / freq*rate)));
 	*x = 0, *y = 0;
 	for (std::size_t i = 0; i < n_end; i++)
 	{

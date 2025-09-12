@@ -3,7 +3,7 @@
 ## What is this?
   - This software facilitates the construction of a software Lock-In Amplifier (LIA) within the Windows using the Digilent Analog Discovery 2 or 3 (AD).
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that has the capacity to measure the amplitude and phase of sinusoidal wave voltages.
-  - The LIAs utilize a technique known as phase-sensitive detection (PSD) or synchronous detection, as illustrated in the accompanying figure and [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
+  - The LIAs utilize a technique known as Phase-Sensitive Detection (PSD) or synchronous detection, as illustrated in the accompanying figure and [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   ![PSD](./docs/images/PSD.png)
     $A=\sqrt{x^2+y^2}$, $\theta=\arctan{\frac{y}{x}}$
     ```

@@ -24,7 +24,6 @@ class daq_dwf
 private:
 	HDWF hdwf;
 	//char	dev[256];
-	char	type[32];
 	void errChk(BOOL ret);
 	int adTaskHandle = 0, daTaskHandle = 0;
 	double _fgOffset = 0;
@@ -32,6 +31,7 @@ private:
 	double _fgAmp2 = 0, _fgPhase2 = 0;
 public:
 	char	serialNo[32] = { "" };
+	char	type[32];
 	//int terminalConfig = 0;
 	settings_t adSettings = { 0,1,-1,10.0,1e6,2,100 };
 	settings_t daSettings = { 0,1,-1,10.0,1e6,2,100 };

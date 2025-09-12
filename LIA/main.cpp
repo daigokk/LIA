@@ -1,8 +1,9 @@
 #include <iostream>
+#include <stop_token>
 #include <thread>
 #include <cstring>
 
-//#define DAQ
+#define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -11,58 +12,43 @@
 #include "Gui.h"
 #include "Timer.h"
 
-void thStart(Settings* pSettings);
-void thStop(volatile flag_t* pFlagMeasurement);
-void measurement(Settings* pSettings);
+void measurement(std::stop_token st, Settings* pSettings);
+//void server(std::stop_token st, Settings* pSettings);
 
 int main(void)
 {
+    std::ios::sync_with_stdio(false); // For std::cout and cin
     static Settings settings;
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
+    std::jthread th_measurement{ measurement, &settings };
+    //std::jthread th_server{ server, &settings };
+    while (!settings.statusMeasurement);
+    //while (!settings.statusServer);
+
     while (!gui.windowShouldClose())
     {
-        settings.flagMeasurement.trigger = true;
-        thStart(&settings);
-        while (settings.flagMeasurement.status)
-        {
-            if (gui.windowShouldClose()) break;
-            /* Poll for and process events */
-            gui.pollEvents();
-
-            gui.show();
-
-            gui.rendering();
-
-            gui.swapBuffers();
-        }
-        thStop(&(settings.flagMeasurement));
+        if (settings.statusMeasurement == false) break;
+        //if (settings.statusServer == false) break;
+        /* Poll for and process events */
+        gui.pollEvents();
+        gui.show();
+        gui.rendering();
+        gui.swapBuffers();
     }
+    th_measurement.request_stop();
+    //th_server.request_stop();
+
     return 0;
 }
 
-void thStart(Settings* pSettings)
-{
-    if (!pSettings->flagMeasurement.status && pSettings->flagMeasurement.trigger)
-    {
-        pSettings->flagMeasurement.trigger = true;
-        std::thread th_measurement(measurement, pSettings);
-        th_measurement.detach();
-        while (!pSettings->flagMeasurement.status);
-    }
-}
-
-void thStop(volatile flag_t* pFlagMeasurement)
-{
-    pFlagMeasurement->trigger = false;
-    while (pFlagMeasurement->status);
-}
-
-void measurement(Settings* pSettings)
+void measurement(std::stop_token st, Settings* pSettings)
 {
    static Psd psd(pSettings);
     Timer timer;
-#ifdef DAQ
+#ifndef DAQ
+    std::cout << "Not connect to AD mode." << std::endl;
+#else
     //Daq_wf daq;
     //daq.powerSupply(5.0);
     //daq.Fg.start(pSettings->freq, pSettings->amp, 0.0);
@@ -70,6 +56,7 @@ void measurement(Settings* pSettings)
     //daq.Scope.open();
     //daq.Scope.trigger();
     daq_dwf daq;
+    std::cout << std::format("%s(%s) is selected.\n", daq.type, daq.serialNo);
     pSettings->pDaq = &daq;
     pSettings->sn = daq.serialNo;
     daq.powerSupply(5);
@@ -83,8 +70,8 @@ void measurement(Settings* pSettings)
     daq.ad_start();
 #endif // DAQ
     timer.start();
-    pSettings->flagMeasurement.status = true;
-    while (pSettings->flagMeasurement.trigger)
+    pSettings->statusMeasurement = true;
+    while (!st.stop_requested())
     {
         double t = pSettings->nofm * MEASUREMENT_DT;
         t = timer.sleepUntil(t);
@@ -102,6 +89,27 @@ void measurement(Settings* pSettings)
 #endif // DAQ
         psd.calc(t);
     }
-    pSettings->flagMeasurement.trigger = false;
-    pSettings->flagMeasurement.status = false;
+    pSettings->statusMeasurement = false;
 }
+
+//void server(std::stop_token st, Settings* pSettings)
+//{
+//    pSettings->statusServer = true;
+//    while (!st.stop_requested())
+//    {
+//        std::string recieveCmd;
+//        std::cout << "cmd: ";
+//        std::cin >> recieveCmd;
+//        //std::cout << recieveCmd;
+//        if (recieveCmd.compare("get") == 0)
+//        {
+//            size_t idx = pSettings->idx;
+//            std::cout << std::format(": %f,%f,%f", pSettings->times[idx], pSettings->xs[idx], pSettings->ys[idx]);
+//        }
+//        else if (recieveCmd.compare("end") == 0)
+//        {
+//            break;
+//        }
+//    }
+//    pSettings->statusServer = false;
+//}
