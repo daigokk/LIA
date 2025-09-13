@@ -8,20 +8,19 @@
 class ControlWindow : public ImuGuiWindowBase
 {
 private:
-    float _freqkHz = 0;
     Settings* pSettings = nullptr;
 public:
     ControlWindow(GLFWwindow* window, Settings* pSettings)
         : ImuGuiWindowBase(window, "Control panel")
     {
 		this->pSettings = pSettings;
-		this->_freqkHz = pSettings->freq * 1e-3f;
     }
     void show(void);
 };
 
 inline void ControlWindow::show(void)
 {
+    bool fgFlag = false;
     static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
@@ -31,23 +30,20 @@ inline void ControlWindow::show(void)
     ImGui::Text("%s", pSettings->sn.data());
 
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("Freq. (kHz)", &(this->_freqkHz), 1.0f, 1.0f, "%3.0f"))
+    float freqkHz = pSettings->freq * 1e-3;
+    if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
     {
-        if (this->_freqkHz < 10.0f) this->_freqkHz = 10.0f;
-        if (this->_freqkHz > 100.0f) this->_freqkHz = 100.0f;
-        pSettings->freq = this->_freqkHz * 1e3f;
-#ifdef DAQ
-        pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
-#endif // DAQ
+        if (freqkHz < 10.0f) freqkHz = 10.0f;
+        if (freqkHz > 100.0f) freqkHz = 100.0f;
+        pSettings->freq = freqkHz * 1e3f;
+        fgFlag = true;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp1), 0.1f, 0.1f, "%4.1f"))
     {
         if (pSettings->amp1 < 0.1f) pSettings->amp1 = 0.1f;
         if (pSettings->amp1 > 5.0f) pSettings->amp1 = 5.0f;
-#ifdef DAQ
-        pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
-#endif // DAQ
+        fgFlag = true;
     }
     ImGui::Separator();
     ImGui::SetNextItemWidth(nextItemWidth);
@@ -79,16 +75,12 @@ inline void ControlWindow::show(void)
         {
             if (pSettings->amp2 < 0.0f) pSettings->amp2 = 0.0f;
             if (pSettings->amp2 > 5.0f) pSettings->amp2 = 5.0f;
-#ifdef DAQ
-            pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
-#endif // DAQ
+            fgFlag = true;
         }
         ImGui::SetNextItemWidth(nextItemWidth);
         if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
         {
-#ifdef DAQ
-            pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
-#endif // DAQ
+            fgFlag = true;
         }
         ImGui::TreePop();
     }
@@ -109,4 +101,8 @@ inline void ControlWindow::show(void)
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
 
     ImGui::End();
+#ifdef DAQ
+    if(fgFlag)
+        pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
+#endif // DAQ
 }
