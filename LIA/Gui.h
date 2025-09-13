@@ -21,20 +21,16 @@
 #include "PlotWindow.h"
 
 
-static void glfw_error_callback(int error, const char* description)
+void glfw_error_callback(int error, const char* description)
 {
     std::cerr << std::format("GLFW Error {}: {}", error, description) << std::endl;
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-    else if (key == 'G' && action == GLFW_PRESS)
-    {
-        std::cout << key << std::endl;
     }
 }
 

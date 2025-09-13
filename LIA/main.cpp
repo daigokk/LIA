@@ -1,9 +1,9 @@
 #include <iostream>
 #include <stop_token>
 #include <thread>
-#include <cstring>
+#include <string>
 
-#define DAQ
+//#define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -13,23 +13,30 @@
 #include "Timer.h"
 
 void measurement(std::stop_token st, Settings* pSettings);
-//void server(std::stop_token st, Settings* pSettings);
+void server(std::stop_token st, Settings* pSettings);
 
-int main(void)
+int main(int argc, char* argv[])
 {
     std::ios::sync_with_stdio(false); // For std::cout and cin
     static Settings settings;
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
     std::jthread th_measurement{ measurement, &settings };
-    //std::jthread th_server{ server, &settings };
     while (!settings.statusMeasurement);
-    //while (!settings.statusServer);
+    std::jthread* pth_server = nullptr;
+    for(int i = 0; i < argc; i++)
+    {
+        if (std::string("pipe") == argv[i])
+        {
+            pth_server = new std::jthread(server, &settings);
+            while (!settings.statusServer);
+        }
+    }
 
     while (!gui.windowShouldClose())
     {
         if (settings.statusMeasurement == false) break;
-        //if (settings.statusServer == false) break;
+        if (pth_server != nullptr && settings.statusServer == false) break;
         /* Poll for and process events */
         gui.pollEvents();
         gui.show();
@@ -37,7 +44,7 @@ int main(void)
         gui.swapBuffers();
     }
     th_measurement.request_stop();
-    //th_server.request_stop();
+    if (pth_server != nullptr) pth_server->request_stop();
 
     return 0;
 }
@@ -92,24 +99,23 @@ void measurement(std::stop_token st, Settings* pSettings)
     pSettings->statusMeasurement = false;
 }
 
-//void server(std::stop_token st, Settings* pSettings)
-//{
-//    pSettings->statusServer = true;
-//    while (!st.stop_requested())
-//    {
-//        std::string recieveCmd;
-//        std::cout << "cmd: ";
-//        std::cin >> recieveCmd;
-//        //std::cout << recieveCmd;
-//        if (recieveCmd.compare("get") == 0)
-//        {
-//            size_t idx = pSettings->idx;
-//            std::cout << std::format(": %f,%f,%f", pSettings->times[idx], pSettings->xs[idx], pSettings->ys[idx]);
-//        }
-//        else if (recieveCmd.compare("end") == 0)
-//        {
-//            break;
-//        }
-//    }
-//    pSettings->statusServer = false;
-//}
+void server(std::stop_token st, Settings* pSettings)
+{
+    pSettings->statusServer = true;
+    while (!st.stop_requested())
+    {
+        std::string recieveCmd;
+        std::cout << "cmd: ";
+        std::cin >> recieveCmd;
+        if (recieveCmd.compare("get") == 0)
+        {
+            size_t idx = pSettings->idx;
+            std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->xs[idx], pSettings->ys[idx]);
+        }
+        else if (recieveCmd.compare("end") == 0)
+        {
+            break;
+        }
+    }
+    pSettings->statusServer = false;
+}
