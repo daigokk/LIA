@@ -54,7 +54,7 @@ void measurement(std::stop_token st, Settings* pSettings)
    static Psd psd(pSettings);
     Timer timer;
 #ifndef DAQ
-    std::cout << "Not connect to AD mode." << std::endl;
+    std::cout << "Not connect to AD." << std::endl;
 #else
     //Daq_wf daq;
     //daq.powerSupply(5.0);
