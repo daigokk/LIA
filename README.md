@@ -50,6 +50,7 @@
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
 ## Python
+  - This software can be controlled from Python.
   ```
   import subprocess
   import numpy as np
@@ -67,6 +68,7 @@
         )
         print(self._recieve())
     def __del__(self):
+        self._send('end')
         self.process.stdin.close()
     def _send(self, cmd:str):
         self.process.stdin.write(f'{cmd}\n')
@@ -77,9 +79,10 @@
     def _query(self, cmd):
         self._send(cmd)
         return self._recieve()
-    def getTXY(self):
-        buf = self._query('get').split(",")
+    def get_txy(self):
+        buf = self._query('get_txy').split(",")
         return (float(buf[0]), float(buf[1]), float(buf[2]))
+
 
   def getDat(lia:Lia):
     dat = []
