@@ -87,7 +87,7 @@
   def getDat(lia:Lia):
     dat = []
     for i in range(60):
-        dat.append(lia.getTXY())
+        dat.append(lia.get_txy())
         time.sleep(1)
     return np.array(dat)
 
