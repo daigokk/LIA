@@ -104,17 +104,13 @@ void server(std::stop_token st, Settings* pSettings)
     pSettings->statusServer = true;
     while (!st.stop_requested())
     {
-        std::string recieveCmd;
-        std::cout << "cmd: ";
-        std::cin >> recieveCmd;
-        if (recieveCmd.compare("get") == 0)
+        std::string cmd;
+        std::cin >> cmd;
+        if (cmd.compare("end") == 0) break;
+        else if (cmd.compare("get_txy") == 0)
         {
             size_t idx = pSettings->idx;
             std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->xs[idx], pSettings->ys[idx]);
-        }
-        else if (recieveCmd.compare("end") == 0)
-        {
-            break;
         }
     }
     pSettings->statusServer = false;
