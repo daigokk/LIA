@@ -49,6 +49,65 @@
   - For information about ECT, please refer to the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
+## Python
+  ```
+  import subprocess
+  import numpy as np
+  import matplotlib.pyplot as plt
+  import time
+
+
+  class Lia:
+    def __init__(self):
+        self.process = subprocess.Popen(
+            r'./lia.exe pipe',
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding='utf-8',
+        )
+        print(self._recieve())
+    def __del__(self):
+        self.process.stdin.close()
+    def _send(self, cmd:str):
+        self.process.stdin.write(f'{cmd}\n')
+        self.process.stdin.flush()
+    def _recieve(self, ):
+        self.process.stdout.flush()
+        return self.process.stdout.readline()
+    def _query(self, cmd):
+        self._send(cmd)
+        return self._recieve()
+    def getTXY(self):
+        buf = self._query('get').split(",")
+        return (float(buf[0]), float(buf[1]), float(buf[2]))
+
+  def getDat(lia:Lia):
+    dat = []
+    for i in range(60):
+        dat.append(lia.getTXY())
+        time.sleep(1)
+    return np.array(dat)
+
+  def makeChart(dat:np.array):
+    fig, ax = plt.subplots(1, 2)
+    ax[0].plot(dat[:,0], dat[:,1], label='$V_x$')
+    ax[0].plot(dat[:,0], dat[:,2], label='$V_y$')
+    ax[1].plot(dat[:,1], dat[:,2])
+    ax[0].set_xlabel('Time (s)')
+    ax[0].set_ylabel('$V$ (V)')
+    ax[0].legend()
+    ax[1].set_xlabel('$V_x$ (V)')
+    ax[1].set_ylabel('$V_y$ (V)')
+    ax[1].set_aspect('equal', 'box')
+    ax[0].grid()
+    ax[1].grid()
+    fig.tight_layout()
+    fig.savefig('chart.svg')
+
+  lia = Lia()
+  dat = getDat(lia)
+  makeChart(dat)
+  ```
 ## Used software
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
