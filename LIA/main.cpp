@@ -115,7 +115,24 @@ void server(std::stop_token st, Settings* pSettings)
         else if (cmd.compare("get_w1txy") == 0)
         {
             size_t idx = pSettings->idx;
-            std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->w1xs[idx], pSettings->w1ys[idx]);
+            std::cout << std::format(
+                "{:e},{:e},{:e}\n", 
+                pSettings->times[idx], 
+                pSettings->w1xs[idx], 
+                pSettings->w1ys[idx]
+            );
+        }
+        else if (cmd.compare("get_w12txy") == 0)
+        {
+            size_t idx = pSettings->idx;
+            std::cout << std::format(
+                "{:e},{:e},{:e},{:e},{:e}\n",
+                pSettings->times[idx],
+                pSettings->w1xs[idx],
+                pSettings->w1ys[idx],
+                pSettings->w2xs[idx],
+                pSettings->w2ys[idx]
+            );
         }
         else if (cmd.compare("get_fgFreq") == 0)
         {
@@ -156,7 +173,12 @@ void server(std::stop_token st, Settings* pSettings)
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)
-            pSettings->pDaq->fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0.0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
+            pSettings->pDaq->fg(
+                pSettings->fgCh1Amp, 
+                pSettings->fgFreq, 
+                0.0, 
+                pSettings->fgCh2Amp, 
+                pSettings->fgCh2Phase);
 #endif // DAQ
     }
     pSettings->statusServer = false;
