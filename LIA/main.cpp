@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 
-#define DAQ
+//#define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -87,12 +87,12 @@ void measurement(std::stop_token st, Settings* pSettings)
         double phase = 2 * PI * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
-            double wt = 2 * PI * pSettings->freq * i * pSettings->rawDt;
-            pSettings->rawData1[i] = pSettings->amp1 * std::sin(wt - phase);
+            double wt = 2 * PI * pSettings->fgFreq * i * pSettings->rawDt;
+            pSettings->rawW1[i] = pSettings->fgCh1Amp * std::sin(wt - phase);
         }
 #else
         //daq.Scope.record(pSettings->rawData1.data());
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());// , pSettings->rawData2.data());
+        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data());// , pSettings->rawW2.data());
         daq.ad_start();
 #endif // DAQ
         psd.calc(t);
@@ -115,7 +115,7 @@ void server(std::stop_token st, Settings* pSettings)
         else if (cmd.compare("get_w1txy") == 0)
         {
             size_t idx = pSettings->idx;
-            std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->xs[idx], pSettings->ys[idx]);
+            std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->w1xs[idx], pSettings->w1ys[idx]);
         }
         else if (cmd.compare("get_fgFreq") == 0)
         {

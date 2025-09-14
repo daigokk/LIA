@@ -30,7 +30,8 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
-        ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
+        ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawW1.data(), (int)pSettings->rawTime.size());
+        //ImPlot::PlotLine("##Ch2", pSettings->rawTime.data(), pSettings->rawW2.data(), (int)pSettings->rawTime.size());
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -67,11 +68,11 @@ inline void TimeChartWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
-            "x", &(pSettings->times[0]), &(pSettings->xs[0]),
+            "x", &(pSettings->times[0]), &(pSettings->w1xs[0]),
             MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
         );
         ImPlot::PlotLine(
-            "y", &(pSettings->times[0]), &(pSettings->ys[0]),
+            "y", &(pSettings->times[0]), &(pSettings->w1ys[0]),
             MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
         );
         ImPlot::EndPlot();
@@ -114,16 +115,16 @@ inline void XYPlotWindow::show()
             head = 0; tail = pSettings->nofm; _size = pSettings->nofm;
             for (int i = 0; i < _size; i++)
             {
-                _xs[i] = pSettings->xs[head + i];
-                _ys[i] = pSettings->ys[head + i];
+                _xs[i] = pSettings->w1xs[head + i];
+                _ys[i] = pSettings->w1ys[head + i];
             }
         }
         else if (0 <= head && tail <= MEASUREMENT_SIZE)
         {
             for (int i = 0; i < _size; i++)
             {
-                _xs[i] = pSettings->xs[head + i];
-                _ys[i] = pSettings->ys[head + i];
+                _xs[i] = pSettings->w1xs[head + i];
+                _ys[i] = pSettings->w1ys[head + i];
             }
         }
         else
@@ -132,13 +133,13 @@ inline void XYPlotWindow::show()
             head += MEASUREMENT_SIZE;
             for (int i = 0; i < offsetIdx; i++)
             {
-                _xs[i] = pSettings->xs[head + i];
-                _ys[i] = pSettings->ys[head + i];
+                _xs[i] = pSettings->w1xs[head + i];
+                _ys[i] = pSettings->w1ys[head + i];
             }
             for (int i = 0; i < tail; i++)
             {
-                _xs[offsetIdx + i] = pSettings->xs[i];
-                _ys[offsetIdx + i] = pSettings->ys[i];
+                _xs[offsetIdx + i] = pSettings->w1xs[i];
+                _ys[offsetIdx + i] = pSettings->w1ys[i];
             }
         }
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
@@ -146,7 +147,7 @@ inline void XYPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
 
         ImPlot::PlotLine("##XY", _xs.data(), _ys.data(), _size);
-        ImPlot::PlotScatter("##NOW", &(pSettings->xs[pSettings->idx]), &(pSettings->ys[pSettings->idx]), 1);
+        ImPlot::PlotScatter("##NOW", &(pSettings->w1xs[pSettings->idx]), &(pSettings->w1ys[pSettings->idx]), 1);
         ImPlot::EndPlot();
     }
     ImGui::End();

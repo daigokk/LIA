@@ -47,7 +47,7 @@ inline void ControlWindow::show(void)
     }
     ImGui::Separator();
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetPhase), 1.0, 10.0, "%3.0f"))
+    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetW1Phase), 1.0, 10.0, "%3.0f"))
     {
 
     }
@@ -65,7 +65,7 @@ inline void ControlWindow::show(void)
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
-        pSettings->offsetX = 0.0f; pSettings->offsetY = 0.0f;
+        pSettings->offsetW1X = 0.0f; pSettings->offsetW1Y = 0.0f;
     }
     ImGui::Separator();
     if (ImGui::TreeNode("Fg secondly"))
@@ -85,15 +85,15 @@ inline void ControlWindow::show(void)
         ImGui::TreePop();
     }
     ImGui::Separator();
-    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->xs[pSettings->idx], pSettings->ys[pSettings->idx]);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->w1xs[pSettings->idx], pSettings->w1ys[pSettings->idx]);
     ImGui::Text(
         "Amp:%4.2fV,Phase:%3.0fDeg.",
-        pow(pow(pSettings->xs[pSettings->idx], 2) + pow(pSettings->ys[pSettings->idx], 2), 0.5),
-        atan2(pSettings->ys[pSettings->idx], pSettings->xs[pSettings->idx]) / PI * 180
+        pow(pow(pSettings->w1xs[pSettings->idx], 2) + pow(pSettings->w1ys[pSettings->idx], 2), 0.5),
+        atan2(pSettings->w1ys[pSettings->idx], pSettings->w1xs[pSettings->idx]) / PI * 180
     );
     ImGui::Separator();
     ImGui::Text("Offset");
-    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offsetX, pSettings->offsetY);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offsetW1X, pSettings->offsetW1Y);
     int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;

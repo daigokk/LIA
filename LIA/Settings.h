@@ -57,7 +57,8 @@ public:
     // Scope
     double rawDt = 1e-8;
     // Lia
-    double offsetPhase = 0, offsetX = 0, offsetY = 0;
+    double offsetW1Phase = 0, offsetW1X = 0, offsetW1Y = 0;
+    double offsetW2Phase = 0, offsetW2X = 0, offsetW2Y = 0;
     // Plot
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5, rawLimit = 1.5;
@@ -67,8 +68,8 @@ public:
     volatile bool statusMeasurement, statusServer;
     std::string sn = "None";
     bool flagRawData2 = false;
-    std::array<double, RAW_SIZE> rawTime, rawData1;//, rawData2;
-    std::array<double, MEASUREMENT_SIZE> times, xs, ys, x2s, y2s;
+    std::array<double, RAW_SIZE> rawTime, rawW1, rawW2;
+    std::array<double, MEASUREMENT_SIZE> times, w1xs, w1ys, w2xs, w2ys;
     bool flagAutoOffset = false;
     Settings()
     {
@@ -79,11 +80,14 @@ public:
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
         fgFreq = conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
         fgCh1Amp = conv(liaIni["Fg"]["fgCh1Amp"].as<std::string>(), fgCh1Amp);
-        fgCh1Amp = conv(liaIni["Fg"]["fgCh2Amp"].as<std::string>(), fgCh2Amp);
-        fgCh1Amp = conv(liaIni["Fg"]["fgCh2Phase"].as<std::string>(), fgCh2Phase);
-        offsetPhase = conv(liaIni["Lia"]["offsetPhase"].as<std::string>(), offsetPhase);
-        offsetX = conv(liaIni["Lia"]["offsetX"].as<std::string>(), offsetX);
-        offsetY = conv(liaIni["Lia"]["offsetY"].as<std::string>(), offsetY);
+        fgCh2Amp = conv(liaIni["Fg"]["fgCh2Amp"].as<std::string>(), fgCh2Amp);
+        fgCh2Phase = conv(liaIni["Fg"]["fgCh2Phase"].as<std::string>(), fgCh2Phase);
+        offsetW1Phase = conv(liaIni["Lia"]["offsetW1Phase"].as<std::string>(), offsetW1Phase);
+        offsetW1X = conv(liaIni["Lia"]["offsetW1X"].as<std::string>(), offsetW1X);
+        offsetW1Y = conv(liaIni["Lia"]["offsetW1Y"].as<std::string>(), offsetW1Y);
+        offsetW2Phase = conv(liaIni["Lia"]["offsetW2Phase"].as<std::string>(), offsetW2Phase);
+        offsetW2X = conv(liaIni["Lia"]["offsetW2X"].as<std::string>(), offsetW2X);
+        offsetW2Y = conv(liaIni["Lia"]["offsetW2Y"].as<std::string>(), offsetW2Y);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
         rawLimit = conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
@@ -94,7 +98,9 @@ public:
         }
     }
     void AddPoint(double t, double x, double y) {
-        times[offset] = t;xs[offset] = x; ys[offset] = y;
+        times[offset] = t;
+        w1xs[offset] = x;
+        w1ys[offset] = y;
         idx = offset;
         nofm++;
         offset = nofm % MEASUREMENT_SIZE;
@@ -118,7 +124,7 @@ public:
         for (size_t i = 0; i < _size; i++)
         {
             size_t idx = (offsetIdx + i) % this->times.size();
-            outputFile << times[idx] << ',' << xs[idx] << ',' << ys[idx] << std::endl;
+            outputFile << times[idx] << ',' << w1xs[idx] << ',' << w1ys[idx] << std::endl;
         }
         outputFile.close();
 
@@ -143,9 +149,12 @@ public:
         liaIni["Fg"]["fgCh1Amp"] = this->fgCh1Amp;
         liaIni["Fg"]["fgCh2Amp"] = this->fgCh2Amp;
         liaIni["Fg"]["fgCh2Phase"] = this->fgCh2Phase;
-        liaIni["Lia"]["offsetPhase"] = this->offsetPhase;
-        liaIni["Lia"]["offsetX"] = this->offsetX;
-        liaIni["Lia"]["offsetY"] = this->offsetY;
+        liaIni["Lia"]["offsetW1Phase"] = this->offsetW1Phase;
+        liaIni["Lia"]["offsetW1X"] = this->offsetW1X;
+        liaIni["Lia"]["offsetW1Y"] = this->offsetW1Y;
+        liaIni["Lia"]["offsetW2Phase"] = this->offsetW2Phase;
+        liaIni["Lia"]["offsetW2X"] = this->offsetW2X;
+        liaIni["Lia"]["offsetW2Y"] = this->offsetW2Y;
         liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
         liaIni["Plot"]["limit"] = this->limit;
         liaIni["Plot"]["rawLimit"] = this->rawLimit;
@@ -184,22 +193,29 @@ public:
     void calc(const double t)
     {
         if (oldFreq != pSettings->fgFreq) init();
-        double _x = 0, _y = 0;
+        double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
 //#pragma omp parallel for reduction(+:_x, _y) // daigokk: For OpenMP, This process is too small.
         for (int i = 0; i < size; i++)
         {
-            _x += pSettings->rawData1[i] * this->_sin[i];
-            _y += pSettings->rawData1[i] * this->_cos[i];
+            _x1 += pSettings->rawW1[i] * this->_sin[i];
+            _y1 += pSettings->rawW1[i] * this->_cos[i];
+            //_x2 += pSettings->rawW2[i] * this->_sin[i];
+            //_y2 += pSettings->rawW2[i] * this->_cos[i];
         }
-        _x /= this->_sin.size(); _y /= this->_sin.size();
+        _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
+        //_x2 /= this->_sin.size(); _y2 /= this->_sin.size();
         if (pSettings->flagAutoOffset)
         {
-            pSettings->offsetX = _x; pSettings->offsetY = _y;
+            pSettings->offsetW1X = _x1; pSettings->offsetW1Y = _y1;
             pSettings->flagAutoOffset = false;
         }
-        _x -= pSettings->offsetX; _y -= pSettings->offsetY;
-        double theta = pSettings->offsetPhase / 180 * PI;
-        pSettings->AddPoint(t, _x * std::cos(theta) - _y * std::sin(theta), _x * std::sin(theta) + _y * std::cos(theta));
+        _x1 -= pSettings->offsetW1X; _y1 -= pSettings->offsetW1Y;
+        double theta = pSettings->offsetW1Phase / 180 * PI;
+        pSettings->AddPoint(
+            t, 
+            _x1 * std::cos(theta) - _y1 * std::sin(theta), 
+            _x1 * std::sin(theta) + _y1 * std::cos(theta)
+        );
         //pSettings->AddPoint(t, _x, _y);
     }
 };
