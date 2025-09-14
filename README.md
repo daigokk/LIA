@@ -81,6 +81,9 @@
     def get_w1txy(self):
         buf = self._query('get_w1txy').split(",")
         return (float(buf[0]), float(buf[1]), float(buf[2]))
+    def get_fgFreq(self):
+        buf = self._query('get_fgFreq').split(",")
+        return float(buf[0])
     def set_fgFreq(self, freq):
         self.process.stdin.write(f'set_fgFreq 10e3\n')
         self.process.stdin.flush()
