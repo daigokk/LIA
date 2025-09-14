@@ -27,14 +27,14 @@
 double conv(std::string str, double defval)
 {
     try {
-        auto val = std::stod(str); // —áŠO‚ªƒXƒ[‚³‚ê‚é‰Â”\«‚ ‚è
+        auto val = std::stod(str); // ä¾‹å¤–ãŒã‚¹ãƒ­ãƒ¼ã•ã‚Œã‚‹å¯èƒ½æ€§ã‚ã‚Š
         return val;
     }
     catch (const std::invalid_argument& e) {
-        //std::cerr << "–³Œø‚È•¶š—ñ: " << e.what() << std::endl;
+        //std::cerr << "ç„¡åŠ¹ãªæ–‡å­—åˆ—: " << e.what() << std::endl;
     }
     catch (const std::out_of_range& e) {
-        //std::cerr << "”ÍˆÍŠO‚Ì’l: " << e.what() << std::endl;
+        //std::cerr << "ç¯„å›²å¤–ã®å€¤: " << e.what() << std::endl;
     }
     return defval;
 }
@@ -53,7 +53,7 @@ public:
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg
-    float freq = 100e3, amp1 = 1.0, amp2 = 0.0, phase2 = 0.0;
+    float fgFreq = 100e3, fgCh1Amp = 1.0, fgCh2Amp = 0.0, fgCh2phase = 0.0;
     // Scope
     double rawDt = 1e-8;
     // Lia
@@ -103,7 +103,7 @@ public:
         const char* filepath = "result.csv";
         std::ofstream outputFile(filepath);
         if (!outputFile)
-        { // ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚È‚©‚Á‚½ê‡
+        { // ãƒ•ã‚¡ã‚¤ãƒ«ãŒé–‹ã‘ãªã‹ã£ãŸå ´åˆ
             std::cerr << "Fail: " << filepath << std::endl;
         }
         outputFile << "# t(s), x(V), y(V)" << std::endl;
@@ -123,7 +123,7 @@ public:
 
         //std::ofstream outputFile2("raw.csv");
         //if (!outputFile)
-        //{ // ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚È‚©‚Á‚½ê‡
+        //{ // ãƒ•ã‚¡ã‚¤ãƒ«ãŒé–‹ã‘ãªã‹ã£ãŸå ´åˆ
         //    std::cerr << "Fail: " << "raw.csv" << std::endl;
         //}
         //outputFile2 << "# t(s), v(V)" << std::endl;
