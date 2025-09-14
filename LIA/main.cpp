@@ -64,11 +64,11 @@ void measurement(std::stop_token st, Settings* pSettings)
     //daq.Scope.open();
     //daq.Scope.trigger();
     daq_dwf daq;
-    std::cout << std::format("%s(%s) is selected.\n", daq.type, daq.serialNo);
+    std::cout << std::format("{:s}({:s}) is selected.\n", daq.type, daq.serialNo);
     pSettings->pDaq = &daq;
     pSettings->sn = daq.serialNo;
     daq.powerSupply(5);
-    daq.fg(pSettings->amp1, pSettings->freq, 0, 0.0, 0.0);
+    daq.fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
 
     daq.adSettings.ch = 0; daq.adSettings.numCh = 1; daq.adSettings.range = 2.5;
     daq.adSettings.triggerDigCh = -1; daq.adSettings.waitAd = 0;

@@ -53,7 +53,7 @@ public:
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg
-    float fgFreq = 100e3, fgCh1Amp = 1.0, fgCh2Amp = 0.0, fgCh2phase = 0.0;
+    float fgFreq = 100e3, fgCh1Amp = 1.0, fgCh2Amp = 0.0, fgCh2Phase = 0.0;
     // Scope
     double rawDt = 1e-8;
     // Lia
@@ -77,15 +77,16 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
-        freq = (float)conv(liaIni["Fg"]["freq"].as<std::string>(), freq);
-        amp1 = (float)conv(liaIni["Fg"]["amp1"].as<std::string>(), amp1);
+        fgFreq = conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
+        fgCh1Amp = conv(liaIni["Fg"]["fgCh1Amp"].as<std::string>(), fgCh1Amp);
+        fgCh1Amp = conv(liaIni["Fg"]["fgCh2Amp"].as<std::string>(), fgCh2Amp);
+        fgCh1Amp = conv(liaIni["Fg"]["fgCh2Phase"].as<std::string>(), fgCh2Phase);
         offsetPhase = conv(liaIni["Lia"]["offsetPhase"].as<std::string>(), offsetPhase);
         offsetX = conv(liaIni["Lia"]["offsetX"].as<std::string>(), offsetX);
         offsetY = conv(liaIni["Lia"]["offsetY"].as<std::string>(), offsetY);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
-        
-        limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
-        rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        limit = conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
+        rawLimit = conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
 
         for (size_t i = 0; i < rawTime.size(); i++)
         {
@@ -138,8 +139,10 @@ public:
         liaIni["Window"]["windowHeight"] = this->windowHeight;
         liaIni["Window"]["windowPosX"] = this->windowPosX;
         liaIni["Window"]["windowPosY"] = this->windowPosY;
-        liaIni["Fg"]["freq"] = this->freq;
-        liaIni["Fg"]["amp1"] = this->amp1;
+        liaIni["Fg"]["fgFreq"] = this->fgFreq;
+        liaIni["Fg"]["fgCh1Amp"] = this->fgCh1Amp;
+        liaIni["Fg"]["fgCh2Amp"] = this->fgCh2Amp;
+        liaIni["Fg"]["fgCh2Phase"] = this->fgCh2Phase;
         liaIni["Lia"]["offsetPhase"] = this->offsetPhase;
         liaIni["Lia"]["offsetX"] = this->offsetX;
         liaIni["Lia"]["offsetY"] = this->offsetY;
@@ -163,12 +166,12 @@ public:
     Psd(Settings* pSettings)
     {
         this->pSettings = pSettings;
-        oldFreq = pSettings->freq;
+        oldFreq = pSettings->fgFreq;
         init();
     }
     void init()
     {
-        oldFreq = pSettings->freq;
+        oldFreq = pSettings->fgFreq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
 //#pragma omp parallel for
@@ -180,7 +183,7 @@ public:
     }
     void calc(const double t)
     {
-        if (oldFreq != pSettings->freq) init();
+        if (oldFreq != pSettings->fgFreq) init();
         double _x = 0, _y = 0;
 //#pragma omp parallel for reduction(+:_x, _y) // daigokk: For OpenMP, This process is too small.
         for (int i = 0; i < size; i++)

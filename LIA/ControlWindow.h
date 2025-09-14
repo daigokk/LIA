@@ -30,19 +30,19 @@ inline void ControlWindow::show(void)
     ImGui::Text("%s", pSettings->sn.data());
 
     ImGui::SetNextItemWidth(nextItemWidth);
-    float freqkHz = pSettings->freq * 1e-3;
+    float freqkHz = pSettings->fgFreq * 1e-3;
     if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
     {
         if (freqkHz < 10.0f) freqkHz = 10.0f;
         if (freqkHz > 100.0f) freqkHz = 100.0f;
-        pSettings->freq = freqkHz * 1e3f;
+        pSettings->fgFreq = freqkHz * 1e3f;
         fgFlag = true;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp1), 0.1f, 0.1f, "%4.1f"))
+    if (ImGui::InputFloat("Volt. (V)", &(pSettings->fgCh1Amp), 0.1f, 0.1f, "%4.1f"))
     {
-        if (pSettings->amp1 < 0.1f) pSettings->amp1 = 0.1f;
-        if (pSettings->amp1 > 5.0f) pSettings->amp1 = 5.0f;
+        if (pSettings->fgCh1Amp < 0.1f) pSettings->fgCh1Amp = 0.1f;
+        if (pSettings->fgCh1Amp > 5.0f) pSettings->fgCh1Amp = 5.0f;
         fgFlag = true;
     }
     ImGui::Separator();
@@ -71,14 +71,14 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Fg secondly"))
     {
         ImGui::SetNextItemWidth(nextItemWidth);
-        if (ImGui::InputFloat("Volt. (V)", &(pSettings->amp2), 0.1f, 0.1f, "%4.2f"))
+        if (ImGui::InputFloat("Volt. (V)", &(pSettings->fgCh2Amp), 0.1f, 0.1f, "%4.2f"))
         {
-            if (pSettings->amp2 < 0.0f) pSettings->amp2 = 0.0f;
-            if (pSettings->amp2 > 5.0f) pSettings->amp2 = 5.0f;
+            if (pSettings->fgCh2Amp < 0.0f) pSettings->fgCh2Amp = 0.0f;
+            if (pSettings->fgCh2Amp > 5.0f) pSettings->fgCh2Amp = 5.0f;
             fgFlag = true;
         }
         ImGui::SetNextItemWidth(nextItemWidth);
-        if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->phase2), 1, 1, "%3.0f"))
+        if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->fgCh2Phase), 1, 1, "%3.0f"))
         {
             fgFlag = true;
         }
@@ -103,6 +103,6 @@ inline void ControlWindow::show(void)
     ImGui::End();
 #ifdef DAQ
     if(fgFlag)
-        pSettings->pDaq->fg(pSettings->amp1, pSettings->freq, 0.0, pSettings->amp2, pSettings->phase2);
+        pSettings->pDaq->fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0.0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
 #endif // DAQ
 }
