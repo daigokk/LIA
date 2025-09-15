@@ -78,8 +78,8 @@
     def _query(self, cmd):
         self._send(cmd)
         return self._recieve()
-    def get_w1txy(self):
-        buf = self._query('get_w1txy').split(",")
+    def get_txy(self):
+        buf = self._query('get_txy').split(",")
         return (float(buf[0]), float(buf[1]), float(buf[2]))
     def get_fgFreq(self):
         return float(self._query('get_fgFreq'))
@@ -91,7 +91,7 @@
   def getDat(lia:Lia):
     dat = []
     for i in range(60):
-        dat.append(lia.get_w1txy())
+        dat.append(lia.get_txy())
         time.sleep(1)
     return np.array(dat)
 
