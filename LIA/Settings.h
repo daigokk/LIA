@@ -105,6 +105,16 @@ public:
         nofm++;
         offset = nofm % MEASUREMENT_SIZE;
     }
+    void AddPoint(double t, double x1, double y1, double x2, double y2) {
+        times[offset] = t;
+        w1xs[offset] = x1;
+        w1ys[offset] = y1;
+        w2xs[offset] = x2;
+        w2ys[offset] = y2;
+        idx = offset;
+        nofm++;
+        offset = nofm % MEASUREMENT_SIZE;
+    }
     ~Settings()
     {
         const char* filepath = "result.csv";
@@ -183,7 +193,7 @@ public:
         oldFreq = pSettings->fgFreq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
             this->_sin[i] = 2 * std::sin(2 * PI * oldFreq * i * pSettings->rawDt);
@@ -194,28 +204,44 @@ public:
     {
         if (oldFreq != pSettings->fgFreq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
-//#pragma omp parallel for reduction(+:_x, _y) // daigokk: For OpenMP, This process is too small.
+#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2) // daigokk: For OpenMP, This process is too small.
         for (int i = 0; i < size; i++)
         {
             _x1 += pSettings->rawW1[i] * this->_sin[i];
             _y1 += pSettings->rawW1[i] * this->_cos[i];
-            //_x2 += pSettings->rawW2[i] * this->_sin[i];
-            //_y2 += pSettings->rawW2[i] * this->_cos[i];
+#ifdef W2
+            _x2 += pSettings->rawW2[i] * this->_sin[i];
+            _y2 += pSettings->rawW2[i] * this->_cos[i];
+#endif // W2
         }
         _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
-        //_x2 /= this->_sin.size(); _y2 /= this->_sin.size();
+#ifdef W2
+        _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
+#endif // W2
         if (pSettings->flagAutoOffset)
         {
             pSettings->offsetW1X = _x1; pSettings->offsetW1Y = _y1;
             pSettings->flagAutoOffset = false;
         }
         _x1 -= pSettings->offsetW1X; _y1 -= pSettings->offsetW1Y;
+#ifdef W2
+        _x2 -= pSettings->offsetW2X; _y2 -= pSettings->offsetW2Y;
+#endif // W2
         double theta = pSettings->offsetW1Phase / 180 * PI;
+#ifndef W2
         pSettings->AddPoint(
             t, 
             _x1 * std::cos(theta) - _y1 * std::sin(theta), 
             _x1 * std::sin(theta) + _y1 * std::cos(theta)
         );
-        //pSettings->AddPoint(t, _x, _y);
+#else
+        pSettings->AddPoint(
+            t,
+            _x1 * std::cos(theta) - _y1 * std::sin(theta),
+            _x1 * std::sin(theta) + _y1 * std::cos(theta),
+            _x2,
+            _y2
+        );
+#endif // W2
     }
 };

@@ -30,8 +30,12 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
+#ifndef W2
         ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawW1.data(), (int)pSettings->rawTime.size());
-        //ImPlot::PlotLine("##Ch2", pSettings->rawTime.data(), pSettings->rawW2.data(), (int)pSettings->rawTime.size());
+#else
+        ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawW1.data(), (int)pSettings->rawTime.size()); 
+        ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawW2.data(), (int)pSettings->rawTime.size());
+#endif // W2
         ImPlot::EndPlot();
     }
     ImGui::End();

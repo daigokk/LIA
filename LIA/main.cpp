@@ -4,7 +4,8 @@
 #include <string>
 #include <sstream>
 
-//#define DAQ
+//#define W2
+#define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -12,9 +13,8 @@
 #include "Settings.h"
 #include "Gui.h"
 #include "Timer.h"
-
+#include "pipe.h"
 void measurement(std::stop_token st, Settings* pSettings);
-void server(std::stop_token st, Settings* pSettings);
 
 int main(int argc, char* argv[])
 {
@@ -24,12 +24,12 @@ int main(int argc, char* argv[])
     if (gui.initialized == false) return -1;
     std::jthread th_measurement{ measurement, &settings };
     while (!settings.statusMeasurement);
-    std::jthread* pth_server = nullptr;
+    std::jthread* pth_pipe = nullptr;
     for(int i = 0; i < argc; i++)
     {
         if (std::string("pipe") == argv[i])
         {
-            pth_server = new std::jthread(server, &settings);
+            pth_pipe = new std::jthread(pipe, &settings);
             while (!settings.statusServer);
         }
     }
@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     while (!gui.windowShouldClose())
     {
         if (settings.statusMeasurement == false) break;
-        if (pth_server != nullptr && settings.statusServer == false) break;
+        if (pth_pipe != nullptr && settings.statusServer == false) break;
         /* Poll for and process events */
         gui.pollEvents();
         gui.show();
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         gui.swapBuffers();
     }
     th_measurement.request_stop();
-    if (pth_server != nullptr) pth_server->request_stop();
+    if (pth_pipe != nullptr) pth_pipe->request_stop();
 
     return 0;
 }
@@ -69,8 +69,12 @@ void measurement(std::stop_token st, Settings* pSettings)
     pSettings->sn = daq.serialNo;
     daq.powerSupply(5);
     daq.fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
-
-    daq.adSettings.ch = 0; daq.adSettings.numCh = 1; daq.adSettings.range = 2.5;
+    daq.adSettings.ch = 0; daq.adSettings.range = 2.5;
+#ifndef W2
+    daq.adSettings.numCh = 1;
+#else
+    daq.adSettings.ch = 0;
+#endif // W2
     daq.adSettings.triggerDigCh = -1; daq.adSettings.waitAd = 0;
     daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
@@ -89,97 +93,20 @@ void measurement(std::stop_token st, Settings* pSettings)
         {
             double wt = 2 * PI * pSettings->fgFreq * i * pSettings->rawDt;
             pSettings->rawW1[i] = pSettings->fgCh1Amp * std::sin(wt - phase);
+#ifdef W2
+            pSettings->rawW2[i] = pSettings->fgCh2Amp * std::sin(wt - pSettings->fgCh2Phase);
+#endif // W2
         }
 #else
         //daq.Scope.record(pSettings->rawData1.data());
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data());// , pSettings->rawW2.data());
+#ifndef W2
+        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data());
+#else
+        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data(), pSettings->rawW2.data());
+#endif // W2
         daq.ad_start();
 #endif // DAQ
         psd.calc(t);
     }
     pSettings->statusMeasurement = false;
-}
-
-void server(std::stop_token st, Settings* pSettings)
-{
-    pSettings->statusServer = true;
-    while (!st.stop_requested())
-    {
-        bool fgFlag = false;
-        std::string cmd;
-        float value = 0;
-        std::getline(std::cin, cmd);
-        std::istringstream iss(cmd);
-        iss >> cmd >> value;
-        if (cmd.compare("end") == 0) break;
-        else if (cmd.compare("get_w1txy") == 0)
-        {
-            size_t idx = pSettings->idx;
-            std::cout << std::format(
-                "{:e},{:e},{:e}\n", 
-                pSettings->times[idx], 
-                pSettings->w1xs[idx], 
-                pSettings->w1ys[idx]
-            );
-        }
-        else if (cmd.compare("get_w12txy") == 0)
-        {
-            size_t idx = pSettings->idx;
-            std::cout << std::format(
-                "{:e},{:e},{:e},{:e},{:e}\n",
-                pSettings->times[idx],
-                pSettings->w1xs[idx],
-                pSettings->w1ys[idx],
-                pSettings->w2xs[idx],
-                pSettings->w2ys[idx]
-            );
-        }
-        else if (cmd.compare("get_fgFreq") == 0)
-        {
-            std::cout << pSettings->fgFreq << std::endl;
-        }
-        else if (cmd.compare("set_fgFreq") == 0)
-        {
-            pSettings->fgFreq = value;
-            fgFlag = true;
-        }
-        else if (cmd.compare("get_fgCh1Amp") == 0)
-        {
-            std::cout << pSettings->fgCh1Amp << std::endl;
-        }
-        else if (cmd.compare("set_fgCh1Amp") == 0)
-        {
-            pSettings->fgCh1Amp = value;
-            fgFlag = true;
-        }
-        else if (cmd.compare("get_fgCh2Amp") == 0)
-        {
-            std::cout << pSettings->fgCh2Amp << std::endl;
-        }
-        else if (cmd.compare("set_fgCh2Amp") == 0)
-        {
-            pSettings->fgCh2Amp = value;
-            fgFlag = true;
-        }
-        else if (cmd.compare("get_fgCh2Phase") == 0)
-        {
-            std::cout << pSettings->fgCh2Phase << std::endl;
-        }
-        else if (cmd.compare("set_fgCh2Phase") == 0)
-        {
-            pSettings->fgCh2Phase = value;
-            fgFlag = true;
-        }
-        std::cin.clear();
-#ifdef DAQ
-        if (fgFlag)
-            pSettings->pDaq->fg(
-                pSettings->fgCh1Amp, 
-                pSettings->fgFreq, 
-                0.0, 
-                pSettings->fgCh2Amp, 
-                pSettings->fgCh2Phase);
-#endif // DAQ
-    }
-    pSettings->statusServer = false;
 }

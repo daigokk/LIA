@@ -133,8 +133,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <OpenMPSupport>
-      </OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableVectorLength>
       </EnableVectorLength>
@@ -162,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inicpp.h" />
+    <ClInclude Include="pipe.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="ControlWindow.h" />
     <ClInclude Include="Gui.h" />
