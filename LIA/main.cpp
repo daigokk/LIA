@@ -68,7 +68,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     pSettings->pDaq = &daq;
     pSettings->sn = daq.serialNo;
     daq.powerSupply(5);
-    daq.fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
+    daq.fg(pSettings->fg1Amp, pSettings->fgFreq, 0, pSettings->fg2Amp, pSettings->fg2Phase);
     daq.adSettings.ch = 0; daq.adSettings.range = 2.5;
 #ifndef W2
     daq.adSettings.numCh = 1;
@@ -92,17 +92,17 @@ void measurement(std::stop_token st, Settings* pSettings)
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
             double wt = 2 * PI * pSettings->fgFreq * i * pSettings->rawDt;
-            pSettings->rawW1[i] = pSettings->fgCh1Amp * std::sin(wt - phase);
+            pSettings->rawData1[i] = pSettings->fg1Amp * std::sin(wt - phase);
 #ifdef W2
-            pSettings->rawW2[i] = pSettings->fgCh2Amp * std::sin(wt - pSettings->fgCh2Phase);
+            pSettings->rawData2[i] = pSettings->fg2Amp * std::sin(wt - pSettings->fg2Phase);
 #endif // W2
         }
 #else
         //daq.Scope.record(pSettings->rawData1.data());
 #ifndef W2
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data());
+        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());
 #else
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawW1.data(), pSettings->rawW2.data());
+        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data(), pSettings->rawData2.data());
 #endif // W2
         daq.ad_start();
 #endif // DAQ

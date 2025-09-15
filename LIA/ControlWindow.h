@@ -39,15 +39,15 @@ inline void ControlWindow::show(void)
         fgFlag = true;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("Volt. (V)", &(pSettings->fgCh1Amp), 0.1f, 0.1f, "%4.1f"))
+    if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg1Amp), 0.1f, 0.1f, "%4.1f"))
     {
-        if (pSettings->fgCh1Amp < 0.1f) pSettings->fgCh1Amp = 0.1f;
-        if (pSettings->fgCh1Amp > 5.0f) pSettings->fgCh1Amp = 5.0f;
+        if (pSettings->fg1Amp < 0.1f) pSettings->fg1Amp = 0.1f;
+        if (pSettings->fg1Amp > 5.0f) pSettings->fg1Amp = 5.0f;
         fgFlag = true;
     }
     ImGui::Separator();
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offsetW1Phase), 1.0, 10.0, "%3.0f"))
+    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f"))
     {
 
     }
@@ -65,35 +65,35 @@ inline void ControlWindow::show(void)
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
-        pSettings->offsetW1X = 0.0f; pSettings->offsetW1Y = 0.0f;
+        pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
     ImGui::Separator();
     if (ImGui::TreeNode("Fg secondly"))
     {
         ImGui::SetNextItemWidth(nextItemWidth);
-        if (ImGui::InputFloat("Volt. (V)", &(pSettings->fgCh2Amp), 0.1f, 0.1f, "%4.2f"))
+        if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg2Amp), 0.1f, 0.1f, "%4.2f"))
         {
-            if (pSettings->fgCh2Amp < 0.0f) pSettings->fgCh2Amp = 0.0f;
-            if (pSettings->fgCh2Amp > 5.0f) pSettings->fgCh2Amp = 5.0f;
+            if (pSettings->fg2Amp < 0.0f) pSettings->fg2Amp = 0.0f;
+            if (pSettings->fg2Amp > 5.0f) pSettings->fg2Amp = 5.0f;
             fgFlag = true;
         }
         ImGui::SetNextItemWidth(nextItemWidth);
-        if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->fgCh2Phase), 1, 1, "%3.0f"))
+        if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->fg2Phase), 1, 1, "%3.0f"))
         {
             fgFlag = true;
         }
         ImGui::TreePop();
     }
     ImGui::Separator();
-    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->w1xs[pSettings->idx], pSettings->w1ys[pSettings->idx]);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
     ImGui::Text(
         "Amp:%4.2fV,Phase:%3.0fDeg.",
-        pow(pow(pSettings->w1xs[pSettings->idx], 2) + pow(pSettings->w1ys[pSettings->idx], 2), 0.5),
-        atan2(pSettings->w1ys[pSettings->idx], pSettings->w1xs[pSettings->idx]) / PI * 180
+        pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
+        atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / PI * 180
     );
     ImGui::Separator();
     ImGui::Text("Offset");
-    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offsetW1X, pSettings->offsetW1Y);
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
     int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
@@ -103,6 +103,6 @@ inline void ControlWindow::show(void)
     ImGui::End();
 #ifdef DAQ
     if(fgFlag)
-        pSettings->pDaq->fg(pSettings->fgCh1Amp, pSettings->fgFreq, 0.0, pSettings->fgCh2Amp, pSettings->fgCh2Phase);
+        pSettings->pDaq->fg(pSettings->fg1Amp, pSettings->fgFreq, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
 #endif // DAQ
 }

@@ -12,26 +12,26 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::istringstream iss(cmd);
         iss >> cmd >> value;
         if (cmd.compare("end") == 0) break;
-        else if (cmd.compare("get_w1txy") == 0)
+        else if (cmd.compare("get_txy") == 0)
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
                 "{:e},{:e},{:e}\n",
                 pSettings->times[idx],
-                pSettings->w1xs[idx],
-                pSettings->w1ys[idx]
+                pSettings->x1s[idx],
+                pSettings->y1s[idx]
             );
         }
-        else if (cmd.compare("get_w12txy") == 0)
+        else if (cmd.compare("get_txy12") == 0)
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
                 "{:e},{:e},{:e},{:e},{:e}\n",
                 pSettings->times[idx],
-                pSettings->w1xs[idx],
-                pSettings->w1ys[idx],
-                pSettings->w2xs[idx],
-                pSettings->w2ys[idx]
+                pSettings->x1s[idx],
+                pSettings->y1s[idx],
+                pSettings->x1s[idx],
+                pSettings->y1s[idx]
             );
         }
         else if (cmd.compare("get_fgFreq") == 0)
@@ -43,42 +43,42 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->fgFreq = value;
             fgFlag = true;
         }
-        else if (cmd.compare("get_fgCh1Amp") == 0)
+        else if (cmd.compare("get_fg1Amp") == 0)
         {
-            std::cout << pSettings->fgCh1Amp << std::endl;
+            std::cout << pSettings->fg1Amp << std::endl;
         }
-        else if (cmd.compare("set_fgCh1Amp") == 0)
+        else if (cmd.compare("set_fg1Amp") == 0)
         {
-            pSettings->fgCh1Amp = value;
+            pSettings->fg1Amp = value;
             fgFlag = true;
         }
-        else if (cmd.compare("get_fgCh2Amp") == 0)
+        else if (cmd.compare("get_fg2Amp") == 0)
         {
-            std::cout << pSettings->fgCh2Amp << std::endl;
+            std::cout << pSettings->fg2Amp << std::endl;
         }
-        else if (cmd.compare("set_fgCh2Amp") == 0)
+        else if (cmd.compare("set_fg2Amp") == 0)
         {
-            pSettings->fgCh2Amp = value;
+            pSettings->fg2Amp = value;
             fgFlag = true;
         }
-        else if (cmd.compare("get_fgCh2Phase") == 0)
+        else if (cmd.compare("get_fg2Phase") == 0)
         {
-            std::cout << pSettings->fgCh2Phase << std::endl;
+            std::cout << pSettings->fg2Phase << std::endl;
         }
-        else if (cmd.compare("set_fgCh2Phase") == 0)
+        else if (cmd.compare("set_fg2Phase") == 0)
         {
-            pSettings->fgCh2Phase = value;
+            pSettings->fg2Phase = value;
             fgFlag = true;
         }
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)
             pSettings->pDaq->fg(
-                pSettings->fgCh1Amp,
+                pSettings->fg1Amp,
                 pSettings->fgFreq,
                 0.0,
-                pSettings->fgCh2Amp,
-                pSettings->fgCh2Phase);
+                pSettings->fg2Amp,
+                pSettings->fg2Phase);
 #endif // DAQ
     }
     pSettings->statusServer = false;
