@@ -21,6 +21,7 @@
         *pY /= this->size;
     }
     ```
+    ![Chart](./docs/images/Chart.svg)
 ## Usage
   - The establishment of a connection between "W1" and "1+" and between "1-" and "Ground" of the AD will result in the visualization of the real component X and imaginary component Y of the sinusoidal waveform output from "W1" on the "XY" window.
   - The frequency and amplitude of the waveform output from "W1" can be controlled through the "Freq." and "Volt." parameters on the "Control Panel."
