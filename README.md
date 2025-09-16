@@ -1,5 +1,8 @@
 # Software Lock-in Amplifier using Digilent Analog Discovery
+  A lightweight, Windows-based software lock-in amplifier (LIA) built around the Digilent Analog Discovery 2 or 3. Measure the amplitude and phase of sinusoidal signals using phase-sensitive detection without investing in expensive lab equipment.
   ![Hard copy](./docs/images/HardCopy.png)
+## Introduction
+  
 ## What is this?
   - This software facilitates the construction of a software Lock-In Amplifier (LIA) within the Windows using the Digilent Analog Discovery 2 or 3 (AD).
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that has the capacity to measure the amplitude and phase of sinusoidal wave voltages.
