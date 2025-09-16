@@ -114,7 +114,7 @@
     fig.savefig('chart.svg')
   ```
   ![Chart](./docs/images/Chart.svg)
-## Used software
+## Software Dependencies
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
   - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
