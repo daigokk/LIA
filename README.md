@@ -66,37 +66,37 @@
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             encoding='utf-8',
-        )
-        print(self._recieve())
+      )
+      print(self._recieve())
     def __del__(self):
-        self.process.kill()
+      self.process.kill()
     def _send(self, cmd:str):
-        self.process.stdin.write(f'{cmd}\n')
-        self.process.stdin.flush()
+      self.process.stdin.write(f'{cmd}\n')
+      self.process.stdin.flush()
     def _recieve(self, ):
-        self.process.stdout.flush()
-        return self.process.stdout.readline()
+      self.process.stdout.flush()
+      return self.process.stdout.readline()
     def _query(self, cmd):
-        self._send(cmd)
-        return self._recieve()
+      self._send(cmd)
+      return self._recieve()
     def get_txy(self):
-        buf = self._query('get_txy').split(",")
-        return (float(buf[0]), float(buf[1]), float(buf[2]))
+      buf = self._query('get_txy').split(",")
+      return (float(buf[0]), float(buf[1]), float(buf[2]))
     def get_fgFreq(self):
-        return float(self._query('get_fgFreq'))
+      return float(self._query('get_fgFreq'))
     def set_fgFreq(self, freq):
-        self._send(f'set_fgFreq {freq}\n')
+      self._send(f'set_fgFreq {freq}\n')
 
 
   def getDat(lia:Lia):
     dat = []
-    for i in range(10):
-        dat.append(lia.get_txy())
-        time.sleep(1)
+    for i in range(5000):
+      dat.append(lia.get_txy())
+      time.sleep(0.002)
     return np.array(dat)
 
   def makeChart(dat:np.array):
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
     ax[0].plot(dat[:,0], dat[:,1], label='$V_x$')
     ax[0].plot(dat[:,0], dat[:,2], label='$V_y$')
     ax[1].plot(dat[:,1], dat[:,2])
@@ -108,13 +108,12 @@
     ax[1].set_aspect('equal', 'box')
     ax[0].grid()
     ax[1].grid()
+    ax[1].set_xlim(-1.3, 1.3)
+    ax[1].set_ylim(-1.3, 1.3)
     fig.tight_layout()
     fig.savefig('chart.svg')
-
-  lia = Lia('./lia.exe')
-  dat = getDat(lia)
-  makeChart(dat)
   ```
+  ![Chart](./docs/images/Chart.svg)
 ## Used software
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
