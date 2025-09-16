@@ -96,7 +96,7 @@
     return np.array(dat)
 
   def makeChart(dat:np.array):
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
     ax[0].plot(dat[:,0], dat[:,1], label='$V_x$')
     ax[0].plot(dat[:,0], dat[:,2], label='$V_y$')
     ax[1].plot(dat[:,1], dat[:,2])
@@ -108,12 +108,10 @@
     ax[1].set_aspect('equal', 'box')
     ax[0].grid()
     ax[1].grid()
+    ax[1].set_xlim(-1.3, 1.3)
+    ax[1].set_ylim(-1.3, 1.3)
     fig.tight_layout()
     fig.savefig('chart.svg')
-
-  lia = Lia('./lia.exe')
-  dat = getDat(lia)
-  makeChart(dat)
   ```
   ![Chart](./docs/images/Chart.svg)
 ## Used software
