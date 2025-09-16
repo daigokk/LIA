@@ -2,6 +2,7 @@
 #include "Settings.h"
 #include <iostream>
 #include <string>
+#include <format>
 #include <sstream> // std::istringstream
 
 void pipe(std::stop_token st, Settings* pSettings)
