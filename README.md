@@ -60,9 +60,9 @@
 
 
   class Lia:
-    def __init__(self):
-        self.process = subprocess.Popen(
-            r'./lia.exe pipe',
+    def __init__(self, path='./lia.exe'):
+      self.process = subprocess.Popen(
+          f'{path} pipe',
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             encoding='utf-8',
@@ -112,7 +112,7 @@
     fig.tight_layout()
     fig.savefig('chart.svg')
 
-  lia = Lia()
+  lia = Lia('./lia.exe')
   dat = getDat(lia)
   makeChart(dat)
   ```
