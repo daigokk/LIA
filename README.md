@@ -21,6 +21,11 @@
         *pY /= this->size;
     }
     ```
+## Quick Start
+  - Connect Analog Discovery:
+    - Waveform generator W1 → input of amplifier
+    - Oscilloscope channel 1 → amplifier output
+    - Oscilloscope ground → amplifier ground
 ## Usage
   - The establishment of a connection between "W1" and "1+" and between "1-" and "Ground" of the AD will result in the visualization of the real component X and imaginary component Y of the sinusoidal waveform output from "W1" on the "XY" window.
   - The frequency and amplitude of the waveform output from "W1" can be controlled through the "Freq." and "Volt." parameters on the "Control Panel."
