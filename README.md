@@ -1,7 +1,7 @@
 # Software Lock-in Amplifier using Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## What is this?
-  - This software is a lightweight, Windows-based software lock-in amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
+  - This software is a Windows-based software Lock-In Amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude and phase of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   ![PSD](./docs/images/PSD.png)
@@ -24,12 +24,12 @@
 ## Quick Start
   1. Connect Analog Discovery:
       - Waveform generator "W1" → Oscilloscope channel "1+"
-      - Ground → Oscilloscope ground "1-"
+      - Ground → Oscilloscope channel "1-"
   1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
   1. Reading Outputs
       - Raw Waveform: Displayed in the “Raw waveform” window.
       - X/Y Components: Shown in the “XY” window in real time.
-## Practical demonstration for eddy current testing (ECT)
+## Practical Demonstration for Eddy Current Testing (ECT)
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
   ![Circuit](./docs/images/Circuit.svg)
@@ -124,5 +124,6 @@
   - [GLFW](https://www.glfw.org/)
   - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
   - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
+  - Microsoft Windows
 ## Acknowledgments
   This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the Analog Discovery.
