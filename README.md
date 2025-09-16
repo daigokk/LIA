@@ -6,7 +6,7 @@
   - The LIAs utilize a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   ![PSD](./docs/images/PSD.png)
-    $A=\sqrt{x^2+y^2}$, $\theta=\arctan{\frac{y}{x}}$
+    Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
     ```
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
