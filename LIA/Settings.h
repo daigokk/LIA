@@ -29,10 +29,10 @@ double conv(std::string str, double defval)
         return val;
     }
     catch (const std::invalid_argument& e) {
-        //std::cerr << "無効な文字列: " << e.what() << std::endl;
+        std::cerr << "無効な文字列: " << e.what() << std::endl;
     }
     catch (const std::out_of_range& e) {
-        //std::cerr << "範囲外の値: " << e.what() << std::endl;
+        std::cerr << "範囲外の値: " << e.what() << std::endl;
     }
     return defval;
 }
@@ -75,10 +75,10 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
-        fgFreq = conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
-        fg1Amp = conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
-        fg2Amp = conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
-        fg2Phase = conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
+        fgFreq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
+        fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
+        fg2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
+        fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
         offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
         offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
         offset1Y = conv(liaIni["Lia"]["offset1Y"].as<std::string>(), offset1Y);
@@ -86,8 +86,8 @@ public:
         offset2X = conv(liaIni["Lia"]["offset2X"].as<std::string>(), offset2X);
         offset2Y = conv(liaIni["Lia"]["offset2Y"].as<std::string>(), offset2Y);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
-        limit = conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
-        rawLimit = conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
+        rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
 
         for (size_t i = 0; i < rawTime.size(); i++)
         {

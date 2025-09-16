@@ -141,7 +141,7 @@ inline void XYPlotWindow::show()
 #endif // ENABLE_ADCH2
         }
         else {
-            size_t _size = MEASUREMENT_SIZE - pSettings->head;
+            int _size = MEASUREMENT_SIZE - pSettings->head;
 #ifndef ENABLE_ADCH2
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
             ImPlot::PlotLine("##XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), _size);

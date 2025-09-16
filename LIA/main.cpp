@@ -1,8 +1,6 @@
 #include <iostream>
-#include <stop_token>
-#include <thread>
-#include <string>
-#include <sstream>
+#include <stop_token> // std::jthread
+#include <thread> // std::jthread
 
 //#define ENABLE_ADCH2
 #define DAQ

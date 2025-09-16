@@ -1,4 +1,8 @@
 #pragma once
+#include "Settings.h"
+#include <iostream>
+#include <string>
+#include <sstream> // std::istringstream
 
 void pipe(std::stop_token st, Settings* pSettings)
 {
@@ -30,8 +34,8 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->times[idx],
                 pSettings->x1s[idx],
                 pSettings->y1s[idx],
-                pSettings->x1s[idx],
-                pSettings->y1s[idx]
+                pSettings->x2s[idx],
+                pSettings->y2s[idx]
             );
         }
         else if (cmd.compare("get_fgFreq") == 0)
@@ -40,8 +44,11 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd.compare("set_fgFreq") == 0)
         {
-            pSettings->fgFreq = value;
-            fgFlag = true;
+            if (10e3 <= value && value <= 100e3)
+            {
+                pSettings->fgFreq = value;
+                fgFlag = true;
+            }
         }
         else if (cmd.compare("get_fg1Amp") == 0)
         {
@@ -49,8 +56,11 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd.compare("set_fg1Amp") == 0)
         {
-            pSettings->fg1Amp = value;
-            fgFlag = true;
+            if (0 <= value && value <= 5.0)
+            {
+                pSettings->fg1Amp = value;
+                fgFlag = true;
+            }
         }
         else if (cmd.compare("get_fg2Amp") == 0)
         {
@@ -58,8 +68,11 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd.compare("set_fg2Amp") == 0)
         {
-            pSettings->fg2Amp = value;
-            fgFlag = true;
+            if (0 <= value && value <= 5.0)
+            {
+                pSettings->fg2Amp = value;
+                fgFlag = true;
+            }
         }
         else if (cmd.compare("get_fg2Phase") == 0)
         {
