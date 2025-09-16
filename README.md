@@ -22,18 +22,15 @@
     }
     ```
 ## Quick Start
-  - Connect Analog Discovery:
+  1. Connect Analog Discovery:
     - Waveform generator "W1" → Oscilloscope channel "1+"
     - Ground → Oscilloscope ground "1-"
-  - Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
-  - Reading Outputs
+  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
+  1. Reading Outputs
     - Raw Waveform: Displayed in the “Raw waveform” window.
     - X/Y Components: Shown in the “XY” window in real time.
-## Usage
-  - The establishment of a connection between "W1" and "1+" and between "1-" and "Ground" of the AD will result in the visualization of the real component X and imaginary component Y of the sinusoidal waveform output from "W1" on the "XY" window.
-  - The frequency and amplitude of the waveform output from "W1" can be controlled through the "Freq." and "Volt." parameters on the "Control Panel."
-  - The waveform entered in "1+" will be displayed on the "Raw waveform" window.
-  - The following figure shows a circuit as a practical application of LIA for the Eddy Current Testing (ECT).
+## Practical demonstration for eddy current testing (ECT)
+  - The following figure shows a circuit as a practical application of LIA for the ECT.
   
   ![Circuit](./docs/images/Circuit.svg)
   ![Photo of Circuit](./docs/images/PhotoOfCircuit.jpg)
