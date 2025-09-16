@@ -23,6 +23,7 @@
     ```
 ## Quick Start
   1. Connect Analog Discovery:
+     
     - Waveform generator "W1" → Oscilloscope channel "1+"
     - Ground → Oscilloscope ground "1-"
   1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
