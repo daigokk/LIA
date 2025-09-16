@@ -90,9 +90,9 @@
 
   def getDat(lia:Lia):
     dat = []
-    for i in range(10):
+    for i in range(5000):
       dat.append(lia.get_txy())
-      time.sleep(1)
+      time.sleep(0.002)
     return np.array(dat)
 
   def makeChart(dat:np.array):
