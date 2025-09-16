@@ -12,16 +12,14 @@
 #include <daq_dwf.hpp>
 #endif // DAQ
 
-#define PI std::acos(-1)
-
-#define RAW_TIME_DEFAULT 5e-5f
-//#define RAW_SIZE_RESERVE 16384
-#define RAW_SIZE 5000
-#define MEASUREMENT_DT 2e-3
-#define MEASUREMENT_SEC (60*10)
-#define MEASUREMENT_SIZE (size_t)(MEASUREMENT_SEC/MEASUREMENT_DT)
-#define XY_HISTORY_SEC 10.0f
-#define XY_SIZE (size_t)(XY_HISTORY_SEC/MEASUREMENT_DT)
+const double PI = std::acos(-1);
+constexpr float RAW_RANGE = 2.5f;
+constexpr size_t RAW_SIZE = 5000;
+constexpr double MEASUREMENT_DT = 2e-3;
+constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
+constexpr float XY_HISTORY_SEC = 10.0f;
+constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
 
 
 double conv(std::string str, double defval)
@@ -55,7 +53,7 @@ public:
     // Fg
     float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
     // Scope
-    double rawDt = 1e-8;
+    const double rawDt = 1e-8;
     // Lia
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
@@ -63,8 +61,7 @@ public:
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5, rawLimit = 1.5;
     size_t nofm = 0;
-    size_t offset = 0;
-    size_t idx = 0;
+    int idx = 0, head = 0, tail = 0;
     volatile bool statusMeasurement, statusServer;
     std::string sn = "None";
     bool flagRawData2 = false;
@@ -97,23 +94,28 @@ public:
             rawTime[i] = i * rawDt * 1e6;
         }
     }
-    void AddPoint(double t, double x, double y) {
-        times[offset] = t;
-        x1s[offset] = x;
-        y1s[offset] = y;
-        idx = offset;
+    void _AddPoint()
+    {
+        idx = tail;
         nofm++;
-        offset = nofm % MEASUREMENT_SIZE;
+        tail = nofm % MEASUREMENT_SIZE;
+        if (nofm <= XY_SIZE) head = 0;
+        else if (XY_SIZE <= tail) head = tail - XY_SIZE;
+        else head = MEASUREMENT_SIZE - (XY_SIZE - tail);
     }
-    void AddPoint(double t, double x1, double y1, double x2, double y2) {
-        times[offset] = t;
-        x1s[offset] = x1;
-        y1s[offset] = y1;
-        x2s[offset] = x2;
-        y2s[offset] = y2;
-        idx = offset;
-        nofm++;
-        offset = nofm % MEASUREMENT_SIZE;
+    void AddPoint(const double t, const double x, const double y) {
+        times[tail] = t;
+        x1s[tail] = x;
+        y1s[tail] = y;
+        this->_AddPoint();
+    }
+    void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2) {
+        times[tail] = t;
+        x1s[tail] = x1;
+        y1s[tail] = y1;
+        x2s[tail] = x2;
+        y2s[tail] = y2;
+        this->_AddPoint();
     }
     ~Settings()
     {
@@ -209,42 +211,43 @@ public:
         {
             _x1 += pSettings->rawData1[i] * this->_sin[i];
             _y1 += pSettings->rawData1[i] * this->_cos[i];
-#ifdef W2
+#ifdef ENABLE_ADCH2
             _x2 += pSettings->rawData2[i] * this->_sin[i];
             _y2 += pSettings->rawData2[i] * this->_cos[i];
-#endif // W2
+#endif // ENABLE_ADCH2
         }
         _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
-#ifdef W2
+#ifdef ENABLE_ADCH2
         _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
-#endif // W2
+#endif // ENABLE_ADCH2
         if (pSettings->flagAutoOffset)
         {
             pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
-#ifdef W2
+#ifdef ENABLE_ADCH2
             pSettings->offset2X = _x2; pSettings->offset2Y = _y2;
-#endif // W2
+#endif // ENABLE_ADCH2
             pSettings->flagAutoOffset = false;
         }
         _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
-#ifdef W2
+#ifdef ENABLE_ADCH2
         _x2 -= pSettings->offset2X; _y2 -= pSettings->offset2Y;
-#endif // W2
-        double theta = pSettings->offset1Phase / 180 * PI;
-#ifndef W2
+#endif // ENABLE_ADCH2
+        double theta1 = pSettings->offset1Phase / 180 * PI;
+#ifndef ENABLE_ADCH2
         pSettings->AddPoint(
             t, 
-            _x1 * std::cos(theta) - _y1 * std::sin(theta), 
-            _x1 * std::sin(theta) + _y1 * std::cos(theta)
+            _x1 * std::cos(theta1) - _y1 * std::sin(theta1), 
+            _x1 * std::sin(theta1) + _y1 * std::cos(theta1)
         );
 #else
+        double theta2 = pSettings->offset2Phase / 180 * PI;
         pSettings->AddPoint(
             t,
-            _x1 * std::cos(theta) - _y1 * std::sin(theta),
-            _x1 * std::sin(theta) + _y1 * std::cos(theta),
-            _x2,
-            _y2
+            _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
+            _x1 * std::sin(theta1) + _y1 * std::cos(theta1),
+            _x2 * std::cos(theta2) - _y2 * std::sin(theta2),
+            _x2 * std::sin(theta2) + _y2 * std::cos(theta2)
         );
-#endif // W2
+#endif // ENABLE_ADCH2
     }
 };

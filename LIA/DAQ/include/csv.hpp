@@ -152,7 +152,7 @@ public:
 		std::ofstream file;
 		if (!open(filename, file)) return false;
 		file << comment << "\n";
-		for (int i = 0; i < arr1.size(); i++)
+		for (size_t i = 0; i < arr1.size(); i++)
 		{
 			file << arr1[i] << ',' << arr2[i] << '\n';
 		}
@@ -163,7 +163,7 @@ public:
 	{
 		std::ofstream file;
 		if (!open(filename, file)) return false;
-		for (int i = 0; i < arr1.size(); i++)
+		for (size_t i = 0; i < arr1.size(); i++)
 		{
 			file << arr1[i] << ',' << arr2[i] << '\n';
 		}
@@ -175,7 +175,7 @@ public:
 		std::ofstream file;
 		if (!open(filename, file)) return false;
 		file << comment << "\n";
-		for (int i = 0; i < arr1.size(); i++)
+		for (size_t i = 0; i < arr1.size(); i++)
 		{
 			file << arr1[i] << ',' << arr2[i] << ',' << arr3[i] << '\n';
 		}
@@ -189,7 +189,7 @@ public:
 		file << comment << "\n";
 		for (const auto& e : arr)
 		{
-			for (int i = 0; i < e.size() - 1; i++)
+			for (size_t i = 0; i < e.size() - 1; i++)
 			{
 				file << e[i] << ',';
 			}
@@ -204,7 +204,7 @@ public:
 		if (!open(filename, file)) return false;
 		for (const auto& e : arr)
 		{
-			for (int i = 0; i < e.size() - 1;i++)
+			for (size_t i = 0; i < e.size() - 1;i++)
 			{
 				file << e[i] << ',';
 			}

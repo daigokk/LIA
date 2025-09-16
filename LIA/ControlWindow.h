@@ -46,16 +46,20 @@ inline void ControlWindow::show(void)
         fgFlag = true;
     }
     ImGui::Separator();
+#ifndef ENABLE_ADCH2
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f"))
-    {
-
-    }
+    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f")) {}
+#else
+    ImGui::SetNextItemWidth(nextItemWidth);
+    if (ImGui::InputDouble("Ch1 Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f")) {}
+    ImGui::SetNextItemWidth(nextItemWidth);
+    if (ImGui::InputDouble("Ch2 Phase (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f")) {}
+#endif // ENABLE_ADCH2
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1f, 0.1f, "%4.2f"))
     {
         if (pSettings->limit < 0.1f) pSettings->limit = 0.1f;
-        if (pSettings->limit > 3.0f) pSettings->limit = 3.0f;
+        if (pSettings->limit > RAW_RANGE * 1.2f) pSettings->limit = RAW_RANGE * 1.2f;
     }
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
@@ -68,7 +72,7 @@ inline void ControlWindow::show(void)
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
     ImGui::Separator();
-    if (ImGui::TreeNode("Fg secondly"))
+    if (ImGui::TreeNode("Fg w2"))
     {
         ImGui::SetNextItemWidth(nextItemWidth);
         if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg2Amp), 0.1f, 0.1f, "%4.2f"))
@@ -87,7 +91,7 @@ inline void ControlWindow::show(void)
     ImGui::Separator();
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
     ImGui::Text(
-        "Amp:%4.2fV,Phase:%3.0fDeg.",
+        "Amp:%4.2fV,Phase:%4.0fDeg.",
         pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
         atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / PI * 180
     );

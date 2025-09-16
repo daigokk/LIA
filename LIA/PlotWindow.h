@@ -20,22 +20,22 @@ private:
 inline void RawPlotWindow::show()
 {
     static ImVec2 windowPos = ImVec2(0, 600 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 300 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
-    ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, 3.0f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
-#ifndef W2
+#ifndef ENABLE_ADCH2
         ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
 #else
         ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size()); 
         ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
-#endif // W2
+#endif // ENABLE_ADCH2
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -57,7 +57,7 @@ private:
 inline void TimeChartWindow::show()
 {
     static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 300 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -73,22 +73,22 @@ inline void TimeChartWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "x1", &(pSettings->times[0]), &(pSettings->x1s[0]),
-            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+            MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)
         );
         ImPlot::PlotLine(
             "y1", &(pSettings->times[0]), &(pSettings->y1s[0]),
-            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+            MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)
         );
-#ifdef W2
+#ifdef ENABLE_ADCH2
         ImPlot::PlotLine(
             "x2", &(pSettings->times[0]), &(pSettings->x2s[0]),
-            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+            MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)
         );
         ImPlot::PlotLine(
             "y2", &(pSettings->times[0]), &(pSettings->y2s[0]),
-            MEASUREMENT_SIZE, 0, pSettings->offset, sizeof(double)
+            MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)
         );
-#endif // W2
+#endif // ENABLE_ADCH2
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -99,18 +99,11 @@ class XYPlotWindow : public ImuGuiWindowBase
 {
 private:
     Settings* pSettings;
-    std::array<double, XY_SIZE> _x1s, _y1s, _x2s, _y2s;
 public:
     XYPlotWindow(GLFWwindow* window, Settings* pSettings)
         : ImuGuiWindowBase(window, "XY")
     {
         this->pSettings = pSettings;
-#pragma omp parallel for
-        for (int i = 0; i < XY_SIZE; i++)
-        {
-            _x1s[i] = 0; _y1s[i] = 0;
-            _x2s[i] = 0; _y2s[i] = 0;
-        }
     }
     void show(void);
 };
@@ -125,72 +118,64 @@ inline void XYPlotWindow::show()
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        int tail = (int)(pSettings->idx + 1), head = (int)(tail - XY_SIZE), _size = (int)XY_SIZE;
-        if (pSettings->nofm < XY_SIZE)
-        {
-            head = 0; tail = pSettings->nofm; _size = pSettings->nofm;
-#pragma omp parallel for
-            for (int i = 0; i < _size; i++)
-            {
-                _x1s[i] = pSettings->x1s[head + i];
-                _y1s[i] = pSettings->y1s[head + i];
-#ifdef W2
-                _x2s[i] = pSettings->x2s[head + i];
-                _y2s[i] = pSettings->y2s[head + i];
-#endif // W2
-            }
-        }
-        else if (0 <= head && tail <= MEASUREMENT_SIZE)
-        {
-#pragma omp parallel for
-            for (int i = 0; i < _size; i++)
-            {
-                _x1s[i] = pSettings->x1s[head + i];
-                _y1s[i] = pSettings->y1s[head + i];
-#ifdef W2
-                _x2s[i] = pSettings->x2s[head + i];
-                _y2s[i] = pSettings->y2s[head + i];
-#endif // W2
-            }
-        }
-        else
-        {
-            int offsetIdx = -head;
-            head += MEASUREMENT_SIZE;
-#pragma omp parallel for
-            for (int i = 0; i < offsetIdx; i++)
-            {
-                _x1s[i] = pSettings->x1s[head + i];
-                _y1s[i] = pSettings->y1s[head + i];
-#ifdef W2
-                _x2s[i] = pSettings->x2s[head + i];
-                _y2s[i] = pSettings->y2s[head + i];
-#endif // W2
-            }
-#pragma omp parallel for
-            for (int i = 0; i < tail; i++)
-            {
-                _x1s[offsetIdx + i] = pSettings->x1s[i];
-                _y1s[offsetIdx + i] = pSettings->y1s[i];
-#ifdef W2
-                _x2s[offsetIdx + i] = pSettings->x2s[i];
-                _y2s[offsetIdx + i] = pSettings->y2s[i];
-#endif // W2
-            }
-        }
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
-#ifndef W2
-        ImPlot::PlotLine("##XY", _x1s.data(), _y1s.data(), _size);
-        ImPlot::PlotScatter("##NOW", &(pSettings->x1s[pSettings->idx]), &(pSettings->y1s[pSettings->idx]), 1);
+        int _head = pSettings->head, _tail = pSettings->tail, _idx = pSettings->idx;
+        if (pSettings->nofm <= XY_SIZE)
+        {
+#ifndef ENABLE_ADCH2
+            ImPlot::PlotLine("##XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), _tail);
 #else
-        ImPlot::PlotLine("XY1", _x1s.data(), _y1s.data(), _size);
-        ImPlot::PlotLine("XY2", _x2s.data(), _y2s.data(), _size);
-        ImPlot::PlotScatter("##NOW1", &(pSettings->x1s[pSettings->idx]), &(pSettings->y1s[pSettings->idx]), 1);
-        ImPlot::PlotScatter("##NOW2", &(pSettings->x2s[pSettings->idx]), &(pSettings->y2s[pSettings->idx]), 1);
-#endif // W2
-        
+            ImPlot::PlotLine("XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), _tail);
+            ImPlot::PlotLine("XY2", &(pSettings->x2s[_head]), &(pSettings->y2s[_head]), _tail);
+#endif // ENABLE_ADCH2
+        }
+        else if (XY_SIZE <= pSettings->idx + 1)
+        {
+#ifndef ENABLE_ADCH2
+            ImPlot::PlotLine("##XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), XY_SIZE);
+#else
+            ImPlot::PlotLine("XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), XY_SIZE);
+            ImPlot::PlotLine("XY2", &(pSettings->x2s[_head]), &(pSettings->y2s[_head]), XY_SIZE);
+#endif // ENABLE_ADCH2
+        }
+        else {
+            size_t _size = MEASUREMENT_SIZE - pSettings->head;
+#ifndef ENABLE_ADCH2
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+            ImPlot::PlotLine("##XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), _size);
+            double _x1s[] = { pSettings->x1s[MEASUREMENT_SIZE - 1], pSettings->x1s[0] };
+            double _y1s[] = { pSettings->y1s[MEASUREMENT_SIZE - 1], pSettings->y1s[0] };
+            ImPlot::PlotLine("##XY12", _x1s, _y1s, 2);
+            ImPlot::PlotLine("##XY13", &(pSettings->x1s[0]), &(pSettings->y1s[0]), pSettings->tail);
+            ImPlot::PopStyleColor();
+#else
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+            ImPlot::PlotLine("XY1", &(pSettings->x1s[_head]), &(pSettings->y1s[_head]), _size);
+            double _x1s[] = { pSettings->x1s[MEASUREMENT_SIZE - 1], pSettings->x1s[0] };
+            double _y1s[] = { pSettings->y1s[MEASUREMENT_SIZE - 1], pSettings->y1s[0] };
+            ImPlot::PlotLine("##XY12", _x1s, _y1s, 2);
+            ImPlot::PlotLine("##XY13", &(pSettings->x1s[0]), &(pSettings->y1s[0]), pSettings->tail);
+            ImPlot::PopStyleColor();
+
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
+            ImPlot::PlotLine("XY2", &(pSettings->x2s[_head]), &(pSettings->y2s[_head]), _size);
+            double _x2s[] = { pSettings->x2s[MEASUREMENT_SIZE - 1], pSettings->x2s[0] };
+            double _y2s[] = { pSettings->y2s[MEASUREMENT_SIZE - 1], pSettings->y2s[0] };
+            ImPlot::PlotLine("##XY22", _x2s, _y2s, 2);
+            ImPlot::PlotLine("##XY23", &(pSettings->x2s[0]), &(pSettings->y2s[0]), pSettings->tail);
+            ImPlot::PopStyleColor();
+#endif // ENABLE_ADCH2
+        }
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+        ImPlot::PlotScatter("##NOW1", &(pSettings->x1s[_idx]), &(pSettings->y1s[_idx]), 1);
+        ImPlot::PopStyleColor();
+#ifdef ENABLE_ADCH2
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
+        ImPlot::PlotScatter("##NOW2", &(pSettings->x2s[_idx]), &(pSettings->y2s[_idx]), 1);
+        ImPlot::PopStyleColor();
+#endif // ENABLE_ADCH2
         ImPlot::EndPlot();
     }
     ImGui::End();
