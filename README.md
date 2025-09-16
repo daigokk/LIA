@@ -23,10 +23,10 @@
     ```
 ## Quick Start
   1. Connect Analog Discovery:
-    - Waveform generator "W1" → Oscilloscope channel "1+"
-    - Ground → Oscilloscope ground "1-"
-  2. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
-  3. Reading Outputs
+      - Waveform generator "W1" → Oscilloscope channel "1+"
+      - Ground → Oscilloscope ground "1-"
+  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
+  1. Reading Outputs
     - Raw Waveform: Displayed in the “Raw waveform” window.
     - X/Y Components: Shown in the “XY” window in real time.
 ## Practical demonstration for eddy current testing (ECT)
