@@ -91,7 +91,7 @@
 
   def getDat(lia:Lia):
     dat = []
-    for i in range(60):
+    for i in range(10):
         dat.append(lia.get_txy())
         time.sleep(1)
     return np.array(dat)
