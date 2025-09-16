@@ -56,7 +56,7 @@
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
 ## Python
-  - This software can be controlled from Python.
+  - Control the LIA and collect data directly from Python:
   ```
   import subprocess
   import numpy as np
