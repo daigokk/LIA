@@ -63,7 +63,7 @@ public:
     size_t nofm = 0;
     int idx = 0, head = 0, tail = 0;
     volatile bool statusMeasurement, statusServer;
-    std::string sn = "None";
+    std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
     std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s;
