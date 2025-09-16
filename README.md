@@ -27,8 +27,8 @@
       - Ground → Oscilloscope ground "1-"
   1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
   1. Reading Outputs
-    - Raw Waveform: Displayed in the “Raw waveform” window.
-    - X/Y Components: Shown in the “XY” window in real time.
+      - Raw Waveform: Displayed in the “Raw waveform” window.
+      - X/Y Components: Shown in the “XY” window in real time.
 ## Practical demonstration for eddy current testing (ECT)
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
