@@ -85,7 +85,7 @@
     def get_fgFreq(self):
         return float(self._query('get_fgFreq'))
     def set_fgFreq(self, freq):
-        self._send(f'set_fgFreq 10e3\n')
+        self._send(f'set_fgFreq freq\n')
 
 
   def getDat(lia:Lia):
