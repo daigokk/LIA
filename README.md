@@ -69,7 +69,7 @@
         )
         print(self._recieve())
     def __del__(self):
-        self.process.stdin.close()
+        self.process.kill()
     def _send(self, cmd:str):
         self.process.stdin.write(f'{cmd}\n')
         self.process.stdin.flush()
