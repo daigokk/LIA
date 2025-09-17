@@ -22,7 +22,9 @@
     }
     ```
 ## Quick Start
-  1. Connect Analog Discovery:
+  1. Install Digilent Waveforms Framework on your system.
+  1. Connect Analog Discovery to your system.
+  1. Connect pins of Analog Discovery:
       - Waveform generator "W1" → Oscilloscope channel "1+"
       - Ground → Oscilloscope channel "1-"
   1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
