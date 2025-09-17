@@ -84,6 +84,15 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->fg2Phase = value;
             fgFlag = true;
         }
+        else if (cmd.compare("get_hpFreq") == 0)
+        {
+            std::cout << pSettings->hpFreq << std::endl;
+        }
+        else if (cmd.compare("set_hpFreq") == 0)
+        {
+            pSettings->hpFreq = value;
+            fgFlag = true;
+        }
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)

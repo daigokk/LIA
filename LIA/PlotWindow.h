@@ -147,12 +147,12 @@ public:
 
 inline void XYPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(500 * pSettings->monitorScale, 0);
+    static ImVec2 windowPos = ImVec2(0, 0);// ImVec2(500 * pSettings->monitorScale, 0);
     static ImVec2 windowSize = ImVec2(700 * pSettings->monitorScale, 700 * pSettings->monitorScale);
     if (pSettings->flagSurfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
     ImGui::Begin(this->name, nullptr, ImGuiWindowFlags_NoBringToFrontOnFocus);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画
