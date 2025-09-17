@@ -19,8 +19,8 @@ private:
 
 inline void RawPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0, 700 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 550 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -56,8 +56,8 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 700 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 550 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(1500 * pSettings->monitorScale, 450 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -109,8 +109,8 @@ private:
 
 inline void DeltaTimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 700 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(975 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 550 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -147,12 +147,12 @@ public:
 
 inline void XYPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0, 0);// ImVec2(500 * pSettings->monitorScale, 0);
-    static ImVec2 windowSize = ImVec2(700 * pSettings->monitorScale, 700 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(975 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 550 * pSettings->monitorScale);
     if (pSettings->flagSurfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name, nullptr, ImGuiWindowFlags_NoBringToFrontOnFocus);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画

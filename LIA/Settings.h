@@ -108,7 +108,7 @@ public:
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
-    float hpFreq = 100;
+    float hpFreq = 0;
     // Plot
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5, rawLimit = 1.5;
