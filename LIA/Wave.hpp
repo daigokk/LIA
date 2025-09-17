@@ -3,8 +3,7 @@
 
 #include <cmath>
 #include <windows.h>
-
-#define _PI acos(-1)
+#include <numbers> // For std::numbers::pi
 
 class Wave
 {
@@ -62,7 +61,7 @@ public:
 	}
 	void makeSin(const int freq)
 	{ //      1ŽüŠú‚Ì³Œ·”gƒf[ƒ^ì¬
-		double qstep = 2 * _PI * freq / this->wfe.nSamplesPerSec;
+		double qstep = 2 * std::numbers::pi * freq / this->wfe.nSamplesPerSec;
 		double rq = 2;
 		double q = 0;
 		int n;

@@ -7,13 +7,13 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
+#include <numbers> // For std::numbers::pi
 #include "inicpp.h"
 
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
 
-const double PI = std::acos(-1);
 constexpr float RAW_RANGE = 2.5f;
 constexpr size_t RAW_SIZE = 5000;
 constexpr double MEASUREMENT_DT = 2e-3;
@@ -63,7 +63,7 @@ public:
         if (this->cutoffFrequency != cutoffFrequency)
         {
             // Calculate the filter coefficient
-            double rc = 1.0 / (2.0 * PI * cutoffFrequency);
+            double rc = 1.0 / (2.0 * std::numbers::pi * cutoffFrequency);
             alpha = rc / (rc + dt);
             this->cutoffFrequency = cutoffFrequency;
         }
@@ -258,8 +258,8 @@ public:
 #pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
-            this->_sin[i] = 2 * std::sin(2 * PI * oldFreq * i * pSettings->rawDt);
-            this->_cos[i] = 2 * std::cos(2 * PI * oldFreq * i * pSettings->rawDt);
+            this->_sin[i] = 2 * std::sin(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
+            this->_cos[i] = 2 * std::cos(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
         }
     }
     void calc(const double t)
@@ -292,7 +292,7 @@ public:
 #ifdef ENABLE_ADCH2
         _x2 -= pSettings->offset2X; _y2 -= pSettings->offset2Y;
 #endif // ENABLE_ADCH2
-        double theta1 = pSettings->offset1Phase / 180 * PI;
+        double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
 #ifndef ENABLE_ADCH2
         pSettings->AddPoint(
             t, 

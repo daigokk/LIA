@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 #include <format>
+#include <numbers> // For std::numbers::pi
 
 #include "Settings.h"
 #include "ImuGuiWindowBase.h"
@@ -223,7 +224,7 @@ inline void Gui::beep()
     {
         int idx = pSettings->idx;
         double amplitude = pow(pSettings->x1s[idx] * pSettings->x1s[idx] + pSettings->y1s[idx] * pSettings->y1s[idx], 0.5);
-        double phase = atan2(pSettings->y1s[idx], pSettings->x1s[idx]) / _PI * 180;
+        double phase = atan2(pSettings->y1s[idx], pSettings->x1s[idx]) / std::numbers::pi * 180;
         if (amplitude > 0.1)
         {
             if (phase < -80)

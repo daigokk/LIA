@@ -4,6 +4,7 @@
 #include "ImuGuiWindowBase.h"
 #include <iostream>
 #include <cmath>
+#include <numbers> // For std::numbers::pi
 
 class ControlWindow : public ImuGuiWindowBase
 {
@@ -118,7 +119,7 @@ inline void ControlWindow::show(void)
     ImGui::Text(
         "Amp:%4.2fV,Phase:%4.0fDeg.",
         pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
-        atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / PI * 180
+        atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
     );
     ImGui::Separator();
     ImGui::Text("Offset");
