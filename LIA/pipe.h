@@ -91,7 +91,15 @@ void pipe(std::stop_token st, Settings* pSettings)
         else if (cmd.compare("set_hpFreq") == 0)
         {
             pSettings->hpFreq = value;
-            fgFlag = true;
+        }
+        else if (cmd.compare("set_autoOffset") == 0)
+        {
+            pSettings->flagAutoOffset = true;
+        }
+        else if (cmd.compare("set_autoOffsetOff") == 0)
+        {
+            pSettings->offset1X = 0; pSettings->offset1Y = 0;
+            pSettings->offset2X = 0; pSettings->offset2Y = 0;
         }
         std::cin.clear();
 #ifdef DAQ
