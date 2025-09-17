@@ -19,7 +19,7 @@ private:
 
 inline void RawPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0, 600 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(0, 700 * pSettings->monitorScale);
     static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
@@ -56,7 +56,7 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 700 * pSettings->monitorScale);
     static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
@@ -94,6 +94,43 @@ inline void TimeChartWindow::show()
     ImGui::End();
 }
 
+class DeltaTimeChartWindow : public ImuGuiWindowBase
+{
+public:
+    DeltaTimeChartWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "DeltTime chart")
+    {
+        this->pSettings = pSettings;
+    }
+    void show(void);
+private:
+    Settings* pSettings;
+};
+
+inline void DeltaTimeChartWindow::show()
+{
+    static ImVec2 windowPos = ImVec2(550 * pSettings->monitorScale, 700 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(550 * pSettings->monitorScale, 310 * pSettings->monitorScale);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::Begin(this->name);
+    static float historySecMax = (float)(MEASUREMENT_DT)*pSettings->times.size();
+    static float historySec = 10;
+    ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
+    //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
+    // プロット描画
+    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
+        double t = pSettings->times[pSettings->idx];
+        ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
+        ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
+        ImPlot::PlotLine(
+            "x1", &(pSettings->times[0]), &(pSettings->dts[0]),
+            MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)
+        );
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
 
 class XYPlotWindow : public ImuGuiWindowBase
 {
@@ -110,17 +147,26 @@ public:
 
 inline void XYPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0);
-    static ImVec2 windowSize = ImVec2(600 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(500 * pSettings->monitorScale, 0);
+    static ImVec2 windowSize = ImVec2(700 * pSettings->monitorScale, 700 * pSettings->monitorScale);
+    if (pSettings->flagSurfaceMode)
+        ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
-    ImGui::Begin(this->name);
+    ImGui::Begin(this->name, nullptr, ImGuiWindowFlags_NoBringToFrontOnFocus);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
-        ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        if (pSettings->flagSurfaceMode)
+        {
+            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit*4, pSettings->limit*4, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit/4, pSettings->limit, ImGuiCond_Always);
+        }
+        else {
+            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        }
         int _head = pSettings->head, _tail = pSettings->tail, _idx = pSettings->idx;
         if (pSettings->nofm <= XY_SIZE)
         {
@@ -179,4 +225,6 @@ inline void XYPlotWindow::show()
         ImPlot::EndPlot();
     }
     ImGui::End();
+    if (pSettings->flagSurfaceMode)
+        ImGui::PopStyleColor();
 }

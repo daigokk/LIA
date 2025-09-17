@@ -21,7 +21,7 @@ public:
 inline void ControlWindow::show(void)
 {
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(500 * pSettings->monitorScale, 700 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
@@ -56,21 +56,46 @@ inline void ControlWindow::show(void)
     if (ImGui::InputDouble("Ch2 Phase (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f")) {}
 #endif // ENABLE_ADCH2
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), 0.1f, 0.1f, "%4.2f"))
+    float step = 0.1f;
+    if (pSettings->limit <= 0.1f) step = 0.01f;
+    else step = 0.1f;
+    if (ImGui::InputFloat("Limit (V)", &(pSettings->limit), step, 0.1f, "%4.2f"))
     {
-        if (pSettings->limit < 0.1f) pSettings->limit = 0.1f;
+        if (pSettings->limit < 0.01f) pSettings->limit = 0.01f;
         if (pSettings->limit > RAW_RANGE * 1.2f) pSettings->limit = RAW_RANGE * 1.2f;
+        if (0.1f < pSettings->limit && pSettings->limit < 0.2f) pSettings->limit = 0.2f;
     }
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
+    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0.0f, 0.0f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.2f, 0.2f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.4f, 0.4f, 0.5f));
+    }
     if (ImGui::Button("Auto offset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
+    }
+    if (pSettings->offset1X != 0)
+    {
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
     }
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
+    ImGui::SetNextItemWidth(nextItemWidth);
+    if (ImGui::InputFloat("High Pass (Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
+    {
+        if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
+        if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
+    }
+    ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
+    ImGui::SameLine();
+    ImGui::Checkbox("Beep", &pSettings->flagBeep);
     ImGui::Separator();
     if (ImGui::TreeNode("Fg w2"))
     {

@@ -2,6 +2,7 @@
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
 #include <format>
+#include <Windows.h>
 
 //#define ENABLE_ADCH2
 #define DAQ
@@ -22,6 +23,15 @@ int main(int argc, char* argv[])
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
     std::jthread th_measurement{ measurement, &settings };
+    // スレッドのハンドルを取得
+    HANDLE handle = th_measurement.native_handle();
+    // 優先度を設定
+    if (SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
+        std::cout << "Priority set to highest.\n";
+    }
+    else {
+        std::cerr << "Failed to set priority.\n";
+    }
     while (!settings.statusMeasurement);
     std::jthread* pth_pipe = nullptr;
     for(int i = 0; i < argc; i++)
@@ -29,14 +39,15 @@ int main(int argc, char* argv[])
         if (std::string("pipe") == argv[i])
         {
             pth_pipe = new std::jthread(pipe, &settings);
-            while (!settings.statusServer);
+            while (!settings.statusPipe);
         }
     }
 
     while (!gui.windowShouldClose())
     {
         if (settings.statusMeasurement == false) break;
-        if (pth_pipe != nullptr && settings.statusServer == false) break;
+        if (pth_pipe != nullptr && settings.statusPipe == false) break;
+        gui.beep();
         /* Poll for and process events */
         gui.pollEvents();
         gui.show();

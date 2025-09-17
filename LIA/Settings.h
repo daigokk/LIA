@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <cmath>
 #include "inicpp.h"
+
 #ifdef DAQ
 #include <daq_dwf.hpp>
 #endif // DAQ
@@ -29,44 +30,96 @@ double conv(std::string str, double defval)
         return val;
     }
     catch (const std::invalid_argument& e) {
-        std::cerr << "無効な文字列: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
     }
     catch (const std::out_of_range& e) {
-        std::cerr << "範囲外の値: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
     }
     return defval;
 }
 
+bool convb(std::string str, bool defval)
+{
+    if (str.compare("false") == 0 || str.compare("False") == 0 || str.compare("FALSE") == 0) return false;
+    else if (str.compare("true") == 0 || str.compare("True") == 0 || str.compare("TRUE") == 0) return true;
+    return defval;
+}
+
+class HighPassFilter {
+private:
+    double alpha = 1;  // Filter coefficient
+    double prevInput = 0;  // Previous input sample
+    double prevOutput = 0; // Previous output sample
+    double dt = MEASUREMENT_DT;
+public:
+    double cutoffFrequency = 0;
+    void init(const double cutoffFrequency, const double dt)
+    {
+        this->cutoffFrequency = cutoffFrequency;
+        this->dt = dt;
+    }
+    double process(const double cutoffFrequency, const double input)
+    {
+        if (this->cutoffFrequency != cutoffFrequency)
+        {
+            // Calculate the filter coefficient
+            double rc = 1.0 / (2.0 * PI * cutoffFrequency);
+            alpha = rc / (rc + dt);
+            this->cutoffFrequency = cutoffFrequency;
+        }
+        if (this->cutoffFrequency == 0)
+        {
+            prevInput = input;
+            prevOutput = input;
+            return input;
+        }
+        // Apply the high-pass filter formula
+        double output = alpha * (prevOutput + input - prevInput);
+
+        // Update previous values
+        prevInput = input;
+        prevOutput = output;
+
+        return output;
+    }
+};
+
+
 class Settings
 {
+private:
+    
 public:
 #ifdef DAQ
     daq_dwf* pDaq = nullptr;
 #endif // DAQ
     // Monitor
-    float monitorScale;
+    float monitorScale = 1.0f;
     // Window
     int windowWidth = 1500;
-    int windowHeight = 900;
+    int windowHeight = 1000;
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg
     float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
     // Scope
     const double rawDt = 1e-8;
-    // Lia
+    // LIA
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
+    HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
+    float hpFreq = 100;
     // Plot
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5, rawLimit = 1.5;
+    bool flagSurfaceMode = false, flagBeep = false;
     size_t nofm = 0;
     int idx = 0, head = 0, tail = 0;
-    volatile bool statusMeasurement, statusServer;
+    volatile bool statusMeasurement = false, statusPipe = false;
     std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
-    std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s;
+    std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;
     bool flagAutoOffset = false;
     Settings()
     {
@@ -85,9 +138,12 @@ public:
         offset2Phase = conv(liaIni["Lia"]["offset2Phase"].as<std::string>(), offset2Phase);
         offset2X = conv(liaIni["Lia"]["offset2X"].as<std::string>(), offset2X);
         offset2Y = conv(liaIni["Lia"]["offset2Y"].as<std::string>(), offset2Y);
+        hpFreq = conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
         rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        flagSurfaceMode = convb(liaIni["Plot"]["flagSurfaceMode"].as<std::string>(), flagSurfaceMode);
+        flagBeep = convb(liaIni["Plot"]["flagBeep"].as<std::string>(), flagBeep);
 
         for (size_t i = 0; i < rawTime.size(); i++)
         {
@@ -105,8 +161,9 @@ public:
     }
     void AddPoint(const double t, const double x, const double y) {
         times[tail] = t;
-        x1s[tail] = x;
-        y1s[tail] = y;
+        dts[tail] = (times[tail] - times[idx])*1e3;
+        x1s[tail] = hpfX1.process(this->hpFreq, x);
+        y1s[tail] = hpfY1.process(this->hpFreq, y);
         this->_AddPoint();
     }
     void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2) {
@@ -167,9 +224,12 @@ public:
         liaIni["Lia"]["offset2Phase"] = this->offset2Phase;
         liaIni["Lia"]["offset2X"] = this->offset2X;
         liaIni["Lia"]["offset2Y"] = this->offset2Y;
+        liaIni["Lia"]["hpFreq"] = this->hpFreq;
         liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
         liaIni["Plot"]["limit"] = this->limit;
         liaIni["Plot"]["rawLimit"] = this->rawLimit;
+        liaIni["Plot"]["flagSurfaceMode"] = this->flagSurfaceMode;
+        liaIni["Plot"]["flagBeep"] = this->flagBeep;
 
         liaIni.save("lia.ini");
         

@@ -7,7 +7,7 @@
 
 void pipe(std::stop_token st, Settings* pSettings)
 {
-    pSettings->statusServer = true;
+    pSettings->statusPipe = true;
     while (!st.stop_requested())
     {
         bool fgFlag = false;
@@ -95,5 +95,5 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->fg2Phase);
 #endif // DAQ
     }
-    pSettings->statusServer = false;
+    pSettings->statusPipe = false;
 }

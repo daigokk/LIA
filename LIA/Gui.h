@@ -19,7 +19,7 @@
 #include "ImuGuiWindowBase.h"
 #include "ControlWindow.h"
 #include "PlotWindow.h"
-
+#include "Wave.hpp"
 
 void glfw_error_callback(int error, const char* description)
 {
@@ -48,11 +48,13 @@ private:
     ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
     int monitorWidth = 0;
     int monitorHeight = 0;
+    Wave* waves[9];
 public:
 	bool initialized = true;
     ControlWindow* controlWindow = nullptr;
     RawPlotWindow* rawPlotWindow = nullptr;
     TimeChartWindow* timeChartWindow = nullptr;
+    DeltaTimeChartWindow* deltaTimeChartWindow = nullptr;
     XYPlotWindow* xyPlotWindow = nullptr;
     Settings* pSettings = nullptr;
     Gui(Settings* pSettings)
@@ -60,9 +62,11 @@ public:
         this->pSettings = pSettings;
         if (!this->initGLFW()) { this->initialized = false; return; }
         if (!this->initImGui()) { this->initialized = false; return; }
+        this->initBeep();
         this->controlWindow = new ControlWindow(this->window, pSettings);
         this->rawPlotWindow = new RawPlotWindow(this->window, pSettings);
         this->timeChartWindow = new TimeChartWindow(this->window, pSettings);
+        this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, pSettings);
         this->xyPlotWindow = new XYPlotWindow(this->window, pSettings);
     }
 	~Gui()
@@ -78,6 +82,9 @@ public:
     }
     bool initGLFW();
     bool initImGui();
+    void initBeep();
+    void deleteBeep();
+    void beep();
 	void clear(void) { glClear(GL_COLOR_BUFFER_BIT); };
     bool windowShouldClose(void) { return glfwWindowShouldClose(this->window); };
 	void pollEvents(void)
@@ -103,15 +110,16 @@ public:
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     };
     void swapBuffers(void){ glfwSwapBuffers(this->window); };
-	void show()
-	{
-        {
-            this->controlWindow->show();
-            this->rawPlotWindow->show();
-            this->timeChartWindow->show();
-            this->xyPlotWindow->show();
-        }
-	};
+    void show()
+    {
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
+        this->xyPlotWindow->show(); 
+        this->rawPlotWindow->show();
+        this->timeChartWindow->show();
+        //this->deltaTimeChartWindow->show();
+        this->controlWindow->show();
+        ImGui::PopStyleColor();
+    };
 };
 
 inline bool Gui::initGLFW()
@@ -190,4 +198,114 @@ inline bool Gui::initImGui()
 
     ImPlot::CreateContext();
     return true;
+}
+
+inline void Gui::initBeep()
+{
+    for (int i = 0; i < 9; i++)
+    {
+        waves[i] = new Wave(4800, 1);
+        waves[i]->makeSin((i + 1) * 100 + 600);
+    }
+}
+
+inline void Gui::deleteBeep()
+{
+    for (int i = 0; i < 9; i++)
+    {
+        delete waves[i];
+    }
+}
+
+inline void Gui::beep()
+{
+    if (pSettings->flagBeep)
+    {
+        int idx = pSettings->idx;
+        double amplitude = pow(pSettings->x1s[idx] * pSettings->x1s[idx] + pSettings->y1s[idx] * pSettings->y1s[idx], 0.5);
+        double phase = atan2(pSettings->y1s[idx], pSettings->x1s[idx]) / _PI * 180;
+        if (amplitude > 0.1)
+        {
+            if (phase < -80)
+            {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->play();
+            }
+            else if (-80 <= phase && phase < -60) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->play();
+                waves[7]->stop();
+            }
+            else if (-60 <= phase && phase < -55) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->play();
+                waves[6]->stop();
+                waves[7]->stop();
+            }
+            else if (-55 <= phase && phase < 0) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->play();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+            }
+            else if (0 <= phase && phase < 30) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->play();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+            }
+            else if (30 <= phase && phase < 60) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->play();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+            }
+            else if (60 <= phase) {
+                waves[0]->stop();
+                waves[1]->play();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+            }
+            else {
+                for (int i = 0; i < 9; i++) waves[i]->stop();
+            }
+        }
+        else {
+            for (int i = 0; i < 9; i++) waves[i]->stop();
+        }
+    }
+    else {
+        for (int i = 0; i < 9; i++) waves[i]->stop();
+    }
 }
