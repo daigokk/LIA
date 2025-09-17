@@ -111,7 +111,7 @@ public:
     float hpFreq = 0;
     // Plot
     double rangeSecTimeSeries = 10.0;
-    float limit = 1.5, rawLimit = 1.5;
+    float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
     bool flagSurfaceMode = false, flagBeep = false;
     size_t nofm = 0;
     int idx = 0, head = 0, tail = 0;
@@ -142,6 +142,7 @@ public:
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
         rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        historySec = (float)conv(liaIni["Plot"]["historySec"].as<std::string>(), historySec);
         flagSurfaceMode = convb(liaIni["Plot"]["flagSurfaceMode"].as<std::string>(), flagSurfaceMode);
         flagBeep = convb(liaIni["Plot"]["flagBeep"].as<std::string>(), flagBeep);
 
@@ -228,6 +229,7 @@ public:
         liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
         liaIni["Plot"]["limit"] = this->limit;
         liaIni["Plot"]["rawLimit"] = this->rawLimit;
+        liaIni["Plot"]["historySec"] = this->historySec;
         liaIni["Plot"]["flagSurfaceMode"] = this->flagSurfaceMode;
         liaIni["Plot"]["flagBeep"] = this->flagBeep;
 
