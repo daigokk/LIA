@@ -168,10 +168,10 @@ public:
     }
     void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2) {
         times[tail] = t;
-        x1s[tail] = x1;
-        y1s[tail] = y1;
-        x2s[tail] = x2;
-        y2s[tail] = y2;
+        x1s[tail] = hpfX1.process(this->hpFreq, x1);
+        y1s[tail] = hpfY1.process(this->hpFreq, y1);
+        x2s[tail] = hpfX2.process(this->hpFreq, x2);
+        y2s[tail] = hpfY2.process(this->hpFreq, y2);
         this->_AddPoint();
     }
     ~Settings()
