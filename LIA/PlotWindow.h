@@ -62,14 +62,13 @@ inline void TimeChartWindow::show()
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
-    static float historySec = 10;
-    ImGui::SliderFloat("History", &historySec, 1, historySecMax, "%5.1f s");
+    ImGui::SliderFloat("History", &pSettings->historySec, 1, historySecMax, "%5.1f s");
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
-        ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "x1", &(pSettings->times[0]), &(pSettings->x1s[0]),

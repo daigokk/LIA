@@ -23,14 +23,13 @@ int main(int argc, char* argv[])
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
     std::jthread th_measurement{ measurement, &settings };
-    // スレッドのハンドルを取得
+    // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
-    // 優先度を設定
     if (SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
-        std::cout << "Priority set to highest.\n";
+        std::cout << "Thread priority set to highest.\n";
     }
     else {
-        std::cerr << "Failed to set priority.\n";
+        std::cerr << "Failed to set thread priority.\n";
     }
     while (!settings.statusMeasurement);
     std::jthread* pth_pipe = nullptr;
