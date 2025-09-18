@@ -27,7 +27,7 @@
   1. Connect pins of Analog Discovery:
       - Waveform generator "W1" → Oscilloscope channel "1+"
       - Ground → Oscilloscope channel "1-"
-  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
+  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on the GUI.
   1. Reading Outputs
       - Raw Waveform: Displayed in the “Raw waveform” window.
       - X/Y Components: Shown in the “XY” window in real time.
