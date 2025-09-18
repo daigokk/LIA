@@ -114,13 +114,14 @@ public:
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
     bool flagSurfaceMode = false, flagBeep = false;
-    size_t nofm = 0;
-    int idx = 0, head = 0, tail = 0;
+    int nofm = 0, idx = 0, tail = 0, size = 0;
     volatile bool statusMeasurement = false, statusPipe = false;
     std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
     std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;
+    std::array<double, XY_SIZE> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
+    int xyNorm = 0, xyIdx = 0, xyHead = 0, xyTail = 0, xySize;
     bool flagAutoOffset = false;
     Settings()
     {
@@ -161,15 +162,25 @@ public:
         idx = tail;
         nofm++;
         tail = nofm % MEASUREMENT_SIZE;
-        if (nofm <= XY_SIZE) head = 0;
-        else if (XY_SIZE <= tail) head = tail - XY_SIZE;
-        else head = MEASUREMENT_SIZE - (XY_SIZE - tail);
+        if (nofm <= MEASUREMENT_SIZE)
+        {
+            size = nofm;
+        }
+        xyIdx = xyTail;
+        xyNorm++;
+        xyTail = xyNorm % XY_SIZE;
+        if (xyNorm < XY_SIZE)
+        {
+            xySize = xyNorm;
+        }
     }
     void AddPoint(const double t, const double x, const double y) {
         times[tail] = t;
         dts[tail] = (times[tail] - times[idx])*1e3;
         x1s[tail] = hpfX1.process(this->hpFreq, x);
         y1s[tail] = hpfY1.process(this->hpFreq, y);
+        xy1Xs[xyTail] = x1s[tail];
+        xy1Ys[xyTail] = y1s[tail];
         this->_AddPoint();
     }
     void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2) {
@@ -178,6 +189,10 @@ public:
         y1s[tail] = hpfY1.process(this->hpFreq, y1);
         x2s[tail] = hpfX2.process(this->hpFreq, x2);
         y2s[tail] = hpfY2.process(this->hpFreq, y2);
+        xy1Xs[xyTail] = x1s[tail];
+        xy1Ys[xyTail] = y1s[tail];
+        xy2Xs[xyTail] = x2s[tail];
+        xy2Ys[xyTail] = y2s[tail];
         this->_AddPoint();
     }
     ~Settings()
@@ -307,7 +322,7 @@ public:
             _x1 * std::sin(theta1) + _y1 * std::cos(theta1)
         );
 #else
-        double theta2 = pSettings->offset2Phase / 180 * PI;
+        double theta2 = pSettings->offset2Phase / 180 * std::numbers::pi;
         pSettings->AddPoint(
             t,
             _x1 * std::cos(theta1) - _y1 * std::sin(theta1),

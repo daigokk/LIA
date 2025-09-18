@@ -2,6 +2,7 @@
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
 #include <format>
+#include <numbers> // For std::numbers::pi
 #include <Windows.h>
 
 //#define ENABLE_ADCH2
@@ -97,10 +98,10 @@ void measurement(std::stop_token st, Settings* pSettings)
         double t = pSettings->nofm * MEASUREMENT_DT;
         t = timer.sleepUntil(t);
 #ifndef DAQ
-        double phase = 2 * PI * t / 60;
+        double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
-            double wt = 2 * PI * pSettings->fgFreq * i * pSettings->rawDt;
+            double wt = 2 * std::numbers::pi * pSettings->fgFreq * i * pSettings->rawDt;
             pSettings->rawData1[i] = pSettings->fg1Amp * std::sin(wt - phase);
 #ifdef ENABLE_ADCH2
             pSettings->rawData2[i] = pSettings->fg2Amp * std::sin(wt - pSettings->fg2Phase);
