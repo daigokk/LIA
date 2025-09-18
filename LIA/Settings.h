@@ -16,7 +16,7 @@
 
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
+constexpr size_t RAW_SIZE = 10000;
 constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -54,11 +54,6 @@ private:
     double dt = MEASUREMENT_DT;
 public:
     double cutoffFrequency = 0;
-    void init(const double cutoffFrequency, const double dt)
-    {
-        this->cutoffFrequency = cutoffFrequency;
-        this->dt = dt;
-    }
     double process(const double cutoffFrequency, const double input)
     {
         if (this->cutoffFrequency != cutoffFrequency)
@@ -138,6 +133,10 @@ public:
         if (fgFreq > highLimitFreq) fgFreq = highLimitFreq;
         fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
         fg2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
+        if (fg1Amp < 0.1f) fg1Amp = 0.1f;
+        if (fg1Amp > 5.0f) fg1Amp = 5.0f;
+        if (fg2Amp < 0.0f) fg2Amp = 0.0f;
+        if (fg2Amp > 5.0f) fg2Amp = 5.0f;
         fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
         offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
         offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
@@ -201,7 +200,11 @@ public:
         { // ファイルが開けなかった場合
             std::cerr << "Fail: " << filepath << std::endl;
         }
+#ifndef ENABLE_ADCH2
         outputFile << "# t(s), x(V), y(V)" << std::endl;
+#else
+        outputFile << "# t(s), x1(V), y1(V), x2(V), y2(V)" << std::endl;
+#endif
         size_t _size = this->nofm;
         size_t offsetIdx = 0;
         if (_size > this->times.size())
@@ -212,7 +215,11 @@ public:
         for (size_t i = 0; i < _size; i++)
         {
             size_t idx = (offsetIdx + i) % this->times.size();
+#ifndef ENABLE_ADCH2
             outputFile << times[idx] << ',' << x1s[idx] << ',' << y1s[idx] << std::endl;
+#else
+            outputFile << times[idx] << ',' << x1s[idx] << ',' << y1s[idx] << ',' << x2s[idx] << ',' << y2s[idx] << std::endl;
+#endif
         }
         outputFile.close();
 
@@ -272,7 +279,8 @@ public:
     {
         if (oldFreq != pSettings->fgFreq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
-//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2) // daigokk: For OpenMP, This process is too small.
+//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
+        // daigokk: For OpenMP, this process is too small.
         for (int i = 0; i < size; i++)
         {
             _x1 += pSettings->rawData1[i] * this->_sin[i];
