@@ -122,6 +122,7 @@ inline void DeltaTimeChartWindow::show()
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, (MEASUREMENT_DT - 2e-3) * 1e3, (MEASUREMENT_DT + 2e-3) * 1e3, ImGuiCond_Always);
         ImPlot::PlotLine(
             "x1", &(pSettings->times[0]), &(pSettings->dts[0]),
             MEASUREMENT_SIZE, 0, pSettings->tail, sizeof(double)

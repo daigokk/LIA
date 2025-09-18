@@ -22,7 +22,7 @@ public:
 inline void ControlWindow::show(void)
 {
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 680 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 690 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
@@ -31,11 +31,13 @@ inline void ControlWindow::show(void)
     ImGui::Text("%s", pSettings->sn.data());
 
     ImGui::SetNextItemWidth(nextItemWidth);
+    static float lowLimitFreqkHz = 0.5f * 1e-3f / (RAW_SIZE * pSettings->rawDt);
+    static float highLimitFreqkHz = 1e-3f / (1000 * pSettings->rawDt);
     float freqkHz = pSettings->fgFreq * 1e-3;
     if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
     {
-        if (freqkHz < 10.0f) freqkHz = 10.0f;
-        if (freqkHz > 100.0f) freqkHz = 100.0f;
+        if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
+        if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
         pSettings->fgFreq = freqkHz * 1e3f;
         fgFlag = true;
     }
@@ -89,7 +91,7 @@ inline void ControlWindow::show(void)
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("High Pass (Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
+    if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
         if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
         if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
@@ -117,8 +119,9 @@ inline void ControlWindow::show(void)
     ImGui::Separator();
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
     ImGui::Text(
-        "Amp:%4.2fV,Phase:%4.0fDeg.",
+        "Amp:%4.2fV, %s:%4.0fDeg.",
         pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
+        u8"ƒÆ",
         atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
     );
     ImGui::Separator();

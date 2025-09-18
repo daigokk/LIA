@@ -15,6 +15,7 @@
 #endif // DAQ
 
 constexpr float RAW_RANGE = 2.5f;
+constexpr double RAW_DT = 1e-8;
 constexpr size_t RAW_SIZE = 5000;
 constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
@@ -103,7 +104,7 @@ public:
     // Fg
     float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
     // Scope
-    const double rawDt = 1e-8;
+    const double rawDt = RAW_DT;
     // LIA
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
@@ -129,6 +130,10 @@ public:
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
         fgFreq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
+        float lowLimitFreq = 0.5f / (RAW_SIZE * rawDt);
+        float highLimitFreq = 1.0f / (1000 * rawDt);
+        if (fgFreq < lowLimitFreq) fgFreq = lowLimitFreq;
+        if (fgFreq > highLimitFreq) fgFreq = highLimitFreq;
         fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
         fg2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
         fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
