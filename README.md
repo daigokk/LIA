@@ -1,4 +1,4 @@
-# Software Lock-in Amplifier using Digilent Analog Discovery
+# Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## What is this?
   - This software is a Windows-based software Lock-In Amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
@@ -27,7 +27,7 @@
   1. Connect pins of Analog Discovery:
       - Waveform generator "W1" → Oscilloscope channel "1+"
       - Ground → Oscilloscope channel "1-"
-  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on "lia.exe".
+  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on the GUI.
   1. Reading Outputs
       - Raw Waveform: Displayed in the “Raw waveform” window.
       - X/Y Components: Shown in the “XY” window in real time.
@@ -122,14 +122,17 @@
 
   lia = Lia('./lia.exe')
   dat = getDat(lia)
-  makeChart(dat)
+  makeChart(dat) # Save time series and Lissajous plots of X/Y components
   ```
   ![Chart](./docs/images/Chart.svg)
+## Requirements
+  - Digilent Analog Discovery 2 or 3
+  - Digilent Waveforms SDK
+  - Microsoft Windows 10/11
 ## Software Dependencies
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
   - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
   - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
-  - Microsoft Windows
 ## Acknowledgments
-  This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the Analog Discovery.
+  This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
