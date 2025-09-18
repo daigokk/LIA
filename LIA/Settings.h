@@ -16,7 +16,7 @@
 
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 10000;
+constexpr size_t RAW_SIZE = 5000;
 constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -216,9 +216,9 @@ public:
         {
             size_t idx = (offsetIdx + i) % this->times.size();
 #ifndef ENABLE_ADCH2
-            outputFile << times[idx] << ',' << x1s[idx] << ',' << y1s[idx] << std::endl;
+            outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
 #else
-            outputFile << times[idx] << ',' << x1s[idx] << ',' << y1s[idx] << ',' << x2s[idx] << ',' << y2s[idx] << std::endl;
+            outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
 #endif
         }
         outputFile.close();
