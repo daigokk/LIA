@@ -206,8 +206,16 @@ inline void Gui::initBeep()
     for (int i = 0; i < 9; i++)
     {
         waves[i] = new Wave(4800, 1);
-        waves[i]->makeSin((i + 1) * 100 + 600);
     }
+    waves[0]->makeSin(100);
+    waves[1]->makeSin(261.626);
+    waves[2]->makeSin(293.665);
+    waves[3]->makeSin(329.628);
+    waves[4]->makeSin(349.228);
+    waves[5]->makeSin(391.995);
+    waves[6]->makeSin(440.000);
+    waves[7]->makeSin(493.883);
+    waves[8]->makeSin(523.251);
 }
 
 inline void Gui::deleteBeep()
@@ -230,55 +238,16 @@ inline void Gui::beep()
             if (phase < -80)
             {
                 waves[0]->stop();
-                waves[1]->stop();
+                waves[1]->play();
                 waves[2]->stop();
                 waves[3]->stop();
                 waves[4]->stop();
                 waves[5]->stop();
                 waves[6]->stop();
-                waves[7]->play();
+                waves[7]->stop();
+                waves[8]->stop();
             }
             else if (-80 <= phase && phase < -60) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->play();
-                waves[7]->stop();
-            }
-            else if (-60 <= phase && phase < -55) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->play();
-                waves[6]->stop();
-                waves[7]->stop();
-            }
-            else if (-55 <= phase && phase < 0) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->play();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-            }
-            else if (0 <= phase && phase < 30) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->play();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-            }
-            else if (30 <= phase && phase < 60) {
                 waves[0]->stop();
                 waves[1]->stop();
                 waves[2]->play();
@@ -287,16 +256,62 @@ inline void Gui::beep()
                 waves[5]->stop();
                 waves[6]->stop();
                 waves[7]->stop();
+                waves[8]->stop();
             }
-            else if (60 <= phase) {
+            else if (-60 <= phase && phase < -55) {
                 waves[0]->stop();
-                waves[1]->play();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->play();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+                waves[8]->stop();
+            }
+            else if (-55 <= phase && phase < 0) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->play();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->stop();
+                waves[7]->stop();
+                waves[8]->stop();
+            }
+            else if (0 <= phase && phase < 30) {
+                waves[0]->stop();
+                waves[1]->stop();
                 waves[2]->stop();
                 waves[3]->stop();
                 waves[4]->stop();
                 waves[5]->stop();
                 waves[6]->stop();
+                waves[7]->play();
+                waves[8]->stop();
+            }
+            else if (30 <= phase && phase < 60) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->play();
+                waves[6]->stop();
                 waves[7]->stop();
+                waves[8]->stop();
+            }
+            else if (60 <= phase) {
+                waves[0]->stop();
+                waves[1]->stop();
+                waves[2]->stop();
+                waves[3]->stop();
+                waves[4]->stop();
+                waves[5]->stop();
+                waves[6]->play();
+                waves[7]->stop();
+                waves[8]->stop();
             }
             else {
                 for (int i = 0; i < 9; i++) waves[i]->stop();

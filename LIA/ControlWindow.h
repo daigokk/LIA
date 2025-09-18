@@ -92,15 +92,15 @@ inline void ControlWindow::show(void)
     }
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
     ImGui::Separator();
+    ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
+    ImGui::SameLine();
+    ImGui::Checkbox("Beep", &pSettings->flagBeep);
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
         if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
         if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
     }
-    ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
-    ImGui::SameLine();
-    ImGui::Checkbox("Beep", &pSettings->flagBeep);
     ImGui::Separator();
     if (ImGui::TreeNode("Fg w2"))
     {
