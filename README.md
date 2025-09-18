@@ -1,4 +1,4 @@
-# Software Lock-in Amplifier using Digilent Analog Discovery
+# Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## What is this?
   - This software is a Windows-based software Lock-In Amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
