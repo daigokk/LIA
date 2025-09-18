@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
     if (SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
-        std::cout << "Thread priority set to highest.\n";
+        //std::cout << "Thread priority set to highest.\n";
     }
     else {
         std::cerr << "Failed to set thread priority.\n";
@@ -89,6 +89,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
     daq.ad_init(daq.adSettings);
+    timer.sleepFor(0.05); 
     daq.ad_start();
 #endif // DAQ
     timer.start();
