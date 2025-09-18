@@ -4,7 +4,7 @@
   - This software is a Windows-based software Lock-In Amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
-  ![PSD](./docs/images/PSD.png)
+  <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
   - Core PSD Calculation (C++)
