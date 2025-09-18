@@ -94,7 +94,6 @@
     def set_fgFreq(self, freq):
       self._send(f'set_fgFreq {freq}\n')
 
-
   def getDat(lia:Lia):
     dat = []
     for i in range(5000):
@@ -110,7 +109,7 @@
     ax[0].set_xlabel('Time (s)')
     ax[0].set_ylabel('$V$ (V)')
     ax[0].legend()
-    ax[1].set_xlabel('$V_x$ (V)')
+    ax[1].set_xlabel('$V_x$ (V)') 
     ax[1].set_ylabel('$V_y$ (V)')
     ax[1].set_aspect('equal', 'box')
     ax[0].grid()
@@ -126,11 +125,11 @@
   ```
   ![Chart](./docs/images/Chart.svg)
 ## Requirements
-  - Digilent Analog Discovery 2 or 3
-  - Digilent Waveforms SDK
-  - Microsoft Windows 10/11
-## Software Dependencies
+  - Digilent Analog Discovery 2/3
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
+  - Microsoft Windows 10/11
+  - Microsoft Visual Studio 2022 (C++ 20)
+## Software Dependencies
   - [GLFW](https://www.glfw.org/)
   - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
   - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
