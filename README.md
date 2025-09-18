@@ -36,6 +36,7 @@
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
   <img src="./docs/images/Circuit.svg" width="100%" alt="Circuit">
+  
   ![Photo of Circuit](./docs/images/PhotoOfCircuit.jpg)
 
   | Parts | Type |  |
