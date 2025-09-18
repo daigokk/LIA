@@ -114,15 +114,16 @@ public:
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
     bool flagSurfaceMode = false, flagBeep = false;
-    int nofm = 0, idx = 0, tail = 0, size = 0;
     volatile bool statusMeasurement = false, statusPipe = false;
     std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
+    int nofm = 0, idx = 0, tail = 0, size = 0;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
     std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;
+    int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize;
     std::array<double, XY_SIZE> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
-    int xyNorm = 0, xyIdx = 0, xyHead = 0, xyTail = 0, xySize;
     bool flagAutoOffset = false;
+
     Settings()
     {
         ini::IniFile liaIni("lia.ini");
@@ -157,34 +158,31 @@ public:
             rawTime[i] = i * rawDt * 1e6;
         }
     }
-    void _AddPoint()
+    void _AddPoint(const double t)
     {
+        times[tail] = t;
+        dts[tail] = (times[tail] - times[idx]) * 1e3;
+
         idx = tail;
         nofm++;
         tail = nofm % MEASUREMENT_SIZE;
-        if (nofm <= MEASUREMENT_SIZE)
-        {
-            size = nofm;
-        }
+        if (nofm <= MEASUREMENT_SIZE) size = nofm;
+
         xyIdx = xyTail;
         xyNorm++;
         xyTail = xyNorm % XY_SIZE;
-        if (xyNorm < XY_SIZE)
-        {
-            xySize = xyNorm;
-        }
+        if (xyNorm < XY_SIZE) xySize = xyNorm;
     }
-    void AddPoint(const double t, const double x, const double y) {
-        times[tail] = t;
-        dts[tail] = (times[tail] - times[idx])*1e3;
+    void AddPoint(const double t, const double x, const double y)
+    {   
         x1s[tail] = hpfX1.process(this->hpFreq, x);
         y1s[tail] = hpfY1.process(this->hpFreq, y);
         xy1Xs[xyTail] = x1s[tail];
         xy1Ys[xyTail] = y1s[tail];
-        this->_AddPoint();
+        this->_AddPoint(t);
     }
-    void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2) {
-        times[tail] = t;
+    void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2)
+    {
         x1s[tail] = hpfX1.process(this->hpFreq, x1);
         y1s[tail] = hpfY1.process(this->hpFreq, y1);
         x2s[tail] = hpfX2.process(this->hpFreq, x2);
@@ -193,7 +191,7 @@ public:
         xy1Ys[xyTail] = y1s[tail];
         xy2Xs[xyTail] = x2s[tail];
         xy2Ys[xyTail] = y2s[tail];
-        this->_AddPoint();
+        this->_AddPoint(t);
     }
     ~Settings()
     {
@@ -218,18 +216,6 @@ public:
         }
         outputFile.close();
 
-        //std::ofstream outputFile2("raw.csv");
-        //if (!outputFile)
-        //{ // ファイルが開けなかった場合
-        //    std::cerr << "Fail: " << "raw.csv" << std::endl;
-        //}
-        //outputFile2 << "# t(s), v(V)" << std::endl;
-        //for (size_t i = 0; i < this->rawTime.size(); i++)
-        //{
-        //    outputFile2 << rawTime[i] << ',' << rawData1[i] << std::endl;
-        //}
-        //outputFile2.close();
-
         ini::IniFile liaIni;
         liaIni["Window"]["windowWidth"] = this->windowWidth;
         liaIni["Window"]["windowHeight"] = this->windowHeight;
@@ -252,9 +238,7 @@ public:
         liaIni["Plot"]["historySec"] = this->historySec;
         liaIni["Plot"]["flagSurfaceMode"] = this->flagSurfaceMode;
         liaIni["Plot"]["flagBeep"] = this->flagBeep;
-
         liaIni.save("lia.ini");
-        
     }
 };
 
@@ -277,7 +261,7 @@ public:
         oldFreq = pSettings->fgFreq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
             this->_sin[i] = 2 * std::sin(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
@@ -288,7 +272,7 @@ public:
     {
         if (oldFreq != pSettings->fgFreq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
-#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2) // daigokk: For OpenMP, This process is too small.
+//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2) // daigokk: For OpenMP, This process is too small.
         for (int i = 0; i < size; i++)
         {
             _x1 += pSettings->rawData1[i] * this->_sin[i];

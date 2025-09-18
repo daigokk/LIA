@@ -22,7 +22,7 @@ public:
 inline void ControlWindow::show(void)
 {
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 690 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 650 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
@@ -79,7 +79,7 @@ inline void ControlWindow::show(void)
     if (ImGui::Button("Auto offset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
-    if (pSettings->offset1X != 0)
+    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
     {
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
@@ -90,6 +90,8 @@ inline void ControlWindow::show(void)
     if (ImGui::Button("Off", offSize)) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
+    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
+    ImGui::Separator();
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
@@ -125,8 +127,6 @@ inline void ControlWindow::show(void)
         atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
     );
     ImGui::Separator();
-    ImGui::Text("Offset");
-    ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
     int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;

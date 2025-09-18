@@ -159,6 +159,26 @@ inline void XYPlotWindow::show()
     {
         pSettings->xyTail = 0; pSettings->xyNorm = 0;
     }
+    ImGui::SameLine();
+    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0.0f, 0.0f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.2f, 0.2f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.4f, 0.4f, 0.5f));
+    }
+    if (ImGui::Button("Auto offset")) {
+        pSettings->flagAutoOffset = true;
+    }
+    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
+    {
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Off")) {
+        pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
+    }
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
