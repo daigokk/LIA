@@ -119,6 +119,10 @@
     ax[1].set_ylim(-1.3, 1.3)
     fig.tight_layout()
     fig.savefig('chart.svg')
+
+  lia = Lia('./lia.exe')
+  dat = getDat(lia)
+  makeChart(dat)
   ```
   ![Chart](./docs/images/Chart.svg)
 ## Software Dependencies
