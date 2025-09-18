@@ -122,9 +122,13 @@
 
   lia = Lia('./lia.exe')
   dat = getDat(lia)
-  makeChart(dat)
+  makeChart(dat) # Save time series and Lissajous plots of X/Y components
   ```
   ![Chart](./docs/images/Chart.svg)
+## Requirements
+  - Windows 10/11
+  - Digilent Analog Discovery 2 or 3
+  - Digilent Waveforms SDK
 ## Software Dependencies
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
