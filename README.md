@@ -126,9 +126,9 @@
   ```
   ![Chart](./docs/images/Chart.svg)
 ## Requirements
-  - Microsoft Windows 10/11
   - Digilent Analog Discovery 2 or 3
   - Digilent Waveforms SDK
+  - Microsoft Windows 10/11
 ## Software Dependencies
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
   - [GLFW](https://www.glfw.org/)
