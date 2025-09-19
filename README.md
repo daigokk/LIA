@@ -60,7 +60,7 @@
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
 ## Python
-  - Control the LIA and collect data directly from Python:
+  - Control the LIA and collect data directly from Python (See also [Pipe.h](./LIA/Pipe.h)):
   ```
   import subprocess
   import numpy as np
@@ -130,7 +130,8 @@
   - Number of channels: 2
   - Max frequency: 100 kHz
   - Sampling time: 2 ms
-  - 
+  - Default recording time: 10 min.
+  - External control functionality using Python, etc.
 ## Requirements
   - Digilent Analog Discovery 2/3
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
