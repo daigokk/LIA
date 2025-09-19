@@ -137,7 +137,7 @@
 
   lia = Lia('./lia.exe')
   dat = getDat(lia)
-  makeChart(dat) # Save time series and Lissajous plots of X/Y components
+  makeChart(dat) # Save time series and XY(Lissajous) plots of X/Y components
   ```
   ![Chart](./docs/images/Chart.svg)
 ## System Requirements ⚙️
