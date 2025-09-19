@@ -38,15 +38,23 @@ inline void ControlWindow::show(void)
     {
         if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
         if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
-        pSettings->fgFreq = freqkHz * 1e3f;
-        fgFlag = true;
+        if (pSettings->fgFreq != freqkHz * 1e3f)
+        {
+            pSettings->fgFreq = freqkHz * 1e3f;
+            fgFlag = true;
+        }
     }
     ImGui::SetNextItemWidth(nextItemWidth);
+    static float oldFg1Amp = pSettings->fg1Amp;
     if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg1Amp), 0.1f, 0.1f, "%4.1f"))
     {
         if (pSettings->fg1Amp < 0.1f) pSettings->fg1Amp = 0.1f;
         if (pSettings->fg1Amp > 5.0f) pSettings->fg1Amp = 5.0f;
-        fgFlag = true;
+        if (oldFg1Amp != pSettings->fg1Amp)
+        {
+            oldFg1Amp = pSettings->fg1Amp;
+            fgFlag = true;
+        }
     }
     ImGui::Separator();
 #ifndef ENABLE_ADCH2
@@ -70,27 +78,17 @@ inline void ControlWindow::show(void)
     }
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
-    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
-    {
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0.0f, 0.0f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.2f, 0.2f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.4f, 0.4f, 0.5f));
-    }
     if (ImGui::Button("Auto offset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
-    if (pSettings->offset1X != 0 && pSettings->offset1Y != 0)
-    {
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleColor();
-    }
+    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::BeginDisabled();
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
+    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::EndDisabled();
     ImGui::Separator();
     ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
     ImGui::SameLine();
@@ -105,11 +103,16 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Fg w2"))
     {
         ImGui::SetNextItemWidth(nextItemWidth);
+        static float oldFg2Amp = pSettings->fg2Amp;
         if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg2Amp), 0.1f, 0.1f, "%4.2f"))
         {
             if (pSettings->fg2Amp < 0.0f) pSettings->fg2Amp = 0.0f;
             if (pSettings->fg2Amp > 5.0f) pSettings->fg2Amp = 5.0f;
-            fgFlag = true;
+            if (oldFg2Amp != pSettings->fg2Amp)
+            {
+                oldFg2Amp = pSettings->fg2Amp;
+                fgFlag = true;
+            }
         }
         ImGui::SetNextItemWidth(nextItemWidth);
         if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->fg2Phase), 1, 1, "%3.0f"))

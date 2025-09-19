@@ -16,7 +16,7 @@
 
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
+constexpr size_t RAW_SIZE = 8000;
 constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -280,7 +280,7 @@ public:
         if (oldFreq != pSettings->fgFreq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
 //#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
-        // daigokk: For OpenMP, this process is too small.
+        // daigokk: For OpenMP, this process may be too small.
         for (int i = 0; i < size; i++)
         {
             _x1 += pSettings->rawData1[i] * this->_sin[i];
