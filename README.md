@@ -130,9 +130,9 @@
   - Number of channels: 2
   - Maximum frequency: 100 kHz
   - Sampling time: 2 ms
-  - Default recording time: 10 min.
-  - Realtime Displays: Raw waveforms, XY plot and Time chart
-  - External control functionality using Python, etc.
+  - Default recording duration: 10 minutes (ring buffer system)
+  - Real-time display functions (raw waveform view, XY plot, time chart)
+  - External control capabilities using Python and other interfaces
 ## Requirements
   - Digilent Analog Discovery 2/3
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
