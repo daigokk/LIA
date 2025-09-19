@@ -27,7 +27,7 @@
     - Analyze two signals simultaneously with high precision.
   - ⚡ Ideal for high-frequency applications
     - Supports up to 100 kHz reference frequency.
-    - 📈 Real-time visualization
+  - 📈 Real-time visualization
         - Raw waveform, XY plot, and time chart.
   - 🐍 Python integration Control
     - LIA and retrieve data via pipe communication.
