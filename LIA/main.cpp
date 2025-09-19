@@ -5,7 +5,6 @@
 #include <numbers> // For std::numbers::pi
 #include <Windows.h>
 
-//#define ENABLE_ADCH2
 #define DAQ
 #ifdef DAQ
 #include <daq_dwf.hpp>
@@ -80,11 +79,9 @@ void measurement(std::stop_token st, Settings* pSettings)
     daq.powerSupply(5);
     daq.fg(pSettings->fg1Amp, pSettings->fgFreq, 0, pSettings->fg2Amp, pSettings->fg2Phase);
     daq.adSettings.ch = 0; daq.adSettings.range = RAW_RANGE;
-#ifndef ENABLE_ADCH2
-    daq.adSettings.numCh = 1;
-#else
-    daq.adSettings.ch = 0;
-#endif // ENABLE_ADCH2
+    
+    daq.adSettings.numCh = 2;
+    
     daq.adSettings.triggerDigCh = -1; daq.adSettings.waitAd = 0;
     daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
@@ -106,18 +103,22 @@ void measurement(std::stop_token st, Settings* pSettings)
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
             double wt = 2 * std::numbers::pi * pSettings->fgFreq * i * pSettings->rawDt;
+
             pSettings->rawData1[i] = pSettings->fg1Amp * std::sin(wt - phase);
-#ifdef ENABLE_ADCH2
-            pSettings->rawData2[i] = pSettings->fg2Amp * std::sin(wt - pSettings->fg2Phase);
-#endif // ENABLE_ADCH2
+            if (pSettings->flagCh2)
+            {
+                pSettings->rawData2[i] = pSettings->fg2Amp * std::sin(wt - pSettings->fg2Phase);
+            }
         }
 #else
         //daq.Scope.record(pSettings->rawData1.data());
-#ifndef ENABLE_ADCH2
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());
-#else
-        daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data(), pSettings->rawData2.data());
-#endif // ENABLE_ADCH2
+        if (!pSettings->flagCh2)
+        {
+            daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());
+        }
+        else {
+            daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data(), pSettings->rawData2.data());
+        }
         daq.ad_start();
 #endif // DAQ
         psd.calc(t);

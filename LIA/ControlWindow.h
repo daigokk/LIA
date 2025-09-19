@@ -64,15 +64,18 @@ inline void ControlWindow::show(void)
         }
     }
     ImGui::Separator();
-#ifndef ENABLE_ADCH2
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f")) {}
-#else
+    ImGui::InputDouble("Ch1 Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Ch1 Phase (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f")) {}
-    ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputDouble("Ch2 Phase (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f")) {}
-#endif // ENABLE_ADCH2
+    if (!pSettings->flagCh2)
+    {
+        ImGui::BeginDisabled();
+        ImGui::InputDouble("Ch2 Phase (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
+        ImGui::EndDisabled();
+    }
+    else {
+        ImGui::InputDouble("Ch2 Phase (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
+    }
     ImGui::SetNextItemWidth(nextItemWidth);
     float step = 0.1f;
     if (pSettings->limit <= 0.1f) step = 0.01f;
@@ -102,6 +105,7 @@ inline void ControlWindow::show(void)
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
     if (stateAutoOffset) ImGui::EndDisabled();
     ImGui::Separator();
+    ImGui::Checkbox("Ch2", &pSettings->flagCh2);
     ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
     ImGui::SameLine();
     ImGui::Checkbox("Beep", &pSettings->flagBeep);

@@ -14,10 +14,10 @@
 #include <daq_dwf.hpp>
 #endif // DAQ
 
-constexpr float RAW_RANGE = 2.5f;
+constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
 constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
-constexpr double MEASUREMENT_DT = 2.0e-3;
+constexpr size_t RAW_SIZE = 8192;
+constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
 constexpr float XY_HISTORY_SEC = 10.0f;
@@ -100,6 +100,7 @@ public:
     float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
     // Scope
     const double rawDt = RAW_DT;
+    bool flagCh2 = false;
     // LIA
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
@@ -138,6 +139,7 @@ public:
         if (fg2Amp < 0.0f) fg2Amp = 0.0f;
         if (fg2Amp > 5.0f) fg2Amp = 5.0f;
         fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
+        flagCh2 = convb(liaIni["Scope"]["flagCh2"].as<std::string>(), flagCh2);
         offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
         offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
         offset1Y = conv(liaIni["Lia"]["offset1Y"].as<std::string>(), offset1Y);
@@ -147,6 +149,8 @@ public:
         hpFreq = conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
+        if (limit < 0.0f) limit = 0.0f;
+        if (limit > 5.0f) limit = 5.0f;
         rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
         historySec = (float)conv(liaIni["Plot"]["historySec"].as<std::string>(), historySec);
         flagSurfaceMode = convb(liaIni["Plot"]["flagSurfaceMode"].as<std::string>(), flagSurfaceMode);
@@ -200,11 +204,13 @@ public:
         { // ファイルが開けなかった場合
             std::cerr << "Fail: " << filepath << std::endl;
         }
-#ifndef ENABLE_ADCH2
-        outputFile << "# t(s), x(V), y(V)" << std::endl;
-#else
-        outputFile << "# t(s), x1(V), y1(V), x2(V), y2(V)" << std::endl;
-#endif
+        if (!flagCh2)
+        {
+            outputFile << "# t(s), x(V), y(V)" << std::endl;
+        }
+        else {
+            outputFile << "# t(s), x1(V), y1(V), x2(V), y2(V)" << std::endl;
+        }
         size_t _size = this->nofm;
         size_t offsetIdx = 0;
         if (_size > this->times.size())
@@ -215,11 +221,13 @@ public:
         for (size_t i = 0; i < _size; i++)
         {
             size_t idx = (offsetIdx + i) % this->times.size();
-#ifndef ENABLE_ADCH2
-            outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
-#else
-            outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
-#endif
+            if (!flagCh2)
+            {
+                outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
+            }
+            else {
+                outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
+            }
         }
         outputFile.close();
 
@@ -231,6 +239,7 @@ public:
         liaIni["Fg"]["fgFreq"] = this->fgFreq;
         liaIni["Fg"]["fg1Amp"] = this->fg1Amp;
         liaIni["Fg"]["fg2Amp"] = this->fg2Amp;
+        liaIni["Scope"]["flagCh2"] = this->flagCh2;
         liaIni["Fg"]["fg2Phase"] = this->fg2Phase;
         liaIni["Lia"]["offset1Phase"] = this->offset1Phase;
         liaIni["Lia"]["offset1X"] = this->offset1X;
@@ -268,7 +277,7 @@ public:
         oldFreq = pSettings->fgFreq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
-//#pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
             this->_sin[i] = 2 * std::sin(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
@@ -279,49 +288,58 @@ public:
     {
         if (oldFreq != pSettings->fgFreq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
+        if (!pSettings->flagCh2)
+        {
+#pragma omp parallel for reduction(+:_x1, _y1)
+            // daigokk: For OpenMP, this process may be too small.
+            for (int i = 0; i < size; i++)
+            {
+                _x1 += pSettings->rawData1[i] * this->_sin[i];
+                _y1 += pSettings->rawData1[i] * this->_cos[i];
+            }
+            _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
+            if (pSettings->flagAutoOffset)
+            {
+                pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
+                pSettings->flagAutoOffset = false;
+            }
+            _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
+            double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
+            pSettings->AddPoint(
+                t,
+                _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
+                _x1 * std::sin(theta1) + _y1 * std::cos(theta1)
+            );
+        }
+        else {
 #pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
-        // daigokk: For OpenMP, this process may be too small.
-        for (int i = 0; i < size; i++)
-        {
-            _x1 += pSettings->rawData1[i] * this->_sin[i];
-            _y1 += pSettings->rawData1[i] * this->_cos[i];
-#ifdef ENABLE_ADCH2
-            _x2 += pSettings->rawData2[i] * this->_sin[i];
-            _y2 += pSettings->rawData2[i] * this->_cos[i];
-#endif // ENABLE_ADCH2
+            // daigokk: For OpenMP, this process may be too small.
+            for (int i = 0; i < size; i++)
+            {
+                _x1 += pSettings->rawData1[i] * this->_sin[i];
+                _y1 += pSettings->rawData1[i] * this->_cos[i];
+                _x2 += pSettings->rawData2[i] * this->_sin[i];
+                _y2 += pSettings->rawData2[i] * this->_cos[i];
+            }
+            _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
+            _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
+            if (pSettings->flagAutoOffset)
+            {
+                pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
+                pSettings->offset2X = _x2; pSettings->offset2Y = _y2;
+                pSettings->flagAutoOffset = false;
+            }
+            _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
+            _x2 -= pSettings->offset2X; _y2 -= pSettings->offset2Y;
+            double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
+            double theta2 = pSettings->offset2Phase / 180 * std::numbers::pi;
+            pSettings->AddPoint(
+                t,
+                _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
+                _x1 * std::sin(theta1) + _y1 * std::cos(theta1),
+                _x2 * std::cos(theta2) - _y2 * std::sin(theta2),
+                _x2 * std::sin(theta2) + _y2 * std::cos(theta2)
+            );
         }
-        _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
-#ifdef ENABLE_ADCH2
-        _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
-#endif // ENABLE_ADCH2
-        if (pSettings->flagAutoOffset)
-        {
-            pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
-#ifdef ENABLE_ADCH2
-            pSettings->offset2X = _x2; pSettings->offset2Y = _y2;
-#endif // ENABLE_ADCH2
-            pSettings->flagAutoOffset = false;
-        }
-        _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
-#ifdef ENABLE_ADCH2
-        _x2 -= pSettings->offset2X; _y2 -= pSettings->offset2Y;
-#endif // ENABLE_ADCH2
-        double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
-#ifndef ENABLE_ADCH2
-        pSettings->AddPoint(
-            t, 
-            _x1 * std::cos(theta1) - _y1 * std::sin(theta1), 
-            _x1 * std::sin(theta1) + _y1 * std::cos(theta1)
-        );
-#else
-        double theta2 = pSettings->offset2Phase / 180 * std::numbers::pi;
-        pSettings->AddPoint(
-            t,
-            _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
-            _x1 * std::sin(theta1) + _y1 * std::cos(theta1),
-            _x2 * std::cos(theta2) - _y2 * std::sin(theta2),
-            _x2 * std::sin(theta2) + _y2 * std::cos(theta2)
-        );
-#endif // ENABLE_ADCH2
     }
 };

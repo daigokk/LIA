@@ -30,12 +30,12 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
-#ifndef ENABLE_ADCH2
-        ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
-#else
-        ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size()); 
-        ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
-#endif // ENABLE_ADCH2
+        ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
+        if (pSettings->flagCh2)
+        {
+            ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
+            ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
+        }
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -86,16 +86,17 @@ inline void TimeChartWindow::show()
             "y1", &(pSettings->times[0]), &(pSettings->y1s[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)
         );
-#ifdef ENABLE_ADCH2
-        ImPlot::PlotLine(
-            "x2", &(pSettings->times[0]), &(pSettings->x2s[0]),
-            pSettings->size, 0, pSettings->tail, sizeof(double)
-        );
-        ImPlot::PlotLine(
-            "y2", &(pSettings->times[0]), &(pSettings->y2s[0]),
-            pSettings->size, 0, pSettings->tail, sizeof(double)
-        );
-#endif // ENABLE_ADCH2
+        if (pSettings->flagCh2)
+        {
+            ImPlot::PlotLine(
+                "x2", &(pSettings->times[0]), &(pSettings->x2s[0]),
+                pSettings->size, 0, pSettings->tail, sizeof(double)
+            );
+            ImPlot::PlotLine(
+                "y2", &(pSettings->times[0]), &(pSettings->y2s[0]),
+                pSettings->size, 0, pSettings->tail, sizeof(double)
+            );
+        }
         ImPlot::EndPlot();
     }
     ImGui::End();
@@ -187,45 +188,40 @@ inline void XYPlotWindow::show()
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         if (pSettings->flagSurfaceMode)
         {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit*4, pSettings->limit*4, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit/4, pSettings->limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit * 4, pSettings->limit * 4, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit / 4, pSettings->limit, ImGuiCond_Always);
         }
         else {
             ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
             ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         }
-
-#ifndef ENABLE_ADCH2
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::PlotLine("##XY1", &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
-                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
-            );
-            ImPlot::PopStyleColor();
-#else
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::PlotLine("XY1", pSettings->xy1Xs.data(), pSettings->xy1Ys.data(),
-                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
-            );
-            ImPlot::PopStyleColor();
-
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-            ImPlot::PlotLine("XY2", pSettings->xy2Xs.data(), pSettings->xy2Ys.data(),
-                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
-            );
-            ImPlot::PopStyleColor();
-#endif // ENABLE_ADCH2
-#ifndef ENABLE_ADCH2 
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-        ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
-        ImPlot::PopStyleColor();
-#else
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+        if (!pSettings->flagCh2)
+        {
+            ImPlot::PlotLine("##Ch1", &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
+                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
+            );
+        }
+        else {
+            ImPlot::PlotLine("Ch1", &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
+                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
+            );
+        }
+        ImPlot::PopStyleColor();
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
         ImPlot::PopStyleColor();
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-        ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
-        ImPlot::PopStyleColor();
-#endif // ENABLE_ADCH2
+        if (pSettings->flagCh2)
+        {
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
+            ImPlot::PlotLine("Ch2", pSettings->xy2Xs.data(), pSettings->xy2Ys.data(),
+                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
+            );
+            ImPlot::PopStyleColor();
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(3, ImPlotColormap_Deep));
+            ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
+            ImPlot::PopStyleColor();
+        }
         ImPlot::EndPlot();
     }
     ImGui::End();

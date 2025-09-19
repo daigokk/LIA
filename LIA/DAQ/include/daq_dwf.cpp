@@ -113,13 +113,13 @@ double daq_dwf::ad_init(const settings_t _settings)
 {
 	// enable channels
 	FDwfAnalogInChannelEnableSet(this->hdwf, 0, true);
-	if (_settings.numCh <= 2)
+	if (_settings.numCh == 2)
 	{
 		FDwfAnalogInChannelEnableSet(this->hdwf, 1, true);
 	}
 	// set pk2pk input range for all channels
 	//double voltsMin, voltsMax, nSteps;
-	//FDwfAnalogInChannelRangeInfo(this->hdwf, &voltsMin, &voltsMax, &nSteps);//5 to 50Vpp, 2V step
+	//FDwfAnalogInChannelRangeInfo(this->hdwf, &voltsMin, &voltsMax, &nSteps);//5 to 50Vpp
 	FDwfAnalogInChannelRangeSet(this->hdwf, -1, _settings.range * 2);
 
 	// set sample rate

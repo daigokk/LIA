@@ -117,7 +117,7 @@ public:
         this->xyPlotWindow->show(); 
         this->rawPlotWindow->show();
         this->timeChartWindow->show();
-        //this->deltaTimeChartWindow->show();
+        this->deltaTimeChartWindow->show();
         this->controlWindow->show();
         ImGui::PopStyleColor();
     };
