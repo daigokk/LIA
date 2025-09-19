@@ -131,6 +131,7 @@
   - Max frequency: 100 kHz
   - Sampling time: 2 ms
   - Default recording time: 10 min.
+  - Realtime Displays: Raw waveforms, XY plot and Time chart
   - External control functionality using Python, etc.
 ## Requirements
   - Digilent Analog Discovery 2/3
