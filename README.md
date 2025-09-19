@@ -28,7 +28,7 @@
   - ⚡ Supports up to 100 kHz reference frequency
     - Ideal for high-frequency applications.
   - 📈 Real-time visualization
-    - Includes waveform viewer, XY plot, and time chart.
+    - Raw waveform, XY plot, and time chart.
   - 🐍 Python integration Control
     - LIA and retrieve data via pipe communication.
   - 💾 Ring buffer recording
