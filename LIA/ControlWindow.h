@@ -101,6 +101,7 @@ inline void ControlWindow::show(void)
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
+        pSettings->offset2X = 0.0f; pSettings->offset2Y = 0.0f;
     }
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
     if (stateAutoOffset) ImGui::EndDisabled();
