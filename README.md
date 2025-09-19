@@ -128,7 +128,7 @@
   ![Chart](./docs/images/Chart.svg)
 ## Features
   - Number of channels: 2
-  - Max frequency: 100 kHz
+  - Maximum frequency: 100 kHz
   - Sampling time: 2 ms
   - Default recording time: 10 min.
   - Realtime Displays: Raw waveforms, XY plot and Time chart
