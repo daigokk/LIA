@@ -207,18 +207,23 @@ inline void XYPlotWindow::show()
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
         }
-        ImPlot::PopStyleColor();
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-        ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
-        ImPlot::PopStyleColor();
-        if (pSettings->flagCh2)
+        if (!pSettings->flagCh2)
         {
+            ImPlot::PopStyleColor();
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+            ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
+            ImPlot::PopStyleColor();
+        }
+        else {
+            ImPlot::PopStyleColor();
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+            ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
+            ImPlot::PopStyleColor();
+
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
             ImPlot::PlotLine("Ch2", pSettings->xy2Xs.data(), pSettings->xy2Ys.data(),
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
-            ImPlot::PopStyleColor();
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(3, ImPlotColormap_Deep));
             ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
             ImPlot::PopStyleColor();
         }

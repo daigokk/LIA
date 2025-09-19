@@ -120,7 +120,7 @@ inline void ControlWindow::show(void)
     {
         ImGui::SetNextItemWidth(nextItemWidth);
         static float oldFg2Amp = pSettings->fg2Amp;
-        if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg2Amp), 0.1f, 0.1f, "%4.2f"))
+        if (ImGui::InputFloat("Volt. (V)", &(pSettings->fg2Amp), 0.01f, 0.1f, "%4.2f"))
         {
             if (pSettings->fg2Amp < 0.0f) pSettings->fg2Amp = 0.0f;
             if (pSettings->fg2Amp > 5.0f) pSettings->fg2Amp = 5.0f;
