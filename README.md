@@ -132,7 +132,7 @@
   - Sampling time: 2 ms
   - Default recording duration: 10 minutes (ring buffer system)
   - Real-time display functions (raw waveform view, XY plot, time chart)
-  - External control via Python or other interfaces through pipe communication
+  - External control via pipe communication using Python or other languages
 ## Requirements
   - Digilent Analog Discovery 2/3
   - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
