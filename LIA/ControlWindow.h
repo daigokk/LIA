@@ -29,7 +29,14 @@ inline void ControlWindow::show(void)
     ImGui::Begin(this->name);
     ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", pSettings->sn.data());
-
+    ImGui::SameLine();
+    if (pSettings->flagPause)
+    {
+        if (ImGui::Button("Run")) { pSettings->flagPause = false; }
+    }
+    else {
+        if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
+    }
     ImGui::SetNextItemWidth(nextItemWidth);
     static float lowLimitFreqkHz = 0.5f * 1e-3f / (RAW_SIZE * pSettings->rawDt);
     static float highLimitFreqkHz = 1e-3f / (1000 * pSettings->rawDt);
@@ -81,14 +88,19 @@ inline void ControlWindow::show(void)
     if (ImGui::Button("Auto offset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::BeginDisabled();
+    bool stateAutoOffset = false;
+    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0)
+    {
+        stateAutoOffset = true;
+        ImGui::BeginDisabled();
+    }
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
     ImGui::Text("X: %5.2fV, Y: %5.2fV", pSettings->offset1X, pSettings->offset1Y);
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::EndDisabled();
+    if (stateAutoOffset) ImGui::EndDisabled();
     ImGui::Separator();
     ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
     ImGui::SameLine();
@@ -135,10 +147,9 @@ inline void ControlWindow::show(void)
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator(); 
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
-
-    ImGui::End();
 #ifdef DAQ
     if(fgFlag)
         pSettings->pDaq->fg(pSettings->fg1Amp, pSettings->fgFreq, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
 #endif // DAQ
+    ImGui::End();
 }

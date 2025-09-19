@@ -39,6 +39,11 @@ public:
 		qpc_previous.QuadPart = qpc_start.QuadPart;
 	}
 
+	void stop()
+	{
+
+	}
+
 	double sleepUntil(const double theTimeSec)
 	{
 		LARGE_INTEGER qpc_next, qpc_now;

@@ -63,6 +63,14 @@ inline void TimeChartWindow::show()
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     ImGui::SliderFloat("History", &pSettings->historySec, 1, historySecMax, "%5.1f s");
+    ImGui::SameLine();
+    if (pSettings->flagPause)
+    {
+        if (ImGui::Button("Run")) { pSettings->flagPause = false; }
+    }
+    else {
+        if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
+    }
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
@@ -164,11 +172,16 @@ inline void XYPlotWindow::show()
         pSettings->flagAutoOffset = true;
     }
     ImGui::SameLine();
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::BeginDisabled();
+    bool stateAutoOffset = false;
+    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0)
+    {
+        stateAutoOffset = true;
+        ImGui::BeginDisabled();
+    }
     if (ImGui::Button("Off")) {
         pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
     }
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0) ImGui::EndDisabled();
+    if (stateAutoOffset) ImGui::EndDisabled();
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);

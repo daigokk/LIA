@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 
 void measurement(std::stop_token st, Settings* pSettings)
 {
-   static Psd psd(pSettings);
+    static Psd psd(pSettings);
     Timer timer;
 #ifndef DAQ
     std::cout << "Not connect to AD." << std::endl;
@@ -94,10 +94,13 @@ void measurement(std::stop_token st, Settings* pSettings)
 #endif // DAQ
     timer.start();
     pSettings->statusMeasurement = true;
+    size_t nloop = 0;
     while (!st.stop_requested())
     {
-        double t = pSettings->nofm * MEASUREMENT_DT;
+        double t = nloop * MEASUREMENT_DT;
+        nloop++;
         t = timer.sleepUntil(t);
+        if (pSettings->flagPause) continue;
 #ifndef DAQ
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
