@@ -35,7 +35,7 @@
     - Store up to 10 minutes of continuous data.
   - 🚀 Fast
     - Sampling time is 2 ms.
-## 🖥️ Getting Started
+## Getting Started 🛠️
   1. Install Digilent Waveforms Framework on your system.
   1. Connect Analog Discovery to your system.
   1. Connect pins of Analog Discovery:
@@ -45,7 +45,7 @@
   1. Reading Outputs
       - Raw Waveform: Displayed in the “Raw waveform” window.
       - X/Y Components: Shown in the “XY” window in real time.
-## 🧪 Application Example: Eddy Current Testing (ECT)
+## Application Example 🧪: Eddy Current Testing (ECT)
   - LIA is well-suited for non-destructive testing such as ECT. By combining AD620-based amplification circuits with sensor coils, users can identify material types and detect internal defects in conductive materials.
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
@@ -140,7 +140,7 @@
   makeChart(dat) # Save time series and Lissajous plots of X/Y components
   ```
   ![Chart](./docs/images/Chart.svg)
-## ⚙️ System Requirements
+## System Requirements ⚙️
   - OS: Windows 10/11
   - Hardware: Digilent Analog Discovery 2 or 3
   - Development: Microsoft Visual Studio 2022 (C++20)
@@ -148,5 +148,5 @@
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
-## 🙏 Acknowledgments
+## Acknowledgments 🙏
   This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
