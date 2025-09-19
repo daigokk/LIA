@@ -25,10 +25,10 @@
 ## Features ✨
   - 🎛️ Dual-channel lock-in detection
     - Analyze two signals simultaneously with high precision.
-  - ⚡ Supports up to 100 kHz reference frequency
-    - Ideal for high-frequency applications.
-  - 📈 Real-time visualization
-    - Raw waveform, XY plot, and time chart.
+  - ⚡ Ideal for high-frequency applications
+    - Supports up to 100 kHz reference frequency.
+    - 📈 Real-time visualization
+        - Raw waveform, XY plot, and time chart.
   - 🐍 Python integration Control
     - LIA and retrieve data via pipe communication.
   - 💾 Ring buffer recording
@@ -44,22 +44,12 @@
      - W1 → CH1+
      - GND → CH1−
   1. Launch LIA
-    - Run lia.exe
-    - Configure frequency and amplitude via GUI
-    - View results in:
+      - Run lia.exe
+      - Configure frequency and amplitude via GUI
+      - View results in:
       - "Raw waveform" window
       - "XY" window for X/Y component visualization
       - "Time chart" window for Y component
-     
-  1. Install Digilent Waveforms Framework on your system.
-  1. Connect Analog Discovery to your system.
-  1. Connect pins of Analog Discovery:
-      - Waveform generator "W1" → Oscilloscope channel "1+"
-      - Ground → Oscilloscope channel "1-"
-  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on the GUI.
-  1. Reading Outputs
-      - Raw Waveform: Displayed in the “Raw waveform” window.
-      - X/Y Components: Shown in the “XY” window in real time.
 ## Application Example 🧪: Eddy Current Testing (ECT)
   - LIA is well-suited for non-destructive testing such as ECT. By combining AD620-based amplification circuits with sensor coils, users can identify material types and detect internal defects in conductive materials.
   - The following figure shows a circuit as a practical application of LIA for the ECT.
