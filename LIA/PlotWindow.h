@@ -79,21 +79,13 @@ inline void TimeChartWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
-            "x1", &(pSettings->times[0]), &(pSettings->x1s[0]),
-            pSettings->size, 0, pSettings->tail, sizeof(double)
-        );
-        ImPlot::PlotLine(
-            "y1", &(pSettings->times[0]), &(pSettings->y1s[0]),
+            "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)
         );
         if (pSettings->flagCh2)
         {
             ImPlot::PlotLine(
-                "x2", &(pSettings->times[0]), &(pSettings->x2s[0]),
-                pSettings->size, 0, pSettings->tail, sizeof(double)
-            );
-            ImPlot::PlotLine(
-                "y2", &(pSettings->times[0]), &(pSettings->y2s[0]),
+                "Ch2y", &(pSettings->times[0]), &(pSettings->y2s[0]),
                 pSettings->size, 0, pSettings->tail, sizeof(double)
             );
         }

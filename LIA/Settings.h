@@ -115,7 +115,7 @@ public:
     bool flagRawData2 = false;
     int nofm = 0, idx = 0, tail = 0, size = 0;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
-    std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;
+    std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;// , abs1, abs2;
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize;
     std::array<double, XY_SIZE> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
     bool flagAutoOffset = false, flagPause = false;
@@ -180,6 +180,7 @@ public:
     {   
         x1s[tail] = hpfX1.process(this->hpFreq, x);
         y1s[tail] = hpfY1.process(this->hpFreq, y);
+        //abs1[tail] = pow(x1s[tail] * x1s[tail] + y1s[tail] * y1s[tail], 0.5);
         xy1Xs[xyTail] = x1s[tail];
         xy1Ys[xyTail] = y1s[tail];
         this->_AddPoint(t);
@@ -190,6 +191,8 @@ public:
         y1s[tail] = hpfY1.process(this->hpFreq, y1);
         x2s[tail] = hpfX2.process(this->hpFreq, x2);
         y2s[tail] = hpfY2.process(this->hpFreq, y2);
+        //abs1[tail] = pow(x1s[tail] * x1s[tail] + y1s[tail] * y1s[tail], 0.5);
+        //abs2[tail] = pow(x2s[tail] * x2s[tail] + y2s[tail] * y2s[tail], 0.5);
         xy1Xs[xyTail] = x1s[tail];
         xy1Ys[xyTail] = y1s[tail];
         xy2Xs[xyTail] = x2s[tail];
