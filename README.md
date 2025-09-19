@@ -1,6 +1,6 @@
 # Dual-Channel Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
-## What is this?
+## 🔬 What is this?
   - This software is a Windows-based software Lock-In Amplifier (LIA) designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
@@ -22,14 +22,14 @@
         *pY /= this->size;
     }
     ```
-## Key Features
+## 🚀 Key Features
   - Dual-channel lock-in detection for simultaneous analysis
   - Supports up to 100 kHz reference frequency
   - Real-time visualization: raw waveforms, XY plots, and time charts
   - Python integration via pipe communication for automation and data acquisition
   - Ring buffer recording: up to 10 minutes of continuous data
   - Sampling time: 2 ms
-## Quick Start
+## 🖥️ Getting Started
   1. Install Digilent Waveforms Framework on your system.
   1. Connect Analog Discovery to your system.
   1. Connect pins of Analog Discovery:
@@ -39,7 +39,7 @@
   1. Reading Outputs
       - Raw Waveform: Displayed in the “Raw waveform” window.
       - X/Y Components: Shown in the “XY” window in real time.
-## Application Example: Eddy Current Testing (ECT)
+## 🧪 Application Example: Eddy Current Testing (ECT)
   - LIA is well-suited for non-destructive testing such as ECT. By combining AD620-based amplification circuits with sensor coils, users can identify material types and detect internal defects in conductive materials.
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
@@ -67,8 +67,8 @@
   - For information about ECT, please refer to [an old document created by Hocking NDT](https://www.scribd.com/doc/48834808/An-Introduction-to-Eddy-Current-Theory-and-technology) or the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
-## Python
-  - Control the LIA and collect data directly from Python (See also [Pipe.h](./LIA/Pipe.h)):
+## 🐍 Python Integration
+  - Control LIA and retrieve data directly from Python (See also [Pipe.h](./LIA/Pipe.h)). Example: generate a Lissajous plot.
   ```
   import subprocess
   import numpy as np
@@ -134,7 +134,7 @@
   makeChart(dat) # Save time series and Lissajous plots of X/Y components
   ```
   ![Chart](./docs/images/Chart.svg)
-## System Requirements
+## ⚙️ System Requirements
   - OS: Windows 10/11
   - Hardware: Digilent Analog Discovery 2 or 3
   - Development: Microsoft Visual Studio 2022 (C++20)
@@ -142,5 +142,5 @@
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
-## Acknowledgments
+## 🙏 Acknowledgments
   This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
