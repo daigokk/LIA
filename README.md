@@ -37,18 +37,19 @@
     - Sampling time is 2 ms.
 ## Getting Started 🛠️
   1. Install Dependencies
-     Digilent WaveForms SDK
+     - Digilent WaveForms SDK
   1. Hardware Setup
-    Connect Analog Discovery 2 or 3 to your PC
-    Example wiring:
-      W1 → CH1+
-      GND → CH1−
+    - Connect Analog Discovery 2 or 3 to your PC
+    - Example wiring:
+      - W1 → CH1+
+      - GND → CH1−
   1. Launch LIA
-    Run lia.exe
-    Configure frequency and amplitude via GUI
-    View results in:
-      “Raw waveform” window
-      “XY” window for X/Y component visualization
+    - Run lia.exe
+    - Configure frequency and amplitude via GUI
+    - View results in:
+      - "Raw waveform" window
+      - "XY" window for X/Y component visualization
+      - "Time chart" window for Y component
      
   1. Install Digilent Waveforms Framework on your system.
   1. Connect Analog Discovery to your system.
