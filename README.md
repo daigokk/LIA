@@ -49,7 +49,7 @@
       - View results in:
         - "Raw waveform" window
         - "XY" window for X/Y component visualization
-      - "Time chart" window for Y component
+        - "Time chart" window for Y component
 ## Application Example 🧪: Eddy Current Testing (ECT)
   - LIA is well-suited for non-destructive testing such as ECT. By combining AD620-based amplification circuits with sensor coils, users can identify material types and detect internal defects in conductive materials.
   - The following figure shows a circuit as a practical application of LIA for the ECT.
