@@ -27,9 +27,9 @@
     - Analyze two signals simultaneously with high precision.
   - ⚡ Ideal for high-frequency applications
     - Supports up to 100 kHz reference frequency.
-  - 🚀 Not slow
+    - 🚀 Not slow
     - Sampling time is 2 ms.
-- 💾 Ring buffer recording
+  - 💾 Ring buffer recording
     - Store default 10 minutes of continuous data.
   - 📈 Real-time visualization
     - Raw waveform, XY plot, and time chart.
