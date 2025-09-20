@@ -144,6 +144,7 @@
   dat = getDat(lia)
   makeChart(dat) # Save time series and XY(Lissajous) plots of X/Y components
   ```
+  - The following figures show X/Y components when the coil is in contact with different materials.
   ![Chart](./docs/images/Chart.svg)
 ## System Requirements ⚙️
   - OS: Windows 10/11
