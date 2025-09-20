@@ -33,7 +33,7 @@
     - LIA and retrieve data via pipe communication.
   - 💾 Ring buffer recording
     - Store up to 10 minutes of continuous data.
-  - 🚀 Fast
+  - 🚀 Not slow
     - Sampling time is 2 ms.
 ## Getting Started 🛠️
   1. Install Dependencies
