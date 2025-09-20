@@ -41,8 +41,8 @@
   1. Hardware Setup
      - Connect Analog Discovery 2 or 3 to your PC
      - Example wiring:
-     - W1 → CH1+
-     - GND → CH1−
+       - W1 → CH1+
+       - GND → CH1−
   1. Launch LIA
       - Run lia.exe
       - Configure frequency and amplitude via GUI
