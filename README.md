@@ -27,14 +27,15 @@
     - Analyze two signals simultaneously with high precision.
   - ⚡ Ideal for high-frequency applications
     - Supports up to 100 kHz reference frequency.
+  - 🚀 Not slow
+    - Sampling time is 2 ms.
+- 💾 Ring buffer recording
+    - Store default 10 minutes of continuous data.
   - 📈 Real-time visualization
     - Raw waveform, XY plot, and time chart.
   - 🐍 Python integration Control
     - LIA and retrieve data via pipe communication.
-  - 💾 Ring buffer recording
-    - Store up to 10 minutes of continuous data.
-  - 🚀 Not slow
-    - Sampling time is 2 ms.
+
 ## Getting Started 🛠️
   1. Install Dependencies
      - Digilent WaveForms SDK
