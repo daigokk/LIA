@@ -79,7 +79,7 @@
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
 ## 🐍 Python Integration
-  - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate a XY(Lissajous) plot.
+  - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
   ```
   import subprocess
   import numpy as np
