@@ -34,7 +34,7 @@
     - Sampling time is 2 ms.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms
       - Intel Core i5-1235U: 2.00±0.08 ms
-      - Intel Core i9-13900H: 2.000±0.002 ms
+      - Intel Core i9-13900H: 2.00±0.04 ms
   - 💾 Ring buffer recording
     - Store default 10 minutes of continuous data.
   - 📈 Real-time visualization
