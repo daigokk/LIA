@@ -32,6 +32,8 @@
     - Supports up to 100 kHz reference frequency.
   - 🚀 Not slow
     - Sampling time is 2 ms.
+      - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms (no OpenMP)
+      - Intel Core i5-1235U: 2.00±0.08 ms (no OpenMP)
   - 💾 Ring buffer recording
     - Store default 10 minutes of continuous data.
   - 📈 Real-time visualization
