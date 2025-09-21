@@ -22,7 +22,7 @@
         *pY /= this->size;
     }
     ```
-    - However, author discovered that Digilent's Waveforms software already includes a lock-in function! See [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier) and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
+    - However, author discovered that Digilent's Waveforms software already includes a lock-in function after making this software! See [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier) and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
     - You may check the original function before using this software.
 
 ## Features ✨
