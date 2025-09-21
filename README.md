@@ -7,7 +7,7 @@
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
-  - May be most simple Core PSD Calculation (C++)
+  - The following code demonstrates the simplest implementation of a Core PSD calculation in C++.
     ```
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
@@ -22,8 +22,8 @@
         *pY /= this->size;
     }
     ```
-    - However, author discovered that Digilent's Waveforms software already includes a lock-in function after making this software! See [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier) and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
-    - You may check the original function before using this software.
+    - However, after creating this software, the author discovered that a software, Digilent Waveforms, already includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
+    - We recommend verifying the original functionality before using this software.
 
 ## Features ✨
   - 🎛️ Dual-channel lock-in detection
