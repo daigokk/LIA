@@ -22,6 +22,9 @@
         *pY /= this->size;
     }
     ```
+    - However, author discovered that Digilent's Waveforms software already includes a lock-in function! Here, and here. How convenient!
+    - You may cheack the original function before using this software.
+
 ## Features ✨
   - 🎛️ Dual-channel lock-in detection
     - Analyze two signals simultaneously with high precision.
