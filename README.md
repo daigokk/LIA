@@ -7,7 +7,7 @@
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
-  - Core PSD Calculation (C++)
+  - May be most simple Core PSD Calculation (C++)
     ```
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
