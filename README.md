@@ -1,13 +1,13 @@
-# Software Lock-in Amplifier with Digilent Analog Discovery
+# LIA: Dual-Channel Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
-## What is this?
-  - This software is a Windows-based software Lock-In Amplifier (LIA) built around the Digilent Analog Discovery 2 or 3 (AD).
+## Overview 🔍
+  - This software is a Windows-based software Lock-In Amplifier (LIA) designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
-  - Core PSD Calculation (C++)
+  - The following code demonstrates the simplest implementation of a Core PSD calculation in C++.
     ```
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
@@ -22,17 +22,42 @@
         *pY /= this->size;
     }
     ```
-## Quick Start
-  1. Install Digilent Waveforms Framework on your system.
-  1. Connect Analog Discovery to your system.
-  1. Connect pins of Analog Discovery:
-      - Waveform generator "W1" → Oscilloscope channel "1+"
-      - Ground → Oscilloscope channel "1-"
-  1. Launch "lia.exe" and adjust frequency and amplitude from the control panel on the GUI.
-  1. Reading Outputs
-      - Raw Waveform: Displayed in the “Raw waveform” window.
-      - X/Y Components: Shown in the “XY” window in real time.
-## Practical Demonstration for Eddy Current Testing (ECT)
+    - However, after creating this software, the author discovered that a software, Digilent Waveforms, already includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
+    - The author recommends verifying the original functionality before using this software.
+
+## Features ✨
+  - 🎛️ Dual-channel lock-in detection
+    - Analyze two signals simultaneously with high precision.
+  - ⚡ Ideal for high-frequency applications
+    - Supports up to 100 kHz reference frequency.
+  - 🚀 Not slow
+    - Sampling time is 2 ms.
+      - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms (no OpenMP)
+      - Intel Core i5-1235U: 2.00±0.08 ms (no OpenMP)
+  - 💾 Ring buffer recording
+    - Store default 10 minutes of continuous data.
+  - 📈 Real-time visualization
+    - Raw waveform, XY plot, and time chart.
+  - 🐍 Python integration Control
+    - LIA and retrieve data via pipe communication.
+
+## Getting Started 🛠️
+  1. Install Dependencies
+     - Digilent WaveForms SDK
+  1. Hardware Setup
+     - Connect Analog Discovery 2 or 3 to your PC
+     - Example wiring:
+       - W1 → CH1+
+       - GND → CH1−
+  1. Launch LIA
+      - Run lia.exe
+      - Configure frequency and amplitude via GUI
+      - View results in:
+        - "Raw waveform" window
+        - "XY" window for X/Y component visualization
+        - "Time chart" window for Y component
+## Application Example 🧪: Eddy Current Testing (ECT)
+  - LIA is well-suited for non-destructive testing such as ECT. By combining AD620-based amplification circuits with sensor coils, users can identify material types and detect surface defects in conductive materials.
   - The following figure shows a circuit as a practical application of LIA for the ECT.
   
   <img src="./docs/images/Circuit.svg" width="100%" alt="Circuit">
@@ -55,12 +80,12 @@
   - The AD620 and INA128/129 are known as effective instrument amplifiers.
   - The provision of power for the amplifier and sensors, such as coils, can be facilitated by the AD.
   - However, it is imperative to exercise caution with regard to the power supply limitations inherent to the AD. For instance, the maximum voltage from AD is ±5V, and the current is constrained by the capabilities of the USB connection or any additional AC adapters connected.
-  - Due to input voltage range of the AD is ±25V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
+  - Due to maximum input voltage range of the AD is ±25V, the default voltage for this software is ±2.5V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
   - For information about ECT, please refer to [an old document created by Hocking NDT](https://www.scribd.com/doc/48834808/An-Introduction-to-Eddy-Current-Theory-and-technology) or the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
-## Python
-  - Control the LIA and collect data directly from Python:
+## 🐍 Python Integration
+  - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
   ```
   import subprocess
   import numpy as np
@@ -123,17 +148,17 @@
 
   lia = Lia('./lia.exe')
   dat = getDat(lia)
-  makeChart(dat) # Save time series and Lissajous plots of X/Y components
+  makeChart(dat) # Save time series and XY(Lissajous) plots of X/Y components
   ```
+  - The following figures show X/Y components when the coil is in contact with different materials in the ECT.
   ![Chart](./docs/images/Chart.svg)
-## Requirements
-  - Digilent Analog Discovery 2/3
-  - [Digilent Waveforms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/reference-manual)
-  - Microsoft Windows 10/11
-  - Microsoft Visual Studio 2022 (C++ 20)
-## Software Dependencies
-  - [GLFW](https://www.glfw.org/)
-  - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
-  - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
-## Acknowledgments
+## System Requirements ⚙️
+  - OS: Windows 10/11
+  - Hardware: Digilent Analog Discovery 2 or 3
+  - Development: Microsoft Visual Studio 2022 (C++20)
+  - Dependencies:
+    - [GLFW](https://www.glfw.org/)
+    - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
+    - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
+## Acknowledgments 🙏
   This software was developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
