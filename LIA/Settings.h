@@ -16,7 +16,7 @@
 
 constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
 constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
+constexpr size_t RAW_SIZE = 8192;
 constexpr double MEASUREMENT_DT = 2e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -229,7 +229,7 @@ public:
                 outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
             }
             else {
-                outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
+                outputFile << std::format("{:e},{:e},{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
             }
         }
         outputFile.close();
@@ -293,7 +293,7 @@ public:
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
         if (!pSettings->flagCh2)
         {
-#pragma omp parallel for reduction(+:_x1, _y1)
+//#pragma omp parallel for reduction(+:_x1, _y1)
             // daigokk: For OpenMP, this process may be too small.
             for (int i = 0; i < size; i++)
             {
@@ -315,7 +315,7 @@ public:
             );
         }
         else {
-#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
+//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
             // daigokk: For OpenMP, this process may be too small.
             for (int i = 0; i < size; i++)
             {
