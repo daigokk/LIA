@@ -23,7 +23,7 @@
     }
     ```
     - However, after creating this software, the author discovered that a software, Digilent Waveforms, already includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). How convenient!
-    - We recommend verifying the original functionality before using this software.
+    - The author recommend verifying the original functionality before using this software.
 
 ## Features ✨
   - 🎛️ Dual-channel lock-in detection
