@@ -56,8 +56,8 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 575 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(1500 * pSettings->monitorScale, 425 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 575 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(1050 * pSettings->monitorScale, 425 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -111,8 +111,8 @@ private:
 
 inline void DeltaTimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(975 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 550 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 750 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 250 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);

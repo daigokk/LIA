@@ -117,10 +117,9 @@ inline void ControlWindow::show(void)
             if (!stateCh2) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
         }
+        ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
         ImGui::EndTabBar();
     }
-    ImGui::Separator();
-    ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
     if (ImGui::Button("Auto offset", autoOffsetSize)) {
