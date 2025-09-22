@@ -31,8 +31,9 @@
   - ⚡ Ideal for high-frequency applications
     - Supports up to 100 kHz reference frequency.
   - 🚀 Not slow
-    - Sampling time is 2 ms.
+    - Default sampling time is 2 ms. The measured sampling time for a sampling length of 5,000 is shown below.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms
+      - Intel Core i5-7300U: 2.00±0.77 ms <- Not good.
       - Intel Core i5-1235U: 2.00±0.08 ms
       - Intel Core i9-13900H: 2.00±0.04 ms
   - 💾 Ring buffer recording
