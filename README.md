@@ -12,7 +12,7 @@
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
         *pY = 0;
-        // Multiplier
+        // Multiplier. The default value for the raw waveform sampling length of "this->size" is 5000.
         for (int i = 0; i < this->size; i++) {
             *pX += this->rawData[i] * this->sine[i];
             *pY += this->rawData[i] * this->cosine[i];
@@ -31,7 +31,7 @@
   - ⚡ Ideal for high-frequency applications
     - Supports up to 100 kHz reference frequency.
   - 🚀 Not slow
-    - Default sampling period is 2 ms. The measured sampling time for a sampling length of 5,000 is shown below.
+    - Default sampling period is 2 ms. The measured sampling period for the raw waveform sampling length of 5,000 is shown below.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms
       - Intel Core i5-7300U: 2.00±0.77 ms <- For this CPU, a sampling period of 5 ms would be optimal.
       - Intel Core i5-1235U: 2.00±0.08 ms
