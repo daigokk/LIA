@@ -229,3 +229,65 @@ inline void XYPlotWindow::show()
     if (pSettings->flagSurfaceMode)
         ImGui::PopStyleColor();
 }
+
+
+class ACFMPlotWindow : public ImuGuiWindowBase
+{
+private:
+    Settings* pSettings;
+public:
+    ACFMPlotWindow(GLFWwindow* window, Settings* pSettings)
+        : ImuGuiWindowBase(window, "ACFM")
+    {
+        this->pSettings = pSettings;
+    }
+    void show(void);
+};
+
+inline void ACFMPlotWindow::show()
+{
+    static ImVec2 windowPos = ImVec2(975 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 575 * pSettings->monitorScale);
+    if (pSettings->flagSurfaceMode)
+        ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
+    ImGui::Begin(this->name);
+    //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
+    if (ImGui::Button("Clear"))
+    {
+        pSettings->xyTail = 0; pSettings->xyNorm = 0;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Auto offset")) {
+        pSettings->flagAutoOffset = true;
+    }
+    ImGui::SameLine();
+    bool stateAutoOffset = false;
+    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0)
+    {
+        stateAutoOffset = true;
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Off")) {
+        pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
+    }
+    if (stateAutoOffset) ImGui::EndDisabled();
+    // プロット描画
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
+    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+        ImPlot::SetupAxes("Bz (V)", "Bx (V)", 0, 0);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::PlotLine("##ACFM", &(pSettings->xy1Ys[0]), &(pSettings->xy2Ys[0]),
+            pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
+        );
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
+        ImPlot::PlotScatter("##NOW", &(pSettings->xy1Ys[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
+        ImPlot::PopStyleColor();
+        ImPlot::EndPlot();
+    }
+    ImPlot::PopStyleColor();
+    ImGui::End();
+    
+}

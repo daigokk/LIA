@@ -57,6 +57,7 @@ public:
     TimeChartWindow* timeChartWindow = nullptr;
     DeltaTimeChartWindow* deltaTimeChartWindow = nullptr;
     XYPlotWindow* xyPlotWindow = nullptr;
+    ACFMPlotWindow* acfmPlotWindow = nullptr;
     Settings* pSettings = nullptr;
     Gui(Settings* pSettings)
     {
@@ -69,6 +70,7 @@ public:
         this->timeChartWindow = new TimeChartWindow(this->window, pSettings);
         this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, pSettings);
         this->xyPlotWindow = new XYPlotWindow(this->window, pSettings);
+        this->acfmPlotWindow = new ACFMPlotWindow(this->window, pSettings);
     }
 	~Gui()
     {
@@ -114,7 +116,8 @@ public:
     void show()
     {
         ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
-        this->xyPlotWindow->show(); 
+        //this->acfmPlotWindow->show();
+        this->xyPlotWindow->show();
         this->rawPlotWindow->show();
         this->timeChartWindow->show();
         this->deltaTimeChartWindow->show();
