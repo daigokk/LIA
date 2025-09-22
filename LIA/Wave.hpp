@@ -59,7 +59,7 @@ public:
 	{
 		close();
 	}
-	void makeSin(const int freq)
+	void makeSin(const double freq)
 	{ //      1ŽüŠú‚Ì³Œ·”gƒf[ƒ^ì¬
 		double qstep = 2 * std::numbers::pi * freq / this->wfe.nSamplesPerSec;
 		double rq = 2;

@@ -42,9 +42,9 @@ inline void ControlWindow::show(void)
         if (ImGui::BeginTabItem("W1"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float lowLimitFreqkHz = 0.5f * 1e-3f / (RAW_SIZE * pSettings->rawDt);
-            static float highLimitFreqkHz = 1e-3f / (1000 * pSettings->rawDt);
-            float freqkHz = pSettings->fgFreq * 1e-3;
+            static float lowLimitFreqkHz = (float)(0.5 * 1e-3 / (RAW_SIZE * pSettings->rawDt));
+            static float highLimitFreqkHz = (float)(1e-3f / (1000 * pSettings->rawDt));
+            float freqkHz = pSettings->fgFreq * 1e-3f;
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
                 if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;

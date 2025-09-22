@@ -128,8 +128,8 @@ public:
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
         fgFreq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
-        float lowLimitFreq = 0.5f / (RAW_SIZE * rawDt);
-        float highLimitFreq = 1.0f / (1000 * rawDt);
+        float lowLimitFreq = (float)(0.5 / (RAW_SIZE * rawDt));
+        float highLimitFreq = (float)(1.0 / (1000 * rawDt));
         if (fgFreq < lowLimitFreq) fgFreq = lowLimitFreq;
         if (fgFreq > highLimitFreq) fgFreq = highLimitFreq;
         fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
@@ -146,7 +146,7 @@ public:
         offset2Phase = conv(liaIni["Lia"]["offset2Phase"].as<std::string>(), offset2Phase);
         offset2X = conv(liaIni["Lia"]["offset2X"].as<std::string>(), offset2X);
         offset2Y = conv(liaIni["Lia"]["offset2Y"].as<std::string>(), offset2Y);
-        hpFreq = conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
+        hpFreq = (float)conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
         rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
         if (limit < 0.0f) limit = 0.0f;
@@ -293,7 +293,7 @@ public:
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
         if (!pSettings->flagCh2)
         {
-//#pragma omp parallel for reduction(+:_x1, _y1)
+//#pragma omp parallel for reduction(+:_x1, _y1) num_threads(4)
             // daigokk: For OpenMP, this process may be too small.
             for (int i = 0; i < size; i++)
             {
@@ -315,7 +315,7 @@ public:
             );
         }
         else {
-//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2)
+//#pragma omp parallel for reduction(+:_x1, _y1, _x2, _y2) num_threads(4)
             // daigokk: For OpenMP, this process may be too small.
             for (int i = 0; i < size; i++)
             {

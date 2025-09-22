@@ -137,6 +137,7 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableVectorLength>
       </EnableVectorLength>
+      <IntelJCCErratum />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
