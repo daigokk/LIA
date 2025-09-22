@@ -73,6 +73,7 @@ inline void TimeChartWindow::show()
     }
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
@@ -91,6 +92,7 @@ inline void TimeChartWindow::show()
         }
         ImPlot::EndPlot();
     }
+    ImPlot::PopStyleColor();
     ImGui::End();
 }
 
@@ -176,6 +178,7 @@ inline void XYPlotWindow::show()
     }
     if (stateAutoOffset) ImGui::EndDisabled();
     // プロット描画
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         if (pSettings->flagSurfaceMode)
@@ -221,6 +224,7 @@ inline void XYPlotWindow::show()
         }
         ImPlot::EndPlot();
     }
+    ImPlot::PopStyleColor();
     ImGui::End();
     if (pSettings->flagSurfaceMode)
         ImGui::PopStyleColor();
