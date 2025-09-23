@@ -116,12 +116,12 @@
       self._send(cmd)
       return self._recieve()
     def get_txy(self):
-      buf = self._query('get_txy').split(",")
+      buf = self._query(':data:txy?').split(",")
       return (float(buf[0]), float(buf[1]), float(buf[2]))
     def get_fgFreq(self):
-      return float(self._query('get_fgFreq'))
+      return float(self._query(':w1:freq?'))
     def set_fgFreq(self, freq):
-      self._send(f'set_fgFreq {freq}\n')
+      self._send(f':w1:freq {freq}\n')
 
   def getDat(lia:Lia):
     dat = []
