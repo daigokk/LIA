@@ -1,7 +1,7 @@
 #include <iostream>
+#include <format>
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
-#include <format>
 #include <numbers> // For std::numbers::pi
 #include <Windows.h>
 
@@ -11,6 +11,7 @@
 #endif // DAQ
 
 #include "Settings.h"
+#include "Psd.h"
 #include "Gui.h"
 #include "Timer.h"
 #include "pipe.h"

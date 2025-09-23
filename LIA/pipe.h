@@ -17,7 +17,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::istringstream iss(cmd);
         iss >> cmd >> value;
         if (cmd.compare("end") == 0) break;
-        else if (cmd.compare("get_txy") == 0)
+        else if (cmd.compare(":data:txy?") == 0)
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
@@ -27,7 +27,7 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->y1s[idx]
             );
         }
-        else if (cmd.compare("get_txy12") == 0)
+        else if (cmd.compare(":data:tx1y1x2y2?") == 0)
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
@@ -39,11 +39,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->y2s[idx]
             );
         }
-        else if (cmd.compare("get_fgFreq") == 0)
+        else if (cmd.compare(":w1:freq?") == 0)
         {
             std::cout << pSettings->fgFreq << std::endl;
         }
-        else if (cmd.compare("set_fgFreq") == 0)
+        else if (cmd.compare(":w1:freq") == 0)
         {
             if (10e3 <= value && value <= 100e3)
             {
@@ -51,11 +51,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare("get_fg1Amp") == 0)
+        else if (cmd.compare(":w1:volt?") == 0)
         {
             std::cout << pSettings->fg1Amp << std::endl;
         }
-        else if (cmd.compare("set_fg1Amp") == 0)
+        else if (cmd.compare(":w1:volt") == 0)
         {
             if (0 <= value && value <= 5.0)
             {
@@ -63,11 +63,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare("get_fg2Amp") == 0)
+        else if (cmd.compare(":w2:volt?") == 0)
         {
             std::cout << pSettings->fg2Amp << std::endl;
         }
-        else if (cmd.compare("set_fg2Amp") == 0)
+        else if (cmd.compare(":w2:volt") == 0)
         {
             if (0 <= value && value <= 5.0)
             {
@@ -75,28 +75,28 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare("get_fg2Phase") == 0)
+        else if (cmd.compare(":w2:phase?") == 0)
         {
             std::cout << pSettings->fg2Phase << std::endl;
         }
-        else if (cmd.compare("set_fg2Phase") == 0)
+        else if (cmd.compare(":w2:phase") == 0)
         {
             pSettings->fg2Phase = value;
             fgFlag = true;
         }
-        else if (cmd.compare("get_hpFreq") == 0)
+        else if (cmd.compare(":calc:hp:freq?") == 0)
         {
             std::cout << pSettings->hpFreq << std::endl;
         }
-        else if (cmd.compare("set_hpFreq") == 0)
+        else if (cmd.compare(":calc:hp:freq") == 0)
         {
             pSettings->hpFreq = value;
         }
-        else if (cmd.compare("set_autoOffset") == 0)
+        else if (cmd.compare(":calc:offset:auto:once") == 0)
         {
             pSettings->flagAutoOffset = true;
         }
-        else if (cmd.compare("set_autoOffsetOff") == 0)
+        else if (cmd.compare(":calc:offset:off") == 0)
         {
             pSettings->offset1X = 0; pSettings->offset1Y = 0;
             pSettings->offset2X = 0; pSettings->offset2Y = 0;

@@ -1,8 +1,8 @@
 #pragma once
 
 #pragma	comment(lib, "opengl32.lib")
-#pragma	comment(lib, "GUI/lib/glfw3.lib")
 #pragma	comment(lib, "GUI/lib/glew32s.lib")
+#pragma	comment(lib, "GUI/lib/glfw3_mt.lib")
 
 #define GLEW_STATIC
 
