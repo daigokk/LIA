@@ -149,6 +149,10 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             pSettings->offset2Phase = value;
         }
+        else if(cmd.find('?'))
+        {
+            std::cout << std::format("Error: {}\n" , cmd);
+        }
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)
