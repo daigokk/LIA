@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
     std::jthread th_measurement{ measurement, &settings };
-    // ƒXƒŒƒbƒh‚Ì—Dæ“x‚ğİ’è
+    // ã‚¹ãƒ¬ãƒƒãƒ‰ã®å„ªå…ˆåº¦ã‚’è¨­å®š
     HANDLE handle = th_measurement.native_handle();
     if (SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
         //std::cout << "Thread priority set to highest.\n";
@@ -86,7 +86,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
     daq.ad_init(daq.adSettings);
-    timer.sleepFor(0.05); 
+    timer.sleepFor(0.1); 
     daq.ad_start();
 #endif // DAQ
     timer.start();
