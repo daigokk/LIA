@@ -168,7 +168,7 @@
     <ClInclude Include="Settings.h" />
     <ClInclude Include="ControlWindow.h" />
     <ClInclude Include="Gui.h" />
-    <ClInclude Include="ImuGuiWindowBase.h" />
+    <ClInclude Include="ImGuiWindowBase.h" />
     <ClInclude Include="PlotWindow.h" />
     <ClInclude Include="Timer.h" />
   </ItemGroup>

@@ -5,10 +5,10 @@
 #include <IMGUI/imgui_impl_opengl3.h>
 #include <IMGUI/implot.h>
 
-class ImuGuiWindowBase
+class ImGuiWindowBase
 {
 public:
-    ImuGuiWindowBase(GLFWwindow* window, const char name[]) { this->window = window; this->name = name; }
+    ImGuiWindowBase(GLFWwindow* window, const char name[]) { this->window = window; this->name = name; }
     void show(void) { ImGui::Begin(this->name); ImGui::End(); }
     const char* name = nullptr;
 private:

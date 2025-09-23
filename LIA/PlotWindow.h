@@ -1,14 +1,23 @@
 ﻿#pragma once
 
 #include "settings.h"
-#include "ImuGuiWindowBase.h"
-#include <IMGUI/imgui_internal.h>
+#include "ImGuiWindowBase.h"
 
-class RawPlotWindow : public ImuGuiWindowBase
+#define MILI_VOLT 0.2f
+
+void ScientificFormatter(double value, char* buff, int size, void*) {
+    snprintf(buff, size, "%.1e", value); // 科学的記法で表示
+}
+
+void MiliFormatter(double value, char* buff, int size, void*) {
+    snprintf(buff, size, "%.0f", value * 1e3); // 科学的記法で表示
+}
+
+class RawPlotWindow : public ImGuiWindowBase
 {
 public:
     RawPlotWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "Raw waveform")
+        : ImGuiWindowBase(window, "Raw waveform")
     {
         this->pSettings = pSettings;
     }
@@ -28,6 +37,11 @@ inline void RawPlotWindow::show()
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
+        if (pSettings->rawLimit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("Time (us)", "v (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
         ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
@@ -41,11 +55,11 @@ inline void RawPlotWindow::show()
     ImGui::End();
 }
 
-class TimeChartWindow : public ImuGuiWindowBase
+class TimeChartWindow : public ImGuiWindowBase
 {
 public:
     TimeChartWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "Time chart")
+        : ImGuiWindowBase(window, "Time chart")
     {
         this->pSettings = pSettings;
     }
@@ -77,6 +91,11 @@ inline void TimeChartWindow::show()
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
+        if (pSettings->limit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("Time (us)", "v (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
         ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
@@ -96,11 +115,11 @@ inline void TimeChartWindow::show()
     ImGui::End();
 }
 
-class DeltaTimeChartWindow : public ImuGuiWindowBase
+class DeltaTimeChartWindow : public ImGuiWindowBase
 {
 public:
     DeltaTimeChartWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "DeltTime chart")
+        : ImGuiWindowBase(window, "DeltTime chart")
     {
         this->pSettings = pSettings;
     }
@@ -135,13 +154,13 @@ inline void DeltaTimeChartWindow::show()
     ImGui::End();
 }
 
-class XYPlotWindow : public ImuGuiWindowBase
+class XYPlotWindow : public ImGuiWindowBase
 {
 private:
     Settings* pSettings;
 public:
     XYPlotWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "XY")
+        : ImGuiWindowBase(window, "XY")
     {
         this->pSettings = pSettings;
     }
@@ -181,6 +200,12 @@ inline void XYPlotWindow::show()
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
+        if (pSettings->limit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("x (mV)", "y (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
         if (pSettings->flagSurfaceMode)
         {
             ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit * 4, pSettings->limit * 4, ImGuiCond_Always);
@@ -231,13 +256,13 @@ inline void XYPlotWindow::show()
 }
 
 
-class ACFMPlotWindow : public ImuGuiWindowBase
+class ACFMPlotWindow : public ImGuiWindowBase
 {
 private:
     Settings* pSettings;
 public:
     ACFMPlotWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "ACFM")
+        : ImGuiWindowBase(window, "ACFM")
     {
         this->pSettings = pSettings;
     }
@@ -277,6 +302,12 @@ inline void ACFMPlotWindow::show()
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Bz (V)", "Bx (V)", 0, 0);
+        if (pSettings->limit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("x (mV)", "y (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
         ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine("##ACFM", &(pSettings->xy1Ys[0]), &(pSettings->xy2Ys[0]),

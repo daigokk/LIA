@@ -53,7 +53,7 @@
     <ClInclude Include="ControlWindow.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="ImuGuiWindowBase.h">
+    <ClInclude Include="ImGuiWindowBase.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="PlotWindow.h">

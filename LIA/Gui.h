@@ -17,7 +17,7 @@
 #include <numbers> // For std::numbers::pi
 
 #include "Settings.h"
-#include "ImuGuiWindowBase.h"
+#include "ImGuiWindowBase.h"
 #include "ControlWindow.h"
 #include "PlotWindow.h"
 #include "Wave.hpp"

@@ -1,18 +1,18 @@
 #pragma once
 
 #include "Settings.h"
-#include "ImuGuiWindowBase.h"
+#include "ImGuiWindowBase.h"
 #include <iostream>
 #include <cmath>
 #include <numbers> // For std::numbers::pi
 
-class ControlWindow : public ImuGuiWindowBase
+class ControlWindow : public ImGuiWindowBase
 {
 private:
     Settings* pSettings = nullptr;
 public:
     ControlWindow(GLFWwindow* window, Settings* pSettings)
-        : ImuGuiWindowBase(window, "Control panel")
+        : ImGuiWindowBase(window, "Control panel")
     {
 		this->pSettings = pSettings;
     }
