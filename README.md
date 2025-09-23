@@ -106,7 +106,8 @@
       print(self._recieve())
     def __del__(self):
       self._send('end')
-      #self.process.kill()
+      time.sleep(1)
+      self.process.kill()
     def _send(self, cmd:str):
       self.process.stdin.write(f'{cmd}\n')
       self.process.stdin.flush()
