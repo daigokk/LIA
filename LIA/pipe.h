@@ -16,8 +16,32 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::getline(std::cin, cmd);
         std::istringstream iss(cmd);
         iss >> cmd >> value;
-        if (cmd.compare("end") == 0) break;
-        else if (cmd.compare(":data:txy?") == 0)
+        if (cmd == "end")
+        {
+            break;
+        }
+        else if (cmd == "reset")
+        {
+            pSettings->fgFreq = 100e3f;
+            pSettings->fg1Amp = 1.0f;
+            pSettings->fg2Amp = 0.0f;
+            pSettings->fg2Phase = 0.0f;
+            pSettings->flagCh2 = false;
+            pSettings->offset1Phase = 0.0;
+            pSettings->offset1X = 0.0;
+            pSettings->offset1Y = 0.0;
+            pSettings->offset2Phase = 0.0;
+            pSettings->offset2X = 0.0;
+            pSettings->offset2Y = 0.0;
+            pSettings->hpFreq = 0.0f;
+            pSettings->flagSurfaceMode = false;
+            pSettings->flagBeep = false;
+            pSettings->limit = 1.5f;
+            pSettings->rawLimit = 1.5f;
+            pSettings->historySec = 10.0f;
+            fgFlag = true;
+        }
+        else if (cmd == ":data:txy?")
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
@@ -27,7 +51,7 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->y1s[idx]
             );
         }
-        else if (cmd.compare(":data:tx1y1x2y2?") == 0)
+        else if (cmd == ":data:tx1y1x2y2?")
         {
             size_t idx = pSettings->idx;
             std::cout << std::format(
@@ -39,11 +63,27 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->y2s[idx]
             );
         }
-        else if (cmd.compare(":w1:freq?") == 0)
+        else if (cmd == ":data:ch2:on")
+        {
+            pSettings->flagCh2 = true;
+        }
+        else if (cmd == ":data:ch2:off")
+        {
+            pSettings->flagCh2 = false;
+        }
+        else if (cmd == ":data:limit")
+        {
+            pSettings->limit = value;
+        }
+        else if (cmd == ":data:raw:limit")
+        {
+            pSettings->rawLimit = value;
+        }
+        else if (cmd == ":w1:freq?")
         {
             std::cout << pSettings->fgFreq << std::endl;
         }
-        else if (cmd.compare(":w1:freq") == 0)
+        else if (cmd == ":w1:freq")
         {
             if (10e3 <= value && value <= 100e3)
             {
@@ -51,11 +91,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare(":w1:volt?") == 0)
+        else if (cmd == ":w1:volt?")
         {
             std::cout << pSettings->fg1Amp << std::endl;
         }
-        else if (cmd.compare(":w1:volt") == 0)
+        else if (cmd == ":w1:volt")
         {
             if (0 <= value && value <= 5.0)
             {
@@ -63,11 +103,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare(":w2:volt?") == 0)
+        else if (cmd == ":w2:volt?")
         {
             std::cout << pSettings->fg2Amp << std::endl;
         }
-        else if (cmd.compare(":w2:volt") == 0)
+        else if (cmd == ":w2:volt")
         {
             if (0 <= value && value <= 5.0)
             {
@@ -75,31 +115,39 @@ void pipe(std::stop_token st, Settings* pSettings)
                 fgFlag = true;
             }
         }
-        else if (cmd.compare(":w2:phase?") == 0)
+        else if (cmd == ":w2:phase?")
         {
             std::cout << pSettings->fg2Phase << std::endl;
         }
-        else if (cmd.compare(":w2:phase") == 0)
+        else if (cmd == ":w2:phase")
         {
             pSettings->fg2Phase = value;
             fgFlag = true;
         }
-        else if (cmd.compare(":calc:hp:freq?") == 0)
+        else if (cmd == ":calc:hp:freq?")
         {
             std::cout << pSettings->hpFreq << std::endl;
         }
-        else if (cmd.compare(":calc:hp:freq") == 0)
+        else if (cmd == ":calc:hp:freq")
         {
             pSettings->hpFreq = value;
         }
-        else if (cmd.compare(":calc:offset:auto:once") == 0)
+        else if (cmd == ":calc:offset:auto:once")
         {
             pSettings->flagAutoOffset = true;
         }
-        else if (cmd.compare(":calc:offset:off") == 0)
+        else if (cmd == ":calc:offset:off")
         {
             pSettings->offset1X = 0; pSettings->offset1Y = 0;
             pSettings->offset2X = 0; pSettings->offset2Y = 0;
+        }
+        else if (cmd == ":phase1:offset")
+        {
+            pSettings->offset1Phase = value;
+        }
+        else if (cmd == ":phase2:offset")
+        {
+            pSettings->offset2Phase = value;
         }
         std::cin.clear();
 #ifdef DAQ

@@ -105,6 +105,7 @@ public:
     double offset1Phase = 0, offset1X = 0, offset1Y = 0;
     double offset2Phase = 0, offset2X = 0, offset2Y = 0;
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
+    bool flagAutoOffset = false, flagPause = false;
     float hpFreq = 0;
     // Plot
     double rangeSecTimeSeries = 10.0;
@@ -118,7 +119,7 @@ public:
     std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;// , abs1, abs2;
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize;
     std::array<double, XY_SIZE> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
-    bool flagAutoOffset = false, flagPause = false;
+    
 
     Settings()
     {

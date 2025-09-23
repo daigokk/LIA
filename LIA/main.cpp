@@ -56,7 +56,6 @@ int main(int argc, char* argv[])
     }
     th_measurement.request_stop();
     if (pth_pipe != nullptr) pth_pipe->request_stop();
-
     return 0;
 }
 
