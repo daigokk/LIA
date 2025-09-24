@@ -234,6 +234,7 @@ inline void XYPlotWindow::show()
         else {
             ImPlot::PopStyleColor();
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale);
             ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
             ImPlot::PopStyleColor();
 
@@ -241,6 +242,7 @@ inline void XYPlotWindow::show()
             ImPlot::PlotLine("Ch2", pSettings->xy2Xs.data(), pSettings->xy2Ys.data(),
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale);
             ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
             ImPlot::PopStyleColor();
         }
