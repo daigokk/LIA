@@ -119,7 +119,6 @@ void measurement(std::stop_token st, Settings* pSettings)
         else {
             daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data(), pSettings->rawData2.data());
         }
-        daq.ad_start();
 #endif // DAQ
         psd.calc(t);
     }
