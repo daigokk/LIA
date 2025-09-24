@@ -184,6 +184,7 @@ inline void ControlWindow::show(void)
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator(); 
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
+    if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
 #ifdef DAQ
     if(fgFlag)
         pSettings->pDaq->fg(pSettings->fg1Amp, pSettings->fgFreq, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
