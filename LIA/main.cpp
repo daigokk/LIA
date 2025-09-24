@@ -86,7 +86,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
     daq.adSettings.rate = 1.0 / (pSettings->rawDt);
     daq.ad_init(daq.adSettings);
-    timer.sleepFor(0.1); 
+    timer.sleepFor(0.5); 
     daq.ad_start();
 #endif // DAQ
     timer.start();
