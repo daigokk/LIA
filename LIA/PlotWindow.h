@@ -10,7 +10,7 @@ void ScientificFormatter(double value, char* buff, int size, void*) {
 }
 
 void MiliFormatter(double value, char* buff, int size, void*) {
-    snprintf(buff, size, "%.0f", value * 1e3); // 科学的記法で表示
+    snprintf(buff, size, "%.0f", value * 1e3); // mili: 1e-3
 }
 
 class RawPlotWindow : public ImGuiWindowBase
