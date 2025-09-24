@@ -93,7 +93,7 @@ inline void TimeChartWindow::show()
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
         if (pSettings->limit <= MILI_VOLT)
         {
-            ImPlot::SetupAxes("Time (us)", "v (mV)", 0, 0);
+            ImPlot::SetupAxes("Time", "v (mV)", ImPlotAxisFlags_NoTickLabels, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
