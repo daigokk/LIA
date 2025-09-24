@@ -150,7 +150,7 @@ inline bool Gui::initGLFW()
 
     pSettings->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
 
-    if (monitorWidth == 2880 && monitorHeight == 1920)
+    if (monitorWidth == 2880 && monitorHeight == 1824)
     {
         this->window = glfwCreateWindow(
             monitorWidth, monitorHeight,
@@ -193,7 +193,7 @@ inline bool Gui::initImGui()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.FontGlobalScale = 1.f; // 全体のフォントスケールを変更
+    io.FontGlobalScale = 1.f; // 蜈ｨ菴薙�ｮ繝輔か繝ｳ繝医せ繧ｱ繝ｼ繝ｫ繧貞､画峩
     ImFont* myFont = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/Lucon.ttf", 32.0f);
     ImGui::PushFont(myFont);
 
