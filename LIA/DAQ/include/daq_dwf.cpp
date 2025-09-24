@@ -179,7 +179,7 @@ double daq_dwf::ad_init()
 void daq_dwf::ad_start()
 {
 	// start
-	FDwfAnalogInConfigure(this->hdwf, 0, true);
+	FDwfAnalogInConfigure(this->hdwf, true, true);
 }
 
 void daq_dwf::ad_get(const size_t length, double ch1[])
@@ -312,7 +312,7 @@ void daq_dwf::daWaveform(const double amplitude, const double freq, const std::v
 	FDwfAnalogOutNodeFunctionSet(this->hdwf, 0, AnalogOutNodeCarrier, funcCustom);
 	FDwfAnalogOutNodeFunctionSet(this->hdwf, 1, AnalogOutNodeCarrier, funcSquare);
 	// set custom waveform samples
-	// normalized to ±1 values
+	// normalized to Â±1 values
 	FDwfAnalogOutNodeDataSet(this->hdwf, 0, AnalogOutNodeCarrier, (double*)waveform.data(), waveform.size());
 	// 10kHz waveform frequency
 	FDwfAnalogOutNodeFrequencySet(this->hdwf, -1, AnalogOutNodeCarrier, freq);
