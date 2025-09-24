@@ -92,8 +92,8 @@ public:
     // Monitor
     float monitorScale = 1.0f;
     // Window
-    int windowWidth = 1500;
-    int windowHeight = 1000;
+    int windowWidth = 1440;
+    int windowHeight = 960;
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg

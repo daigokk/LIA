@@ -149,11 +149,21 @@ inline bool Gui::initGLFW()
     //std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
 
     pSettings->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
-    this->window = glfwCreateWindow(
-        (int)(pSettings->windowWidth * pSettings->monitorScale),
-        (int)(pSettings->windowHeight * pSettings->monitorScale),
-        "Lock-in amplifier", NULL, NULL
-    );
+
+    if (monitorWidth == 2880 && monitorHeight == 1920)
+    {
+        this->window = glfwCreateWindow(
+            monitorWidth, monitorHeight,
+            "Lock-in amplifier", glfwGetPrimaryMonitor(), NULL);
+    }
+    else{
+        this->window = glfwCreateWindow(
+            (int)(pSettings->windowWidth * pSettings->monitorScale),
+            (int)(pSettings->windowHeight * pSettings->monitorScale),
+            "Lock-in amplifier", NULL, NULL
+        );
+    }
+
     if (!this->window)
     {
         this->initialized = false;

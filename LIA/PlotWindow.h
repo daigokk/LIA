@@ -71,7 +71,7 @@ private:
 inline void TimeChartWindow::show()
 {
     static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 575 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(1050 * pSettings->monitorScale, 425 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(1050 * pSettings->monitorScale, 385 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -131,7 +131,7 @@ private:
 inline void DeltaTimeChartWindow::show()
 {
     static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 750 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 250 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 210 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -186,16 +186,13 @@ inline void XYPlotWindow::show()
         pSettings->flagAutoOffset = true;
     }
     ImGui::SameLine();
-    bool stateAutoOffset = false;
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0)
+    if (pSettings->flagPause)
     {
-        stateAutoOffset = true;
-        ImGui::BeginDisabled();
+        if (ImGui::Button("Run")) { pSettings->flagPause = false; }
     }
-    if (ImGui::Button("Off")) {
-        pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
+    else {
+        if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
     }
-    if (stateAutoOffset) ImGui::EndDisabled();
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
@@ -288,16 +285,13 @@ inline void ACFMPlotWindow::show()
         pSettings->flagAutoOffset = true;
     }
     ImGui::SameLine();
-    bool stateAutoOffset = false;
-    if (pSettings->offset1X == 0 && pSettings->offset1Y == 0)
+    if (pSettings->flagPause)
     {
-        stateAutoOffset = true;
-        ImGui::BeginDisabled();
+        if (ImGui::Button("Run")) { pSettings->flagPause = false; }
     }
-    if (ImGui::Button("Off")) {
-        pSettings->offset1X = 0.0f; pSettings->offset1Y = 0.0f;
+    else {
+        if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
     }
-    if (stateAutoOffset) ImGui::EndDisabled();
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {

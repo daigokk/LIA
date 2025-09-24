@@ -22,7 +22,7 @@ public:
 inline void ControlWindow::show(void)
 {
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 750 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 900 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
