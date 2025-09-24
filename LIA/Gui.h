@@ -153,7 +153,7 @@ inline bool Gui::initGLFW()
     if (monitorWidth == 2880 && monitorHeight == 1824)
     {
         this->window = glfwCreateWindow(
-            monitorWidth, monitorHeight,
+            monitorWidth, 1920,
             "Lock-in amplifier", glfwGetPrimaryMonitor(), NULL);
     }
     else{
