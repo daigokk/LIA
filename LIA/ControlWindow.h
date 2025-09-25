@@ -22,21 +22,13 @@ public:
 inline void ControlWindow::show(void)
 {
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 900 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 920 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", pSettings->sn.data());
-    ImGui::SameLine();
-    if (pSettings->flagPause)
-    {
-        if (ImGui::Button("Run")) { pSettings->flagPause = false; }
-    }
-    else {
-        if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
-    }
     if (ImGui::BeginTabBar("Fg"))
     {
         if (ImGui::BeginTabItem("W1"))
@@ -121,8 +113,8 @@ inline void ControlWindow::show(void)
         ImGui::EndTabBar();
     }
     ImGui::Separator();
-    static ImVec2 autoOffsetSize = ImVec2(300.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
-    if (ImGui::Button("Auto offset", autoOffsetSize)) {
+    static ImVec2 autoOffsetSize = ImVec2(200.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
+    if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
     bool stateAutoOffset = true;
@@ -138,6 +130,16 @@ inline void ControlWindow::show(void)
         pSettings->offset2X = 0.0f; pSettings->offset2Y = 0.0f;
     }
     if (!stateAutoOffset) ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::Dummy(ImVec2(1.0f * pSettings->monitorScale, 0.0f));
+    ImGui::SameLine();
+    if (pSettings->flagPause)
+    {
+        if (ImGui::Button("Run", offSize)) { pSettings->flagPause = false; }
+    }
+    else {
+        if (ImGui::Button("Pause", offSize)) { pSettings->flagPause = true; }
+    }
     if (ImGui::TreeNode("Offset value"))
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();

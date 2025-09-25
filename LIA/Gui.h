@@ -116,12 +116,12 @@ public:
     void show()
     {
         ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
-        //this->acfmPlotWindow->show();
         this->xyPlotWindow->show();
         this->rawPlotWindow->show();
         this->timeChartWindow->show();
         this->deltaTimeChartWindow->show();
         this->controlWindow->show();
+        //this->acfmPlotWindow->show();
         ImGui::PopStyleColor();
     };
 };

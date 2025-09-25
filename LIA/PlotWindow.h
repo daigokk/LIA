@@ -29,7 +29,7 @@ private:
 inline void RawPlotWindow::show()
 {
     static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(460 * pSettings->monitorScale, 575 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(430 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -70,8 +70,8 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 575 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(990 * pSettings->monitorScale, 385 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(990 * pSettings->monitorScale, 360 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -96,7 +96,10 @@ inline void TimeChartWindow::show()
             ImPlot::SetupAxes("Time", "v (mV)", ImPlotAxisFlags_NoTickLabels, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
+        if (!pSettings->flagPause)
+        {
+            ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
+        }
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
@@ -169,8 +172,8 @@ public:
 
 inline void XYPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(910 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(530 * pSettings->monitorScale, 575 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(880 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     if (pSettings->flagSurfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
@@ -227,7 +230,7 @@ inline void XYPlotWindow::show()
         if (!pSettings->flagCh2)
         {
             ImPlot::PopStyleColor();
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
             ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
             ImPlot::PopStyleColor();
         }
@@ -306,10 +309,10 @@ inline void ACFMPlotWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(pSettings->xy1Ys[0]), &(pSettings->xy2Ys[0]),
             pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
         );
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
         ImPlot::PlotScatter("##NOW", &(pSettings->xy1Ys[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         ImPlot::PopStyleColor();
         ImPlot::EndPlot();
