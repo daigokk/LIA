@@ -11,11 +11,12 @@ void pipe(std::stop_token st, Settings* pSettings)
     pSettings->statusPipe = true;
     while (!st.stop_requested())
     {
-        static std::string errcmd;
+        static std::string errcmd = "";
         bool fgFlag = false;
         std::string cmd;
         float value = 0;
         std::getline(std::cin, cmd);
+        if (cmd.length() == 0) continue; // ‹ó”’‚ª‘—‚ç‚ê‚½Žž‚Í–³Ž‹
         std::istringstream iss(cmd);
         iss >> cmd >> value;
         if (cmd == "end")
@@ -187,7 +188,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             pSettings->offset2Phase = value;
         }
-        else if (cmd == ":error?")
+        else if (cmd == "error?")
         {
             if (errcmd == "")
             {
@@ -199,9 +200,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 errcmd = "";
             }
         }
-        else if(cmd.find('?'))
+        else if (cmd.find("?") != -1)
         {
-            std::cout << std::format("Error: '{}'\n", cmd);
+            errcmd = std::format("{} {}", cmd, value);
+            std::cout << std::format("Error: '{}'\n", errcmd);
+            errcmd = "";
         }
         else
         {
