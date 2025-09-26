@@ -7,7 +7,7 @@
 
 #define DAQ
 #ifdef DAQ
-#include <daq_dwf.hpp>
+#include <Daq_wf.h>
 #endif // DAQ
 
 #include "Settings.h"
@@ -66,28 +66,16 @@ void measurement(std::stop_token st, Settings* pSettings)
 #ifndef DAQ
     std::cout << "Not connect to AD." << std::endl;
 #else
-    //Daq_wf daq;
-    //daq.powerSupply(5.0);
-    //daq.Fg.start(pSettings->freq, pSettings->amp, 0.0);
-    //timer.sleepFor(1.0);
-    //daq.Scope.open();
-    //daq.Scope.trigger();
-    daq_dwf daq;
-    std::cout << std::format("{:s}({:s}) is selected.\n", daq.type, daq.serialNo);
+    Daq_wf daq;
+    daq.powerSupply(5.0);
+    daq.fg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+    daq.scope.open(-1, RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
+    daq.scope.trigger();
+    std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pSettings->pDaq = &daq;
-    pSettings->sn = daq.serialNo;
-    daq.powerSupply(5);
-    daq.fg(pSettings->fg1Amp, pSettings->fgFreq, 0, pSettings->fg2Amp, pSettings->fg2Phase);
-    daq.adSettings.ch = 0; daq.adSettings.range = RAW_RANGE;
-    
-    daq.adSettings.numCh = 2;
-    
-    daq.adSettings.triggerDigCh = -1; daq.adSettings.waitAd = 0;
-    daq.adSettings.numSampsPerChan = (int)pSettings->rawTime.size();
-    daq.adSettings.rate = 1.0 / (pSettings->rawDt);
-    daq.ad_init(daq.adSettings);
+    pSettings->sn = daq.device.sn;
     timer.sleepFor(0.5); 
-    daq.ad_start();
+    daq.scope.start();
 #endif // DAQ
     timer.start();
     pSettings->statusMeasurement = true;
@@ -111,13 +99,12 @@ void measurement(std::stop_token st, Settings* pSettings)
             }
         }
 #else
-        //daq.Scope.record(pSettings->rawData1.data());
         if (!pSettings->flagCh2)
         {
-            daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data());
+            daq.scope.record(pSettings->rawData1.data());
         }
         else {
-            daq.ad_get(daq.adSettings.numSampsPerChan, pSettings->rawData1.data(), pSettings->rawData2.data());
+            daq.scope.record(pSettings->rawData1.data(), pSettings->rawData2.data());
         }
 #endif // DAQ
         psd.calc(t);

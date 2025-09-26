@@ -149,7 +149,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DAQ\include\daq_dwf.cpp" />
     <ClCompile Include="GUI\include\IMGUI\imgui.cpp" />
     <ClCompile Include="GUI\include\IMGUI\imgui_draw.cpp" />
     <ClCompile Include="GUI\include\IMGUI\imgui_impl_glfw.cpp" />

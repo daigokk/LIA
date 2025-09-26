@@ -1,3 +1,5 @@
+#pragma once
+
 #pragma	comment(lib, "DAQ/lib/dwf.lib")
 #include <iostream>         // needed for input/output
 #include <string>           // needed for error handling
@@ -5,76 +7,92 @@
 #include <dwf.h>
 
 
-void errChk(bool ret, const char* func, const char* file, int line)
-{
-    static char szError[512] = { 0 };
-    if (!ret) {
-        FDwfGetLastErrorMsg(szError);
-        std::cerr << "\a\n--- DWF error -----------------------------------\n";
-        std::cerr << "Function: " << func << std::endl;
-        std::cerr << "File: " << file << ", " << line << std::endl;
-        std::cerr << szError;
-        std::cerr << "-------------------------------------------------\n";
-        system("PAUSE");
-        exit(EXIT_FAILURE);
-    }
-}
-
 class Daq_wf
 {
-private:
+public:
     struct Device
     {
     public:
         HDWF hdwf = 0;
         char name[256] = { "" };
         char sn[32] = { "" };
-    } Device;
-
-public:
+    } device;
     Daq_wf(int idxDevice = 0)
     {
         int pcDevice;
         errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumDeviceName(idxDevice, Device.name), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumSN(idxDevice, Device.sn), __func__, __FILE__, __LINE__);
-        errChk(FDwfDeviceOpen(idxDevice, &Device.hdwf), __func__, __FILE__, __LINE__);
+        errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
+        errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
+        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
 
-        std::cout << Device.name << "," << Device.sn << std::endl;
-        Fg.pHdwf = &Device.hdwf;
-        Scope.pHdwf = &Device.hdwf;
+        //std::cout << device.name << "," << device.sn << std::endl;
+        fg.pHdwf = &device.hdwf;
+        scope.pHdwf = &device.hdwf;
     }
     ~Daq_wf()
     {
         // close the connection
-        FDwfDeviceClose(Device.hdwf);
+        FDwfDeviceClose(device.hdwf);
+    }
+    static void errChk(bool ret, const char* func, const char* file, int line)
+    {
+#ifndef NODEBUG
+        static char szError[512] = { 0 };
+        if (!ret) {
+            FDwfGetLastErrorMsg(szError);
+            std::cerr << "\a\n--- DWF error -----------------------------------\n";
+            std::cerr << "Function: " << func << std::endl;
+            std::cerr << "File: " << file << ", " << line << std::endl;
+            std::cerr << szError;
+            std::cerr << "-------------------------------------------------\n";
+            system("PAUSE");
+            exit(EXIT_FAILURE);
+        }
+#endif
     }
     void powerSupply(const double volts = 5.0)
     {
         bool flag = true;
         if (volts == 0.0) flag = false;
-        // set voltage(from 0 to 5 V)
-        FDwfAnalogIOChannelNodeSet(Device.hdwf, 0, 1, abs(volts));
-        // set voltage(from 0 to - 5 V)
-        FDwfAnalogIOChannelNodeSet(Device.hdwf, 1, 1, -abs(volts));
-        // enable positive and negative supply
-        FDwfAnalogIOChannelNodeSet(Device.hdwf, 0, 0, true);
-        FDwfAnalogIOChannelNodeSet(Device.hdwf, 1, 0, true);
-        // master enable
-        FDwfAnalogIOEnableSet(Device.hdwf, flag);
+        errChk( // set voltage(from 0 to 5 V)
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 1, abs(volts)),
+            __func__, __FILE__, __LINE__
+        );
+        errChk( // set voltage(from 0 to -5 V)
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 1, -abs(volts)),
+            __func__, __FILE__, __LINE__
+        );
+        errChk( // enable positive supply
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 0, flag),
+            __func__, __FILE__, __LINE__
+        );
+        errChk( // enable negative supply
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 0, flag),
+            __func__, __FILE__, __LINE__
+        );
+        errChk( // master enable
+            FDwfAnalogIOEnableSet(device.hdwf, flag),
+            __func__, __FILE__, __LINE__
+        );
     }
-    class _Fg
+    class Fg
     {
     public:
-        HDWF* pHdwf;
-        int channel = 0;
+        HDWF* pHdwf = nullptr;
+        int channel = -1;
         double frequency = 1e3;
-        double amplitude = 1.0;
-        double phaseDeg = 0.0;
+        double amplitude1 = 1.0;
+        double phaseDeg1 = 0.0;
+        double amplitude2 = 0.0;
+        double phaseDeg2 = 0.0;
         void start()
         {
             errChk( // enable channel
-                FDwfAnalogOutNodeEnableSet(*pHdwf, channel, AnalogOutNodeCarrier, true),
+                FDwfAnalogOutNodeEnableSet(*pHdwf, 0, AnalogOutNodeCarrier, true),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // enable channel
+                FDwfAnalogOutNodeEnableSet(*pHdwf, 1, AnalogOutNodeCarrier, true),
                 __func__, __FILE__, __LINE__
             );
             errChk( // set function type
@@ -86,7 +104,11 @@ public:
                 __func__, __FILE__, __LINE__
             );
             errChk( // set amplitude or DC voltage
-                FDwfAnalogOutNodeAmplitudeSet(*pHdwf, channel, AnalogOutNodeCarrier, amplitude),
+                FDwfAnalogOutNodeAmplitudeSet(*pHdwf, 0, AnalogOutNodeCarrier, amplitude1),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set amplitude or DC voltage
+                FDwfAnalogOutNodeAmplitudeSet(*pHdwf, 1, AnalogOutNodeCarrier, amplitude2),
                 __func__, __FILE__, __LINE__
             );
             errChk( // set offset
@@ -94,7 +116,11 @@ public:
                 __func__, __FILE__, __LINE__
             );
             errChk( // set pahse
-                FDwfAnalogOutNodePhaseSet(*pHdwf, channel, AnalogOutNodeCarrier, phaseDeg),
+                FDwfAnalogOutNodePhaseSet(*pHdwf, 0, AnalogOutNodeCarrier, phaseDeg1),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set pahse
+                FDwfAnalogOutNodePhaseSet(*pHdwf, 1, AnalogOutNodeCarrier, phaseDeg2),
                 __func__, __FILE__, __LINE__
             );
             errChk( // start signal generation
@@ -103,19 +129,34 @@ public:
             );
             return;
         }
-        void start(const double frequency, const double amplitude, const double phaseDeg)
+        void start(const double frequency, const double amplitude1, const double phaseDeg1)
         {
             this->frequency = frequency;
-            this->amplitude = amplitude;
-            this->phaseDeg = phaseDeg;
+            this->amplitude1 = amplitude1;
+            this->phaseDeg1 = phaseDeg1;
+            this->amplitude2 = 0.0;
+            this->phaseDeg2 = 0.0;
             this->start();
         }
-    } Fg;
-    class _Scope
+        void start(
+            const double frequency,
+            const double amplitude1, const double phaseDeg1,
+            const double amplitude2, const double phaseDeg2
+        )
+        {
+            this->frequency = frequency;
+            this->amplitude1 = amplitude1;
+            this->phaseDeg1 = phaseDeg1;
+            this->amplitude2 = amplitude2;
+            this->phaseDeg2 = phaseDeg2;
+            this->start();
+        }
+    } fg;
+    class Scope
     {
     public:
         HDWF* pHdwf;
-        int channel = 0;
+        int channel = -1;
         double voltsRange = 5.0;
         int bufferSize = 5000;
         double SamplingRate = 100e6;
@@ -136,7 +177,7 @@ public:
                 __func__, __FILE__, __LINE__
             );
             errChk( // set range (maximum signal amplitude in Volts)
-                FDwfAnalogInChannelRangeSet(*pHdwf, channel, voltsRange),
+                FDwfAnalogInChannelRangeSet(*pHdwf, channel, voltsRange * 2),
                 __func__, __FILE__, __LINE__
             );
             errChk( // set the buffer size per channel (data point in a recording)
@@ -158,12 +199,20 @@ public:
             //std::cout << bufferSize << ", " << SamplingRate << std::endl;
             return;
         }
+        void open(const int channel, const double voltsRange, const int bufferSize, const int SamplingRate)
+        {
+            this->channel = channel;
+            this->voltsRange = voltsRange;
+            this->bufferSize = bufferSize;
+            this->SamplingRate = SamplingRate;
+            this->open();
+        }
         void trigger()
         {
-            //errChk( // enable/disable auto triggering
-            //    FDwfAnalogInTriggerAutoTimeoutSet(*pHdwf, secTimeout),
-            //    __func__, __FILE__, __LINE__
-            //);
+            errChk( // enable/disable auto triggering
+                FDwfAnalogInTriggerAutoTimeoutSet(*pHdwf, secTimeout),
+                __func__, __FILE__, __LINE__
+            );
             errChk( // set trigger source
                 FDwfAnalogInTriggerSourceSet(*pHdwf, trigSrc),
                 __func__, __FILE__, __LINE__
@@ -192,32 +241,63 @@ public:
                     __func__, __FILE__, __LINE__
                 );
             }
-           
+            return;
+        }
+        void trigger(
+            const double secTimeout, const TRIGSRC trigSrc,
+            const int trigChannel, const TRIGTYPE trigType, const double trigVoltLevel, DwfTriggerSlope trigSlope
+        )
+        {
+            this->secTimeout = secTimeout;
+            this->trigSrc = trigSrc;
+            this->trigChannel = trigChannel;
+            this->trigType = trigType;
+            this->trigVoltLevel = trigVoltLevel;
+            this->trigSlope = trigSlope;
+            this->trigger();
+        }
+        void start()
+        {
             errChk( // set up the instrument
                 FDwfAnalogInConfigure(*pHdwf, true, true),
                 __func__, __FILE__, __LINE__
             );
-            return;
         }
-        void record(double buffer[])
+        void record(double buffer1[])
         {
             // read data to an internal buffer
             DwfState sts;
             do {
                 errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf, false, &sts),
+                    FDwfAnalogInStatus(*pHdwf, true, &sts),
                     __func__, __FILE__, __LINE__
                 );
             } while (sts != stsDone);
-            errChk( // set up the instrument
-                FDwfAnalogInStatusData(*pHdwf, channel, buffer, bufferSize),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set up the instrument
-                FDwfAnalogInConfigure(*pHdwf, true, true),
+            errChk( // read store buffer
+                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             return;
         }
-    } Scope;
+        void record(double buffer1[], double buffer2[])
+        {
+            // read data to an internal buffer
+            DwfState sts;
+            do {
+                errChk( // read store buffer status
+                    FDwfAnalogInStatus(*pHdwf, true, &sts),
+                    __func__, __FILE__, __LINE__
+                );
+            } while (sts != stsDone);
+            errChk( // read store buffer
+                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // read store buffer
+                FDwfAnalogInStatusData(*pHdwf, 1, buffer2, bufferSize),
+                __func__, __FILE__, __LINE__
+            );
+            return;
+        }
+    } scope;
 };

@@ -189,7 +189,8 @@ inline void ControlWindow::show(void)
     if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
 #ifdef DAQ
     if(fgFlag)
-        pSettings->pDaq->fg(pSettings->fg1Amp, pSettings->fgFreq, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+        //pSettings->pDaq->fg(pSettings->fg1Amp, pSettings->fgFreq, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+        pSettings->pDaq->fg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
 #endif // DAQ
     ImGui::End();
 }

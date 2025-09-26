@@ -11,7 +11,7 @@
 #include "inicpp.h"
 
 #ifdef DAQ
-#include <daq_dwf.hpp>
+#include <Daq_wf.h>
 #endif // DAQ
 
 constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
@@ -87,7 +87,7 @@ private:
     
 public:
 #ifdef DAQ
-    daq_dwf* pDaq = nullptr;
+    Daq_wf* pDaq = nullptr;
 #endif // DAQ
     // Monitor
     float monitorScale = 1.0f;

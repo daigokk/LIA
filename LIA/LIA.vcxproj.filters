@@ -42,9 +42,6 @@
     <ClCompile Include="GUI\include\IMGUI\implot.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="DAQ\include\daq_dwf.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Gui.h">
