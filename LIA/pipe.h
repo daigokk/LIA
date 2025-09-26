@@ -4,12 +4,14 @@
 #include <string>
 #include <format>
 #include <sstream> // std::istringstream
+#include <cmath>
 
 void pipe(std::stop_token st, Settings* pSettings)
 {
     pSettings->statusPipe = true;
     while (!st.stop_requested())
     {
+        static std::string errcmd;
         bool fgFlag = false;
         std::string cmd;
         float value = 0;
@@ -22,7 +24,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == "reset")
         {
-            pSettings->fgFreq = 100e3f;
+            pSettings->fgFreq = (float)(1.0 / (1000 * pSettings->rawDt));
             pSettings->fg1Amp = 1.0f;
             pSettings->fg2Amp = 0.0f;
             pSettings->fg2Phase = 0.0f;
@@ -39,6 +41,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->limit = 1.5f;
             pSettings->rawLimit = 1.5f;
             pSettings->historySec = 10.0f;
+            errcmd = "";
             fgFlag = true;
         }
         else if (cmd == ":data:txy?")
@@ -73,11 +76,25 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":data:limit")
         {
-            pSettings->limit = value;
+            if (0.01 <= value && value <= RAW_RANGE * 1.2)
+            {
+                pSettings->limit = value;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
+            }
         }
         else if (cmd == ":data:raw:limit")
         {
-            pSettings->rawLimit = value;
+            if (0.1 <= value && value <= RAW_RANGE * 1.2)
+            {
+                pSettings->rawLimit = value;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
+            }
         }
         else if (cmd == ":w1:freq?")
         {
@@ -85,10 +102,16 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w1:freq")
         {
-            if (10e3 <= value && value <= 100e3)
+            double lowLimitFreq = 0.5  / (RAW_SIZE * pSettings->rawDt);
+            double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
+            if (lowLimitFreq <= value && value <= highLimitFreq)
             {
                 pSettings->fgFreq = value;
                 fgFlag = true;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
             }
         }
         else if (cmd == ":w1:volt?")
@@ -97,10 +120,14 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w1:volt")
         {
-            if (0 <= value && value <= 5.0)
+            if (0.0 <= value && value <= 5.0)
             {
                 pSettings->fg1Amp = value;
                 fgFlag = true;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
             }
         }
         else if (cmd == ":w2:volt?")
@@ -109,10 +136,14 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w2:volt")
         {
-            if (0 <= value && value <= 5.0)
+            if (0.0 <= value && value <= 5.0)
             {
                 pSettings->fg2Amp = value;
                 fgFlag = true;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
             }
         }
         else if (cmd == ":w2:phase?")
@@ -130,7 +161,14 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":calc:hp:freq")
         {
-            pSettings->hpFreq = value;
+            if (0.0 <= value && value <= 50.0)
+            {
+                pSettings->hpFreq = value;
+            }
+            else
+            {
+                errcmd = std::format("{} {}", cmd, value);
+            }
         }
         else if (cmd == ":calc:offset:auto:once")
         {
@@ -149,20 +187,36 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             pSettings->offset2Phase = value;
         }
+        else if (cmd == ":error?")
+        {
+            if (errcmd == "")
+            {
+                std::cout << "No error." << std::endl;
+            }
+            else
+            {
+                std::cout << std::format("Last error: '{}'\n", errcmd);
+                errcmd = "";
+            }
+        }
         else if(cmd.find('?'))
         {
-            std::cout << std::format("Error: {}\n" , cmd);
+            std::cout << std::format("Error: '{}'\n", cmd);
+        }
+        else
+        {
+            errcmd = std::format("{} {}", cmd, value);
         }
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)
-            //pSettings->pDaq->fg(
-            //    pSettings->fg1Amp,
-            //    pSettings->fgFreq,
-            //    0.0,
-            //    pSettings->fg2Amp,
-            //    pSettings->fg2Phase);
-            pSettings->pDaq->fg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+        {
+            pSettings->pDaq->fg.start(
+                pSettings->fgFreq,
+                pSettings->fg1Amp, 0.0,
+                pSettings->fg2Amp, pSettings->fg2Phase
+            );
+        }
 #endif // DAQ
     }
     pSettings->statusPipe = false;

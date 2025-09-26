@@ -17,23 +17,6 @@ public:
         char name[256] = { "" };
         char sn[32] = { "" };
     } device;
-    Daq_wf(int idxDevice = 0)
-    {
-        int pcDevice;
-        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
-        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
-
-        //std::cout << device.name << "," << device.sn << std::endl;
-        fg.pHdwf = &device.hdwf;
-        scope.pHdwf = &device.hdwf;
-    }
-    ~Daq_wf()
-    {
-        // close the connection
-        FDwfDeviceClose(device.hdwf);
-    }
     static void errChk(bool ret, const char* func, const char* file, int line)
     {
 #ifndef NODEBUG
@@ -49,6 +32,21 @@ public:
             exit(EXIT_FAILURE);
         }
 #endif
+    }
+    Daq_wf(int idxDevice = 0)
+    {
+        int pcDevice;
+        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
+        errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
+        errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
+        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
+        fg.pHdwf = &device.hdwf;
+        scope.pHdwf = &device.hdwf;
+    }
+    ~Daq_wf()
+    {
+        // close the connection
+        FDwfDeviceClose(device.hdwf);
     }
     void powerSupply(const double volts = 5.0)
     {
@@ -210,7 +208,7 @@ public:
             //std::cout << bufferSize << ", " << SamplingRate << std::endl;
             return;
         }
-        void open(const int channel, const double voltsRange, const int bufferSize, const int SamplingRate)
+        void open(const int channel, const double voltsRange, const int bufferSize, const double SamplingRate)
         {
             this->channel = channel;
             this->voltsRange = voltsRange;

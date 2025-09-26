@@ -26,10 +26,7 @@ int main(int argc, char* argv[])
     std::jthread th_measurement{ measurement, &settings };
     // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
-    if (SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
-        //std::cout << "Thread priority set to highest.\n";
-    }
-    else {
+    if (!SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
         std::cerr << "Failed to set thread priority.\n";
     }
     while (!settings.statusMeasurement);
