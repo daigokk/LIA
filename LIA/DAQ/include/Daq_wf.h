@@ -151,6 +151,17 @@ public:
             this->phaseDeg2 = phaseDeg2;
             this->start();
         }
+        void off()
+        {
+            errChk( // enable channel
+                FDwfAnalogOutNodeEnableSet(*pHdwf, 0, AnalogOutNodeCarrier, false),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // enable channel
+                FDwfAnalogOutNodeEnableSet(*pHdwf, 1, AnalogOutNodeCarrier, false),
+                __func__, __FILE__, __LINE__
+            );
+        }
     } fg;
     class Scope
     {
