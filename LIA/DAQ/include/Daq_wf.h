@@ -1,314 +1,263 @@
 #pragma once
 
-#pragma	comment(lib, "DAQ/lib/dwf.lib")
-#include <iostream>         // needed for input/output
-#include <string>           // needed for error handling
-#include <fstream>          // needed for input/output
-#include <dwf.h>
+#include <array>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <format>
+#include <stdexcept>
+#include <cmath>
+#include <numbers> // For std::numbers::pi
+#include "inicpp.h"
+
+#ifdef DAQ
+#include <Daq_wf.h>
+#endif // DAQ
+
+constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
+constexpr double RAW_DT = 1e-8; // Most fase dt is 1e-8.
+constexpr size_t RAW_SIZE = 5000; // Maximum size of AD2 is 8192.
+constexpr double MEASUREMENT_DT = 2.0e-3;
+constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
+constexpr float XY_HISTORY_SEC = 10.0f;
+constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
 
 
-class Daq_wf
+double conv(std::string str, double defval)
 {
+    try {
+        auto val = std::stod(str); // 例外がスローされる可能性あり
+        return val;
+    }
+    catch (const std::invalid_argument& e) {
+        //std::cerr << e.what() << std::endl;
+    }
+    catch (const std::out_of_range& e) {
+        //std::cerr << e.what() << std::endl;
+    }
+    return defval;
+}
+
+bool convb(std::string str, bool defval)
+{
+    if (str.compare("false") == 0 || str.compare("False") == 0 || str.compare("FALSE") == 0) return false;
+    else if (str.compare("true") == 0 || str.compare("True") == 0 || str.compare("TRUE") == 0) return true;
+    return defval;
+}
+
+class HighPassFilter {
+private:
+    double alpha = 1;  // Filter coefficient
+    double prevInput = 0;  // Previous input sample
+    double prevOutput = 0; // Previous output sample
+    double dt = MEASUREMENT_DT;
 public:
-    struct Device
+    double cutoffFrequency = 0;
+    double process(const double cutoffFrequency, const double input)
     {
-    public:
-        HDWF hdwf = 0;
-        char name[256] = { "" };
-        char sn[32] = { "" };
-    } device;
-    Daq_wf(int idxDevice = 0)
-    {
-        int pcDevice;
-        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
-        errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
-        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
+        if (this->cutoffFrequency != cutoffFrequency)
+        {
+            // Calculate the filter coefficient
+            double rc = 1.0 / (2.0 * std::numbers::pi * cutoffFrequency);
+            alpha = rc / (rc + dt);
+            this->cutoffFrequency = cutoffFrequency;
+        }
+        if (this->cutoffFrequency == 0)
+        {
+            prevInput = input;
+            prevOutput = input;
+            return input;
+        }
+        // Apply the high-pass filter formula
+        double output = alpha * (prevOutput + input - prevInput);
 
-        //std::cout << device.name << "," << device.sn << std::endl;
-        fg.pHdwf = &device.hdwf;
-        scope.pHdwf = &device.hdwf;
-    }
-    ~Daq_wf()
-    {
-        // close the connection
-        FDwfDeviceClose(device.hdwf);
-    }
-    static void errChk(bool ret, const char* func, const char* file, int line)
-    {
-#ifndef NODEBUG
-        static char szError[512] = { 0 };
-        if (!ret) {
-            FDwfGetLastErrorMsg(szError);
-            std::cerr << "\a\n--- DWF error -----------------------------------\n";
-            std::cerr << "Function: " << func << std::endl;
-            std::cerr << "File: " << file << ", " << line << std::endl;
-            std::cerr << szError;
-            std::cerr << "-------------------------------------------------\n";
-            system("PAUSE");
-            exit(EXIT_FAILURE);
-        }
-#endif
-    }
-    void powerSupply(const double volts = 5.0)
-    {
-        bool flag = true;
-        if (volts == 0.0) flag = false;
-        errChk( // set voltage(from 0 to 5 V)
-            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 1, abs(volts)),
-            __func__, __FILE__, __LINE__
-        );
-        errChk( // set voltage(from 0 to -5 V)
-            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 1, -abs(volts)),
-            __func__, __FILE__, __LINE__
-        );
-        errChk( // enable positive supply
-            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 0, flag),
-            __func__, __FILE__, __LINE__
-        );
-        errChk( // enable negative supply
-            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 0, flag),
-            __func__, __FILE__, __LINE__
-        );
-        errChk( // master enable
-            FDwfAnalogIOEnableSet(device.hdwf, flag),
-            __func__, __FILE__, __LINE__
-        );
-    }
-    class Fg
-    {
-    public:
-        HDWF* pHdwf = nullptr;
-        int channel = -1;
-        double frequency = 1e3;
-        double amplitude1 = 1.0;
-        double phaseDeg1 = 0.0;
-        double amplitude2 = 0.0;
-        double phaseDeg2 = 0.0;
-        void start()
-        {
-            errChk( // enable channel
-                FDwfAnalogOutNodeEnableSet(*pHdwf, 0, AnalogOutNodeCarrier, true),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // enable channel
-                FDwfAnalogOutNodeEnableSet(*pHdwf, 1, AnalogOutNodeCarrier, true),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set function type
-                FDwfAnalogOutNodeFunctionSet(*pHdwf, channel, AnalogOutNodeCarrier, funcSine),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set frequency
-                FDwfAnalogOutNodeFrequencySet(*pHdwf, channel, AnalogOutNodeCarrier, frequency),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set amplitude or DC voltage
-                FDwfAnalogOutNodeAmplitudeSet(*pHdwf, 0, AnalogOutNodeCarrier, amplitude1),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set amplitude or DC voltage
-                FDwfAnalogOutNodeAmplitudeSet(*pHdwf, 1, AnalogOutNodeCarrier, amplitude2),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set offset
-                FDwfAnalogOutNodeOffsetSet(*pHdwf, channel, AnalogOutNodeCarrier, 0.0),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set pahse
-                FDwfAnalogOutNodePhaseSet(*pHdwf, 0, AnalogOutNodeCarrier, phaseDeg1),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set pahse
-                FDwfAnalogOutNodePhaseSet(*pHdwf, 1, AnalogOutNodeCarrier, phaseDeg2),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // start signal generation
-                FDwfAnalogOutConfigure(*pHdwf, channel, true),
-                __func__, __FILE__, __LINE__
-            );
-            return;
-        }
-        void start(const double frequency, const double amplitude1, const double phaseDeg1)
-        {
-            this->frequency = frequency;
-            this->amplitude1 = amplitude1;
-            this->phaseDeg1 = phaseDeg1;
-            this->amplitude2 = 0.0;
-            this->phaseDeg2 = 0.0;
-            this->start();
-        }
-        void start(
-            const double frequency,
-            const double amplitude1, const double phaseDeg1,
-            const double amplitude2, const double phaseDeg2
-        )
-        {
-            this->frequency = frequency;
-            this->amplitude1 = amplitude1;
-            this->phaseDeg1 = phaseDeg1;
-            this->amplitude2 = amplitude2;
-            this->phaseDeg2 = phaseDeg2;
-            this->start();
-        }
-        void off()
-        {
-            errChk( // enable channel
-                FDwfAnalogOutNodeEnableSet(*pHdwf, 0, AnalogOutNodeCarrier, false),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // enable channel
-                FDwfAnalogOutNodeEnableSet(*pHdwf, 1, AnalogOutNodeCarrier, false),
-                __func__, __FILE__, __LINE__
-            );
-        }
-    } fg;
-    class Scope
-    {
-    public:
-        HDWF* pHdwf;
-        int channel = -1;
-        double voltsRange = 5.0;
-        int bufferSize = 5000;
-        double SamplingRate = 100e6;
-        double secTimeout = 0.0;
-        TRIGSRC trigSrc = trigsrcAnalogOut1;
-        int trigChannel = 0;
-        TRIGTYPE trigType = trigtypeEdge;
-        double trigVoltLevel = 0.0;
-        DwfTriggerSlope trigSlope = DwfTriggerSlopeRise;
-        void open()
-        {
-            errChk( // enable all channels
-                FDwfAnalogInChannelEnableSet(*pHdwf, channel, true),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set offset voltage(in Volts)
-                FDwfAnalogInChannelOffsetSet(*pHdwf, channel, 0.0),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set range (maximum signal amplitude in Volts)
-                FDwfAnalogInChannelRangeSet(*pHdwf, channel, voltsRange * 2),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set the buffer size per channel (data point in a recording)
-                FDwfAnalogInBufferSizeSet(*pHdwf, bufferSize),
-                __func__, __FILE__, __LINE__
-            );
-            FDwfAnalogInBufferSizeGet(*pHdwf, &bufferSize);
+        // Update previous values
+        prevInput = input;
+        prevOutput = output;
 
-            errChk( // set the acquisition frequency (in Hz)
-                FDwfAnalogInFrequencySet(*pHdwf, SamplingRate),
-                __func__, __FILE__, __LINE__
-            );
-            FDwfAnalogInFrequencyGet(*pHdwf, &SamplingRate);
-            //std::cout << SamplingRate << std::endl;
-            errChk( // disable averaging (for more info check the documentation)
-                FDwfAnalogInChannelFilterSet(*pHdwf, channel, filterDecimate),
-                __func__, __FILE__, __LINE__
-            );
-            //std::cout << bufferSize << ", " << SamplingRate << std::endl;
-            return;
-        }
-        void open(const int channel, const double voltsRange, const int bufferSize, const int SamplingRate)
-        {
-            this->channel = channel;
-            this->voltsRange = voltsRange;
-            this->bufferSize = bufferSize;
-            this->SamplingRate = SamplingRate;
-            this->open();
-        }
-        void trigger()
-        {
-            errChk( // enable/disable auto triggering
-                FDwfAnalogInTriggerAutoTimeoutSet(*pHdwf, secTimeout),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // set trigger source
-                FDwfAnalogInTriggerSourceSet(*pHdwf, trigSrc),
-                __func__, __FILE__, __LINE__
-            );
+        return output;
+    }
+};
 
-            // set trigger channel
-            if (trigSrc != trigsrcAnalogOut1)
+
+class Settings
+{
+private:
+    
+public:
+#ifdef DAQ
+    Daq_wf* pDaq = nullptr;
+#endif // DAQ
+    // Monitor
+    float monitorScale = 1.0f;
+    // Window
+    int windowWidth = 1440;
+    int windowHeight = 960;
+    int windowPosX = 0;
+    int windowPosY = 30;
+    // Fg
+    float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
+    // Scope
+    const double rawDt = RAW_DT;
+    bool flagCh2 = false;
+    // LIA
+    double offset1Phase = 0, offset1X = 0, offset1Y = 0;
+    double offset2Phase = 0, offset2X = 0, offset2Y = 0;
+    HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
+    bool flagAutoOffset = false, flagPause = false;
+    float hpFreq = 0;
+    // Plot
+    double rangeSecTimeSeries = 10.0;
+    float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
+    bool flagSurfaceMode = false, flagBeep = false;
+    volatile bool statusMeasurement = false, statusPipe = false;
+    std::string sn = "SN:XXXXXXXXXX";
+    bool flagRawData2 = false;
+    int nofm = 0, idx = 0, tail = 0, size = 0;
+    std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
+    std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;// , abs1, abs2;
+    int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize;
+    std::array<double, XY_SIZE> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
+    
+
+    Settings()
+    {
+        ini::IniFile liaIni("lia.ini");
+        windowWidth = (int)conv(liaIni["Window"]["windowWidth"].as<std::string>(), windowWidth);
+        windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
+        windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
+        windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
+        fgFreq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
+        float lowLimitFreq = (float)(0.5 / (RAW_SIZE * rawDt));
+        float highLimitFreq = (float)(1.0 / (1000 * rawDt));
+        if (fgFreq < lowLimitFreq) fgFreq = lowLimitFreq;
+        if (fgFreq > highLimitFreq) fgFreq = highLimitFreq;
+        fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
+        fg2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
+        if (fg1Amp < 0.1f) fg1Amp = 0.1f;
+        if (fg1Amp > 5.0f) fg1Amp = 5.0f;
+        if (fg2Amp < 0.0f) fg2Amp = 0.0f;
+        if (fg2Amp > 5.0f) fg2Amp = 5.0f;
+        fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
+        flagCh2 = convb(liaIni["Scope"]["flagCh2"].as<std::string>(), flagCh2);
+        offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
+        offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
+        offset1Y = conv(liaIni["Lia"]["offset1Y"].as<std::string>(), offset1Y);
+        offset2Phase = conv(liaIni["Lia"]["offset2Phase"].as<std::string>(), offset2Phase);
+        offset2X = conv(liaIni["Lia"]["offset2X"].as<std::string>(), offset2X);
+        offset2Y = conv(liaIni["Lia"]["offset2Y"].as<std::string>(), offset2Y);
+        hpFreq = (float)conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
+        rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
+        limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
+        if (limit < 0.0f) limit = 0.0f;
+        if (limit > 5.0f) limit = 5.0f;
+        rawLimit = (float)conv(liaIni["Plot"]["rawLimit"].as<std::string>(), rawLimit);
+        historySec = (float)conv(liaIni["Plot"]["historySec"].as<std::string>(), historySec);
+        flagSurfaceMode = convb(liaIni["Plot"]["flagSurfaceMode"].as<std::string>(), flagSurfaceMode);
+        flagBeep = convb(liaIni["Plot"]["flagBeep"].as<std::string>(), flagBeep);
+
+        for (size_t i = 0; i < rawTime.size(); i++)
+        {
+            rawTime[i] = i * rawDt * 1e6;
+        }
+    }
+    void _AddPoint(const double t)
+    {
+        times[tail] = t;
+        dts[tail] = (times[tail] - times[idx]) * 1e3;
+
+        idx = tail;
+        nofm++;
+        tail = nofm % MEASUREMENT_SIZE;
+        if (nofm <= MEASUREMENT_SIZE) size = nofm;
+
+        xyIdx = xyTail;
+        xyNorm++;
+        xyTail = xyNorm % XY_SIZE;
+        if (xyNorm < XY_SIZE) xySize = xyNorm;
+    }
+    void AddPoint(const double t, const double x, const double y)
+    {   
+        x1s[tail] = hpfX1.process(this->hpFreq, x);
+        y1s[tail] = hpfY1.process(this->hpFreq, y);
+        //abs1[tail] = pow(x1s[tail] * x1s[tail] + y1s[tail] * y1s[tail], 0.5);
+        xy1Xs[xyTail] = x1s[tail];
+        xy1Ys[xyTail] = y1s[tail];
+        this->_AddPoint(t);
+    }
+    void AddPoint(const double t, const double x1, const double y1, const double x2, const double y2)
+    {
+        x1s[tail] = hpfX1.process(this->hpFreq, x1);
+        y1s[tail] = hpfY1.process(this->hpFreq, y1);
+        x2s[tail] = hpfX2.process(this->hpFreq, x2);
+        y2s[tail] = hpfY2.process(this->hpFreq, y2);
+        //abs1[tail] = pow(x1s[tail] * x1s[tail] + y1s[tail] * y1s[tail], 0.5);
+        //abs2[tail] = pow(x2s[tail] * x2s[tail] + y2s[tail] * y2s[tail], 0.5);
+        xy1Xs[xyTail] = x1s[tail];
+        xy1Ys[xyTail] = y1s[tail];
+        xy2Xs[xyTail] = x2s[tail];
+        xy2Ys[xyTail] = y2s[tail];
+        this->_AddPoint(t);
+    }
+    ~Settings()
+    {
+        const char* filepath = "result.csv";
+        std::ofstream outputFile(filepath);
+        if (!outputFile)
+        { // ファイルが開けなかった場合
+            std::cerr << "Fail: " << filepath << std::endl;
+        }
+        if (!flagCh2)
+        {
+            outputFile << "# t(s), x(V), y(V)" << std::endl;
+        }
+        else {
+            outputFile << "# t(s), x1(V), y1(V), x2(V), y2(V)" << std::endl;
+        }
+        size_t _size = this->nofm;
+        size_t offsetIdx = 0;
+        if (_size > this->times.size())
+        {
+            _size = this->times.size();
+            offsetIdx = this->nofm;
+        }
+        for (size_t i = 0; i < _size; i++)
+        {
+            size_t idx = (offsetIdx + i) % this->times.size();
+            if (!flagCh2)
             {
-                if (trigSrc == trigsrcDetectorAnalogIn)
-                {
-                    errChk(
-                        FDwfAnalogInTriggerChannelSet(*pHdwf, trigChannel),
-                        __func__, __FILE__, __LINE__
-                    );
-                }
-                errChk( // set trigger type
-                    FDwfAnalogInTriggerTypeSet(*pHdwf, trigType),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set trigger type
-                    FDwfAnalogInTriggerLevelSet(*pHdwf, trigVoltLevel),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set trigger edge
-                    FDwfAnalogInTriggerConditionSet(*pHdwf, trigSlope),
-                    __func__, __FILE__, __LINE__
-                );
+                outputFile << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
             }
-            return;
+            else {
+                outputFile << std::format("{:e},{:e},{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
+            }
         }
-        void trigger(
-            const double secTimeout, const TRIGSRC trigSrc,
-            const int trigChannel, const TRIGTYPE trigType, const double trigVoltLevel, DwfTriggerSlope trigSlope
-        )
-        {
-            this->secTimeout = secTimeout;
-            this->trigSrc = trigSrc;
-            this->trigChannel = trigChannel;
-            this->trigType = trigType;
-            this->trigVoltLevel = trigVoltLevel;
-            this->trigSlope = trigSlope;
-            this->trigger();
-        }
-        void start()
-        {
-            errChk( // set up the instrument
-                FDwfAnalogInConfigure(*pHdwf, true, true),
-                __func__, __FILE__, __LINE__
-            );
-        }
-        void record(double buffer1[])
-        {
-            // read data to an internal buffer
-            DwfState sts;
-            do {
-                errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf, true, &sts),
-                    __func__, __FILE__, __LINE__
-                );
-            } while (sts != stsDone);
-            errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
-                __func__, __FILE__, __LINE__
-            );
-            return;
-        }
-        void record(double buffer1[], double buffer2[])
-        {
-            // read data to an internal buffer
-            DwfState sts;
-            do {
-                errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf, true, &sts),
-                    __func__, __FILE__, __LINE__
-                );
-            } while (sts != stsDone);
-            errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
-                __func__, __FILE__, __LINE__
-            );
-            errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf, 1, buffer2, bufferSize),
-                __func__, __FILE__, __LINE__
-            );
-            return;
-        }
-    } scope;
+        outputFile.close();
+
+        ini::IniFile liaIni;
+        liaIni["Window"]["windowWidth"] = this->windowWidth;
+        liaIni["Window"]["windowHeight"] = this->windowHeight;
+        liaIni["Window"]["windowPosX"] = this->windowPosX;
+        liaIni["Window"]["windowPosY"] = this->windowPosY;
+        liaIni["Fg"]["fgFreq"] = this->fgFreq;
+        liaIni["Fg"]["fg1Amp"] = this->fg1Amp;
+        liaIni["Fg"]["fg2Amp"] = this->fg2Amp;
+        liaIni["Scope"]["flagCh2"] = this->flagCh2;
+        liaIni["Fg"]["fg2Phase"] = this->fg2Phase;
+        liaIni["Lia"]["offset1Phase"] = this->offset1Phase;
+        liaIni["Lia"]["offset1X"] = this->offset1X;
+        liaIni["Lia"]["offset1Y"] = this->offset1Y;
+        liaIni["Lia"]["offset2Phase"] = this->offset2Phase;
+        liaIni["Lia"]["offset2X"] = this->offset2X;
+        liaIni["Lia"]["offset2Y"] = this->offset2Y;
+        liaIni["Lia"]["hpFreq"] = this->hpFreq;
+        liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
+        liaIni["Plot"]["limit"] = this->limit;
+        liaIni["Plot"]["rawLimit"] = this->rawLimit;
+        liaIni["Plot"]["historySec"] = this->historySec;
+        liaIni["Plot"]["flagSurfaceMode"] = this->flagSurfaceMode;
+        liaIni["Plot"]["flagBeep"] = this->flagBeep;
+        liaIni.save("lia.ini");
+    }
 };
