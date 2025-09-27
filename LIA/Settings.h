@@ -110,7 +110,7 @@ public:
     // Plot
     double rangeSecTimeSeries = 10.0;
     float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
-    bool flagSurfaceMode = false, flagBeep = false;
+    bool flagSurfaceMode = false, flagBeep = false, flagACFM = false;
     volatile bool statusMeasurement = false, statusPipe = false;
     std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
@@ -156,6 +156,7 @@ public:
         historySec = (float)conv(liaIni["Plot"]["historySec"].as<std::string>(), historySec);
         flagSurfaceMode = convb(liaIni["Plot"]["flagSurfaceMode"].as<std::string>(), flagSurfaceMode);
         flagBeep = convb(liaIni["Plot"]["flagBeep"].as<std::string>(), flagBeep);
+        flagACFM = convb(liaIni["Plot"]["flagACFM"].as<std::string>(), flagACFM);
 
         for (size_t i = 0; i < rawTime.size(); i++)
         {
@@ -255,6 +256,7 @@ public:
         liaIni["Plot"]["historySec"] = this->historySec;
         liaIni["Plot"]["flagSurfaceMode"] = this->flagSurfaceMode;
         liaIni["Plot"]["flagBeep"] = this->flagBeep;
+        liaIni["Plot"]["flagACFM"] = this->flagACFM;
         liaIni.save("lia.ini");
     }
 };

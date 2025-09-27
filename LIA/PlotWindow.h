@@ -273,8 +273,8 @@ public:
 
 inline void ACFMPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(975 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(525 * pSettings->monitorScale, 575 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(730 * pSettings->monitorScale, 300 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     if (pSettings->flagSurfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);

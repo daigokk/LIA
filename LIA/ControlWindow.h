@@ -84,7 +84,6 @@ inline void ControlWindow::show(void)
         }
         ImGui::EndTabBar();
     }
-    //ImGui::Separator();
     bool stateCh2 = pSettings->flagCh2;
     if (ImGui::BeginTabBar("Plot window"))
     {
@@ -151,9 +150,20 @@ inline void ControlWindow::show(void)
         if (!stateAutoOffset) ImGui::EndDisabled();
     }
     ImGui::Separator();
+    
+    bool stateACFM = false;
+    if (pSettings->flagACFM)
+    {
+        stateACFM = true;
+        pSettings->flagCh2 = true;
+        ImGui::BeginDisabled();
+    }
     ImGui::Checkbox("Ch2", &pSettings->flagCh2);
+    if (stateACFM) ImGui::EndDisabled();
     ImGui::SameLine();
     ImGui::Checkbox("Beep", &pSettings->flagBeep);
+    ImGui::SameLine();
+    ImGui::Checkbox("ACFM", &pSettings->flagACFM);
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {

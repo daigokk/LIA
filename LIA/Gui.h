@@ -121,7 +121,7 @@ public:
         this->timeChartWindow->show();
         this->deltaTimeChartWindow->show();
         this->controlWindow->show();
-        //this->acfmPlotWindow->show();
+        if (pSettings->flagACFM) this->acfmPlotWindow->show();
         ImGui::PopStyleColor();
     };
 };
@@ -200,6 +200,7 @@ inline bool Gui::initImGui()
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
+    //ImGui::StyleColorsLight();
 
     // Setup scaling
     ImGuiStyle& style = ImGui::GetStyle();
