@@ -3,7 +3,7 @@
 ## Overview 🔍
   - This software is a Windows-based software Lock-In Amplifier (LIA) designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
   - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
-  - This technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
+  - The principle of this technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
@@ -28,7 +28,7 @@
   - 🎛️ Dual-channel lock-in detection
     - Analyze two signals simultaneously with high precision.
   - ⚡ Ideal for high-frequency applications
-    - Supports up to 100 kHz reference frequency.
+    - Supports up to 100 kHz (100MS/s) reference frequency.
   - 🚀 Not slow
     - Default sampling period is 2 ms. The measured sampling period for the default setting is shown below.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms
@@ -86,7 +86,7 @@
   - For information about ECT, please refer to [an old document created by Hocking NDT](https://www.scribd.com/doc/48834808/An-Introduction-to-Eddy-Current-Theory-and-technology) or the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
-## 🐍 Python Integration
+## Python Integration 🐍
   - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
   ```
   import subprocess
