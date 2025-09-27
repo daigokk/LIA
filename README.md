@@ -28,7 +28,7 @@
   - 🎛️ Dual-channel lock-in detection
     - Analyze two signals simultaneously with high precision.
   - ⚡ Ideal for high-frequency applications
-    - Supports up to 100 kHz reference frequency.
+    - Supports up to 100 kHz (100MS/s) reference frequency.
   - 🚀 Not slow
     - Default sampling period is 2 ms. The measured sampling period for the default setting is shown below.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.04 ms
