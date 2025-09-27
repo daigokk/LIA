@@ -86,7 +86,7 @@
   - For information about ECT, please refer to [an old document created by Hocking NDT](https://www.scribd.com/doc/48834808/An-Introduction-to-Eddy-Current-Theory-and-technology) or the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
-## 🐍 Python Integration
+## Python Integration 🐍
   - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
   ```
   import subprocess
