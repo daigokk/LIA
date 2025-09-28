@@ -129,8 +129,8 @@ inline void TimeChartWindow::show()
         if (!pSettings->flagPause)
         {
             ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         }
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)

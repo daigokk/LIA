@@ -100,12 +100,13 @@ inline void ControlWindow::show(void)
                 if (0.1f < pSettings->limit && pSettings->limit < 0.2f) pSettings->limit = 0.2f;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
+            if (pSettings->flagPause) { ImGui::BeginDisabled(); }
             ImGui::InputDouble("Ch1 Phase(Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
-            
             if (!stateCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::InputDouble("Ch2 Phase(Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::EndDisabled(); }
+            if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
         }
         ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
@@ -113,6 +114,7 @@ inline void ControlWindow::show(void)
     }
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(200.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
+    if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
         pSettings->flagAutoOffset = true;
     }
@@ -129,6 +131,7 @@ inline void ControlWindow::show(void)
         pSettings->offset2X = 0.0f; pSettings->offset2Y = 0.0f;
     }
     if (!stateAutoOffset) ImGui::EndDisabled();
+    if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::SameLine();
     ImGui::Dummy(ImVec2(1.0f * pSettings->monitorScale, 0.0f));
     ImGui::SameLine();
@@ -165,11 +168,13 @@ inline void ControlWindow::show(void)
     ImGui::SameLine();
     ImGui::Checkbox("ACFM", &pSettings->flagACFM);
     ImGui::SetNextItemWidth(nextItemWidth);
+    if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
         if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
         if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
     }
+    if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::Separator();
     if (ImGui::TreeNode("Monitor"))
     {
