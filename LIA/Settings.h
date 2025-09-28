@@ -95,7 +95,7 @@ public:
     int windowPosX = 0;
     int windowPosY = 30;
     // Fg
-    float fgFreq = 100e3, fg1Amp = 1.0, fg2Amp = 0.0, fg2Phase = 0.0;
+    float w1Freq = 100e3, w1Amp = 1.0, w1Phase=0.0, w2Freq = w1Freq, w2Amp = 0.0, w2Phase = 0.0;
     // Scope
     const double rawDt = RAW_DT;
     bool flagCh2 = false;
@@ -126,18 +126,18 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
-        fgFreq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), fgFreq);
+        w1Freq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), w1Freq);
         float lowLimitFreq = (float)(0.5 / (RAW_SIZE * rawDt));
         float highLimitFreq = (float)(1.0 / (1000 * rawDt));
-        if (fgFreq < lowLimitFreq) fgFreq = lowLimitFreq;
-        if (fgFreq > highLimitFreq) fgFreq = highLimitFreq;
-        fg1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), fg1Amp);
-        fg2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), fg2Amp);
-        if (fg1Amp < 0.1f) fg1Amp = 0.1f;
-        if (fg1Amp > 5.0f) fg1Amp = 5.0f;
-        if (fg2Amp < 0.0f) fg2Amp = 0.0f;
-        if (fg2Amp > 5.0f) fg2Amp = 5.0f;
-        fg2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), fg2Phase);
+        if (w1Freq < lowLimitFreq) w1Freq = lowLimitFreq;
+        if (w1Freq > highLimitFreq) w1Freq = highLimitFreq;
+        w1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), w1Amp);
+        w2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), w2Amp);
+        if (w1Amp < 0.1f) w1Amp = 0.1f;
+        if (w1Amp > 5.0f) w1Amp = 5.0f;
+        if (w2Amp < 0.0f) w2Amp = 0.0f;
+        if (w2Amp > 5.0f) w2Amp = 5.0f;
+        w2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), w2Phase);
         flagCh2 = convb(liaIni["Scope"]["flagCh2"].as<std::string>(), flagCh2);
         offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
         offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
@@ -236,11 +236,11 @@ public:
         liaIni["Window"]["windowHeight"] = this->windowHeight;
         liaIni["Window"]["windowPosX"] = this->windowPosX;
         liaIni["Window"]["windowPosY"] = this->windowPosY;
-        liaIni["Fg"]["fgFreq"] = this->fgFreq;
-        liaIni["Fg"]["fg1Amp"] = this->fg1Amp;
-        liaIni["Fg"]["fg2Amp"] = this->fg2Amp;
+        liaIni["Fg"]["fgFreq"] = this->w1Freq;
+        liaIni["Fg"]["fg1Amp"] = this->w1Amp;
+        liaIni["Fg"]["fg2Amp"] = this->w2Amp;
         liaIni["Scope"]["flagCh2"] = this->flagCh2;
-        liaIni["Fg"]["fg2Phase"] = this->fg2Phase;
+        liaIni["Fg"]["fg2Phase"] = this->w2Phase;
         liaIni["Lia"]["offset1Phase"] = this->offset1Phase;
         liaIni["Lia"]["offset1X"] = this->offset1X;
         liaIni["Lia"]["offset1Y"] = this->offset1Y;

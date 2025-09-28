@@ -79,7 +79,7 @@ public:
         HDWF* pHdwf = nullptr;
         int channel = -1;
         FUNC func1 = funcSine, func2 = funcSine;
-        double frequency = 1e3;
+        double frequency1 = 1e3, frequency2 = 1e3;
         double amplitude1 = 1.0, amplitude2 = 0.0;
         double phaseDeg1 = 0.0, phaseDeg2 = 0.0;
         double rgdData1[5000], rgdData2[5000];
@@ -110,7 +110,11 @@ public:
                 FDwfAnalogOutNodeDataSet(*pHdwf, 1, AnalogOutNodeCarrier, rgdData2, 5000);
             }
             errChk( // set frequency
-                FDwfAnalogOutNodeFrequencySet(*pHdwf, channel, AnalogOutNodeCarrier, frequency),
+                FDwfAnalogOutNodeFrequencySet(*pHdwf, 0, AnalogOutNodeCarrier, frequency1),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set frequency
+                FDwfAnalogOutNodeFrequencySet(*pHdwf, 1, AnalogOutNodeCarrier, frequency2),
                 __func__, __FILE__, __LINE__
             );
             errChk( // set amplitude or DC voltage
@@ -141,7 +145,7 @@ public:
         }
         void start(const double frequency, const double amplitude1, const double phaseDeg1)
         {
-            this->frequency = frequency;
+            this->frequency1 = frequency;
             this->amplitude1 = amplitude1;
             this->phaseDeg1 = phaseDeg1;
             this->amplitude2 = 0.0;
@@ -149,14 +153,14 @@ public:
             this->start();
         }
         void start(
-            const double frequency,
-            const double amplitude1, const double phaseDeg1,
-            const double amplitude2, const double phaseDeg2
+            const double frequency1, const double amplitude1, const double phaseDeg1,
+            const double frequency2, const double amplitude2, const double phaseDeg2
         )
         {
-            this->frequency = frequency;
+            this->frequency1 = frequency1;
             this->amplitude1 = amplitude1;
             this->phaseDeg1 = phaseDeg1;
+            this->frequency2 = frequency2;
             this->amplitude2 = amplitude2;
             this->phaseDeg2 = phaseDeg2;
             this->start();

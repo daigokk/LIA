@@ -13,12 +13,12 @@ public:
     Psd(Settings* pSettings)
     {
         this->pSettings = pSettings;
-        oldFreq = pSettings->fgFreq;
+        oldFreq = pSettings->w1Freq;
         init();
     }
     void init()
     {
-        oldFreq = pSettings->fgFreq;
+        oldFreq = pSettings->w1Freq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
         //#pragma omp parallel for
@@ -30,7 +30,7 @@ public:
     }
     void calc(const double t)
     {
-        if (oldFreq != pSettings->fgFreq) init();
+        if (oldFreq != pSettings->w1Freq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
         if (!pSettings->flagCh2)
         {

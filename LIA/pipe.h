@@ -25,10 +25,10 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == "reset")
         {
-            pSettings->fgFreq = (float)(1.0 / (1000 * pSettings->rawDt));
-            pSettings->fg1Amp = 1.0f;
-            pSettings->fg2Amp = 0.0f;
-            pSettings->fg2Phase = 0.0f;
+            pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
+            pSettings->w1Amp = 1.0f;
+            pSettings->w2Amp = 0.0f;
+            pSettings->w2Phase = 0.0f;
             pSettings->flagCh2 = false;
             pSettings->offset1Phase = 0.0;
             pSettings->offset1X = 0.0;
@@ -99,7 +99,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w1:freq?")
         {
-            std::cout << pSettings->fgFreq << std::endl;
+            std::cout << pSettings->w1Freq << std::endl;
         }
         else if (cmd == ":w1:freq")
         {
@@ -107,7 +107,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
             if (lowLimitFreq <= value && value <= highLimitFreq)
             {
-                pSettings->fgFreq = value;
+                pSettings->w1Freq = value;
                 fgFlag = true;
             }
             else
@@ -117,13 +117,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w1:volt?")
         {
-            std::cout << pSettings->fg1Amp << std::endl;
+            std::cout << pSettings->w1Amp << std::endl;
         }
         else if (cmd == ":w1:volt")
         {
             if (0.0 <= value && value <= 5.0)
             {
-                pSettings->fg1Amp = value;
+                pSettings->w1Amp = value;
                 fgFlag = true;
             }
             else
@@ -133,13 +133,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w2:volt?")
         {
-            std::cout << pSettings->fg2Amp << std::endl;
+            std::cout << pSettings->w2Amp << std::endl;
         }
         else if (cmd == ":w2:volt")
         {
             if (0.0 <= value && value <= 5.0)
             {
-                pSettings->fg2Amp = value;
+                pSettings->w2Amp = value;
                 fgFlag = true;
             }
             else
@@ -149,11 +149,11 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == ":w2:phase?")
         {
-            std::cout << pSettings->fg2Phase << std::endl;
+            std::cout << pSettings->w2Phase << std::endl;
         }
         else if (cmd == ":w2:phase")
         {
-            pSettings->fg2Phase = value;
+            pSettings->w2Phase = value;
             fgFlag = true;
         }
         else if (cmd == ":calc:hp:freq?")
@@ -215,9 +215,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         if (fgFlag)
         {
             pSettings->pDaq->awg.start(
-                pSettings->fgFreq,
-                pSettings->fg1Amp, 0.0,
-                pSettings->fg2Amp, pSettings->fg2Phase
+                pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
+                pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
             );
         }
 #endif // DAQ

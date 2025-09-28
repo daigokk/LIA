@@ -65,7 +65,10 @@ void measurement(std::stop_token st, Settings* pSettings)
 #else
     Daq_dwf daq;
     daq.powerSupply(5.0);
-    daq.awg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+    daq.awg.start(
+        pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
+        pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
+    );
     daq.scope.open(-1, RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
