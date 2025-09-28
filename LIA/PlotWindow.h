@@ -189,7 +189,7 @@ private:
 inline void TimeChartZoomWindow::show()
 {
     static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(750 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
