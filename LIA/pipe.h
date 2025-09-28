@@ -26,8 +26,10 @@ void pipe(std::stop_token st, Settings* pSettings)
         else if (cmd == "reset")
         {
             pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
+            pSettings->w2Freq = pSettings->w1Freq;
             pSettings->w1Amp = 1.0f;
             pSettings->w2Amp = 0.0f;
+            pSettings->w1Phase = 0.0f;
             pSettings->w2Phase = 0.0f;
             pSettings->flagCh2 = false;
             pSettings->offset1Phase = 0.0;
@@ -39,6 +41,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->hpFreq = 0.0f;
             pSettings->flagSurfaceMode = false;
             pSettings->flagBeep = false;
+            pSettings->flagACFM = false;
             pSettings->limit = 1.5f;
             pSettings->rawLimit = 1.5f;
             pSettings->historySec = 10.0f;
