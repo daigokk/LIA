@@ -149,7 +149,9 @@ inline void TimeChartWindow::show()
         {
             if (flag)
             {
-                *pTimeChartZoomRect = ImPlotRect(pSettings->times[pSettings->idx] - pSettings->historySec / 10, pSettings->times[pSettings->idx], -pSettings->limit / 2, pSettings->limit / 2);
+                *pTimeChartZoomRect = ImPlotRect(
+                    pSettings->times[pSettings->idx] - pSettings->historySec / 2 - pSettings->historySec / 20,
+                    pSettings->times[pSettings->idx] - pSettings->historySec / 2 + pSettings->historySec / 20, -pSettings->limit / 2, pSettings->limit / 2);
                 flag = false;
             }
             static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None;
