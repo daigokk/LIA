@@ -52,9 +52,11 @@ private:
     Wave* waves[9];
 public:
 	bool initialized = true;
+    ImPlotRect timeChartZoomRect;
     ControlWindow* controlWindow = nullptr;
     RawPlotWindow* rawPlotWindow = nullptr;
     TimeChartWindow* timeChartWindow = nullptr;
+    TimeChartZoomWindow* timeChartZoomWindow = nullptr;
     DeltaTimeChartWindow* deltaTimeChartWindow = nullptr;
     XYPlotWindow* xyPlotWindow = nullptr;
     ACFMPlotWindow* acfmPlotWindow = nullptr;
@@ -67,7 +69,8 @@ public:
         this->initBeep();
         this->controlWindow = new ControlWindow(this->window, pSettings);
         this->rawPlotWindow = new RawPlotWindow(this->window, pSettings);
-        this->timeChartWindow = new TimeChartWindow(this->window, pSettings);
+        this->timeChartWindow = new TimeChartWindow(this->window, pSettings, &timeChartZoomRect);
+        this->timeChartZoomWindow = new TimeChartZoomWindow(this->window, pSettings, &timeChartZoomRect);
         this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, pSettings);
         this->xyPlotWindow = new XYPlotWindow(this->window, pSettings);
         this->acfmPlotWindow = new ACFMPlotWindow(this->window, pSettings);
@@ -122,6 +125,12 @@ public:
         this->deltaTimeChartWindow->show();
         this->controlWindow->show();
         if (pSettings->flagACFM) this->acfmPlotWindow->show();
+        if (pSettings->flagPause)
+        {
+            ImGui::PopStyleColor();
+            this->timeChartZoomWindow->show();
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
+        }
         ImGui::PopStyleColor();
     };
 };

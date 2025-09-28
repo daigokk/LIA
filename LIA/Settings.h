@@ -83,8 +83,6 @@ public:
 
 class Settings
 {
-private:
-    
 public:
 #ifdef DAQ
     Daq_wf* pDaq = nullptr;

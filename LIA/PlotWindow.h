@@ -88,14 +88,16 @@ inline void RawPlotWindow::show()
 class TimeChartWindow : public ImGuiWindowBase
 {
 public:
-    TimeChartWindow(GLFWwindow* window, Settings* pSettings)
+    TimeChartWindow(GLFWwindow* window, Settings* pSettings, ImPlotRect* pTimeChartZoomRect)
         : ImGuiWindowBase(window, "Time chart")
     {
         this->pSettings = pSettings;
+        this->pTimeChartZoomRect = pTimeChartZoomRect;
     }
     void show(void);
 private:
     Settings* pSettings;
+    ImPlotRect* pTimeChartZoomRect;
 };
 
 inline void TimeChartWindow::show()
@@ -117,7 +119,7 @@ inline void TimeChartWindow::show()
     }
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
-    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
+    //ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
@@ -129,8 +131,79 @@ inline void TimeChartWindow::show()
         if (!pSettings->flagPause)
         {
             ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
         }
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::PlotLine(
+            "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
+            pSettings->size, 0, pSettings->tail, sizeof(double)
+        );
+        if (pSettings->flagCh2)
+        {
+            ImPlot::PlotLine(
+                "Ch2y", &(pSettings->times[0]), &(pSettings->y2s[0]),
+                pSettings->size, 0, pSettings->tail, sizeof(double)
+            );
+        }
+        static bool flag = true;
+        if (pSettings->flagPause)
+        {
+            if (flag)
+            {
+                *pTimeChartZoomRect = ImPlotRect(pSettings->times[pSettings->idx] - pSettings->historySec / 10, pSettings->times[pSettings->idx], -pSettings->limit / 2, pSettings->limit / 2);
+                flag = false;
+            }
+            static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None;
+            bool clicked = false;
+            bool hovered = false;
+            bool held = false;
+            ImPlot::DragRect(
+                0, &pTimeChartZoomRect->X.Min, &pTimeChartZoomRect->Y.Min, 
+                &pTimeChartZoomRect->X.Max, &pTimeChartZoomRect->Y.Max, 
+                ImVec4(1, 0, 1, 1), flags, &clicked, &hovered, &held
+            );
+        }
+        else {
+            flag=true;
+        }
+        ImPlot::EndPlot();
+    }
+    //ImPlot::PopStyleColor();
+    ImGui::End();
+}
+
+class TimeChartZoomWindow : public ImGuiWindowBase
+{
+public:
+    TimeChartZoomWindow(GLFWwindow* window, Settings* pSettings, ImPlotRect* pTimeChartZoomRect)
+        : ImGuiWindowBase(window, "Time chart zoom")
+    {
+        this->pSettings = pSettings;
+        this->pTimeChartZoomRect = pTimeChartZoomRect;
+    }
+    void show(void);
+private:
+    Settings* pSettings;
+    ImPlotRect* pTimeChartZoomRect;
+};
+
+inline void TimeChartZoomWindow::show()
+{
+    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 0 * pSettings->monitorScale);
+    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::Begin(this->name);
+    // プロット描画
+    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
+        double t = pSettings->times[pSettings->idx];
+        ImPlot::SetupAxes("Time (s)", "v (V)", 0, 0);
+        if (pSettings->limit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("Time (s)", "v (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
+        ImPlot::SetupAxisLimits(ImAxis_X1, pTimeChartZoomRect->X.Min, pTimeChartZoomRect->X.Max, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, pTimeChartZoomRect->Y.Min, pTimeChartZoomRect->Y.Max, ImGuiCond_Always);
         ImPlot::PlotLine(
             "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)
@@ -144,7 +217,6 @@ inline void TimeChartWindow::show()
         }
         ImPlot::EndPlot();
     }
-    ImPlot::PopStyleColor();
     ImGui::End();
 }
 
@@ -227,7 +299,6 @@ inline void XYPlotWindow::show()
         if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
     }
     // プロット描画
-    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         if (pSettings->limit <= MILI_VOLT)
@@ -281,7 +352,6 @@ inline void XYPlotWindow::show()
         }
         ImPlot::EndPlot();
     }
-    ImPlot::PopStyleColor();
     ImGui::End();
     if (pSettings->flagSurfaceMode)
         ImGui::PopStyleColor();
@@ -328,7 +398,6 @@ inline void ACFMPlotWindow::show()
         if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
     }
     // プロット描画
-    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Bz (V)", "Bx (V)", 0, 0);
         if (pSettings->limit <= MILI_VOLT)
@@ -347,7 +416,6 @@ inline void ACFMPlotWindow::show()
         ImPlot::PopStyleColor();
         ImPlot::EndPlot();
     }
-    ImPlot::PopStyleColor();
     ImGui::End();
     
 }
