@@ -63,9 +63,9 @@ void measurement(std::stop_token st, Settings* pSettings)
 #ifndef DAQ
     std::cout << "Not connect to AD." << std::endl;
 #else
-    Daq_wf daq;
+    Daq_dwf daq;
     daq.powerSupply(5.0);
-    daq.fg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
+    daq.awg.start(pSettings->fgFreq, pSettings->fg1Amp, 0.0, pSettings->fg2Amp, pSettings->fg2Phase);
     daq.scope.open(-1, RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);

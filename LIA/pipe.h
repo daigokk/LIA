@@ -214,7 +214,7 @@ void pipe(std::stop_token st, Settings* pSettings)
 #ifdef DAQ
         if (fgFlag)
         {
-            pSettings->pDaq->fg.start(
+            pSettings->pDaq->awg.start(
                 pSettings->fgFreq,
                 pSettings->fg1Amp, 0.0,
                 pSettings->fg2Amp, pSettings->fg2Phase

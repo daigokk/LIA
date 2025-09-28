@@ -7,7 +7,7 @@
 #include <dwf.h>
 
 
-class Daq_wf
+class Daq_dwf
 {
 public:
     struct Device
@@ -33,17 +33,17 @@ public:
         }
 #endif
     }
-    Daq_wf(int idxDevice = 0)
+    Daq_dwf(int idxDevice = 0)
     {
         int pcDevice;
         errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
         errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
-        fg.pHdwf = &device.hdwf;
+        awg.pHdwf = &device.hdwf;
         scope.pHdwf = &device.hdwf;
     }
-    ~Daq_wf()
+    ~Daq_dwf()
     {
         // close the connection
         FDwfDeviceClose(device.hdwf);
@@ -73,16 +73,16 @@ public:
             __func__, __FILE__, __LINE__
         );
     }
-    class Fg
+    class Awg
     {
     public:
         HDWF* pHdwf = nullptr;
         int channel = -1;
+        FUNC func1 = funcSine, func2 = funcSine;
         double frequency = 1e3;
-        double amplitude1 = 1.0;
-        double phaseDeg1 = 0.0;
-        double amplitude2 = 0.0;
-        double phaseDeg2 = 0.0;
+        double amplitude1 = 1.0, amplitude2 = 0.0;
+        double phaseDeg1 = 0.0, phaseDeg2 = 0.0;
+        double rgdData1[5000], rgdData2[5000];
         void start()
         {
             errChk( // enable channel
@@ -94,9 +94,21 @@ public:
                 __func__, __FILE__, __LINE__
             );
             errChk( // set function type
-                FDwfAnalogOutNodeFunctionSet(*pHdwf, channel, AnalogOutNodeCarrier, funcSine),
+                FDwfAnalogOutNodeFunctionSet(*pHdwf, 0, AnalogOutNodeCarrier, func1),
                 __func__, __FILE__, __LINE__
             );
+            errChk( // set function type
+                FDwfAnalogOutNodeFunctionSet(*pHdwf, 1, AnalogOutNodeCarrier, func2),
+                __func__, __FILE__, __LINE__
+            );
+            if (func1 == funcCustom)
+            {
+                FDwfAnalogOutNodeDataSet(*pHdwf, 0, AnalogOutNodeCarrier, rgdData1, 5000);
+            }
+            if (func2 == funcCustom)
+            {
+                FDwfAnalogOutNodeDataSet(*pHdwf, 1, AnalogOutNodeCarrier, rgdData2, 5000);
+            }
             errChk( // set frequency
                 FDwfAnalogOutNodeFrequencySet(*pHdwf, channel, AnalogOutNodeCarrier, frequency),
                 __func__, __FILE__, __LINE__
@@ -160,7 +172,7 @@ public:
                 __func__, __FILE__, __LINE__
             );
         }
-    } fg;
+    } awg;
     class Scope
     {
     public:
@@ -202,10 +214,9 @@ public:
             FDwfAnalogInFrequencyGet(*pHdwf, &SamplingRate);
             //std::cout << SamplingRate << std::endl;
             errChk( // disable averaging (for more info check the documentation)
-                FDwfAnalogInChannelFilterSet(*pHdwf, channel, filterDecimate),
+                FDwfAnalogInChannelFilterSet(*pHdwf, channel, filterAverageFit),
                 __func__, __FILE__, __LINE__
             );
-            //std::cout << bufferSize << ", " << SamplingRate << std::endl;
             return;
         }
         void open(const int channel, const double voltsRange, const int bufferSize, const double SamplingRate)

@@ -85,7 +85,7 @@ class Settings
 {
 public:
 #ifdef DAQ
-    Daq_wf* pDaq = nullptr;
+    Daq_dwf* pDaq = nullptr;
 #endif // DAQ
     // Monitor
     float monitorScale = 1.0f;
