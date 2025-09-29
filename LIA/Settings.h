@@ -128,6 +128,7 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
+        ImGui_Thema = (int)conv(liaIni["ImGui"]["ImGui_Thema"].as<std::string>(), ImGui_Thema);
         w1Freq = (float)conv(liaIni["Awg"]["w1Freq"].as<std::string>(), w1Freq);
         float lowLimitFreq = (float)(0.5 / (RAW_SIZE * rawDt));
         float highLimitFreq = (float)(1.0 / (1000 * rawDt));
@@ -239,6 +240,7 @@ public:
         liaIni["Window"]["windowHeight"] = this->windowHeight;
         liaIni["Window"]["windowPosX"] = this->windowPosX;
         liaIni["Window"]["windowPosY"] = this->windowPosY;
+        liaIni["ImGui"]["ImGui_Thema"] = this->ImGui_Thema;
         liaIni["Awg"]["w1Freq"] = this->w1Freq;
         liaIni["Awg"]["w1Amp"] = this->w1Amp;
         liaIni["Awg"]["w2Amp"] = this->w2Amp;
