@@ -106,7 +106,7 @@ public:
     bool flagAutoOffset = false, flagPause = false;
     float hpFreq = 0;
     // Plot
-    double rangeSecTimeSeries = 10.0;
+    //double rangeSecTimeSeries = 10.0;
     float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
     bool flagSurfaceMode = false, flagBeep = false, flagACFM = false;
     volatile bool statusMeasurement = false, statusPipe = false;
@@ -126,18 +126,19 @@ public:
         windowHeight = (int)conv(liaIni["Window"]["windowHeight"].as<std::string>(), windowHeight);
         windowPosX = (int)conv(liaIni["Window"]["windowPosX"].as<std::string>(), windowPosX);
         windowPosY = (int)conv(liaIni["Window"]["windowPosY"].as<std::string>(), windowPosY);
-        w1Freq = (float)conv(liaIni["Fg"]["fgFreq"].as<std::string>(), w1Freq);
+        w1Freq = (float)conv(liaIni["Awg"]["w1Freq"].as<std::string>(), w1Freq);
         float lowLimitFreq = (float)(0.5 / (RAW_SIZE * rawDt));
         float highLimitFreq = (float)(1.0 / (1000 * rawDt));
         if (w1Freq < lowLimitFreq) w1Freq = lowLimitFreq;
         if (w1Freq > highLimitFreq) w1Freq = highLimitFreq;
-        w1Amp = (float)conv(liaIni["Fg"]["fg1Amp"].as<std::string>(), w1Amp);
-        w2Amp = (float)conv(liaIni["Fg"]["fg2Amp"].as<std::string>(), w2Amp);
+        this->w2Freq = this->w1Freq;
+        w1Amp = (float)conv(liaIni["Awg"]["w1Amp"].as<std::string>(), w1Amp);
+        w2Amp = (float)conv(liaIni["Awg"]["w2Amp"].as<std::string>(), w2Amp);
         if (w1Amp < 0.1f) w1Amp = 0.1f;
         if (w1Amp > 5.0f) w1Amp = 5.0f;
         if (w2Amp < 0.0f) w2Amp = 0.0f;
         if (w2Amp > 5.0f) w2Amp = 5.0f;
-        w2Phase = (float)conv(liaIni["Fg"]["fg2Phase"].as<std::string>(), w2Phase);
+        w2Phase = (float)conv(liaIni["Awg"]["w2Phase"].as<std::string>(), w2Phase);
         flagCh2 = convb(liaIni["Scope"]["flagCh2"].as<std::string>(), flagCh2);
         offset1Phase = conv(liaIni["Lia"]["offset1Phase"].as<std::string>(), offset1Phase);
         offset1X = conv(liaIni["Lia"]["offset1X"].as<std::string>(), offset1X);
@@ -146,7 +147,7 @@ public:
         offset2X = conv(liaIni["Lia"]["offset2X"].as<std::string>(), offset2X);
         offset2Y = conv(liaIni["Lia"]["offset2Y"].as<std::string>(), offset2Y);
         hpFreq = (float)conv(liaIni["Lia"]["hpFreq"].as<std::string>(), hpFreq);
-        rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
+        //rangeSecTimeSeries = conv(liaIni["Plot"]["Measurement_rangeSecTimeSeries"].as<std::string>(), rangeSecTimeSeries);
         limit = (float)conv(liaIni["Plot"]["limit"].as<std::string>(), limit);
         if (limit < 0.0f) limit = 0.0f;
         if (limit > 5.0f) limit = 5.0f;
@@ -236,11 +237,11 @@ public:
         liaIni["Window"]["windowHeight"] = this->windowHeight;
         liaIni["Window"]["windowPosX"] = this->windowPosX;
         liaIni["Window"]["windowPosY"] = this->windowPosY;
-        liaIni["Fg"]["fgFreq"] = this->w1Freq;
-        liaIni["Fg"]["fg1Amp"] = this->w1Amp;
-        liaIni["Fg"]["fg2Amp"] = this->w2Amp;
+        liaIni["Awg"]["w1Freq"] = this->w1Freq;
+        liaIni["Awg"]["w1Amp"] = this->w1Amp;
+        liaIni["Awg"]["w2Amp"] = this->w2Amp;
+        liaIni["Awg"]["w2Phase"] = this->w2Phase; 
         liaIni["Scope"]["flagCh2"] = this->flagCh2;
-        liaIni["Fg"]["fg2Phase"] = this->w2Phase;
         liaIni["Lia"]["offset1Phase"] = this->offset1Phase;
         liaIni["Lia"]["offset1X"] = this->offset1X;
         liaIni["Lia"]["offset1Y"] = this->offset1Y;
@@ -248,7 +249,7 @@ public:
         liaIni["Lia"]["offset2X"] = this->offset2X;
         liaIni["Lia"]["offset2Y"] = this->offset2Y;
         liaIni["Lia"]["hpFreq"] = this->hpFreq;
-        liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
+        //liaIni["Plot"]["Measurement_rangeSecTimeSeries"] = this->rangeSecTimeSeries;
         liaIni["Plot"]["limit"] = this->limit;
         liaIni["Plot"]["rawLimit"] = this->rawLimit;
         liaIni["Plot"]["historySec"] = this->historySec;

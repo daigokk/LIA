@@ -191,13 +191,13 @@ inline void ControlWindow::show(void)
     ImGui::SameLine();
     ImGui::Checkbox("ACFM", &pSettings->flagACFM);
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (pSettings->flagPause) { ImGui::BeginDisabled(); }
+    //if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
         if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
         if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
     }
-    if (pSettings->flagPause) { ImGui::EndDisabled(); }
+    //if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::Separator();
     if (ImGui::TreeNode("Monitor"))
     {

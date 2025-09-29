@@ -16,7 +16,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::string cmd;
         float value = 0;
         std::getline(std::cin, cmd);
-        if (cmd.length() == 0) continue; // ‹ó”’‚ª‘—‚ç‚ê‚½Žž‚Í–³Ž‹
+        if (cmd.length() == 0) continue; // ‹ó”’‚ðŽóM‚µ‚½Žž‚Í–³Ž‹
         std::istringstream iss(cmd);
         iss >> cmd >> value;
         if (cmd == "end")

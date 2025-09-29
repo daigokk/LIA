@@ -119,7 +119,7 @@ inline void TimeChartWindow::show()
     }
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
-    //ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 背景を透明に
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
@@ -169,7 +169,7 @@ inline void TimeChartWindow::show()
         }
         ImPlot::EndPlot();
     }
-    //ImPlot::PopStyleColor();
+    ImPlot::PopStyleColor();
     ImGui::End();
 }
 
@@ -196,6 +196,7 @@ inline void TimeChartZoomWindow::show()
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
     // プロット描画
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time (s)", "v (V)", 0, 0);
@@ -219,6 +220,7 @@ inline void TimeChartZoomWindow::show()
         }
         ImPlot::EndPlot();
     }
+    ImPlot::PopStyleColor();
     ImGui::End();
 }
 
@@ -301,6 +303,7 @@ inline void XYPlotWindow::show()
         if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
     }
     // プロット描画
+    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
         if (pSettings->limit <= MILI_VOLT)
@@ -354,6 +357,7 @@ inline void XYPlotWindow::show()
         }
         ImPlot::EndPlot();
     }
+    ImPlot::PopStyleColor();
     ImGui::End();
     if (pSettings->flagSurfaceMode)
         ImGui::PopStyleColor();

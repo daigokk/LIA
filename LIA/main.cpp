@@ -90,12 +90,12 @@ void measurement(std::stop_token st, Settings* pSettings)
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
-            double wt = 2 * std::numbers::pi * pSettings->fgFreq * i * pSettings->rawDt;
+            double wt = 2 * std::numbers::pi * pSettings->w1Freq * i * pSettings->rawDt;
 
-            pSettings->rawData1[i] = pSettings->fg1Amp * std::sin(wt - phase);
+            pSettings->rawData1[i] = pSettings->w1Amp * std::sin(wt - phase);
             if (pSettings->flagCh2)
             {
-                pSettings->rawData2[i] = pSettings->fg2Amp * std::sin(wt - pSettings->fg2Phase);
+                pSettings->rawData2[i] = pSettings->w2Amp * std::sin(wt - pSettings->w2Phase);
             }
         }
 #else
