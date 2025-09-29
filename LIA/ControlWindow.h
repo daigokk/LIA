@@ -225,6 +225,9 @@ inline void ControlWindow::show(void)
     ImGui::Separator(); 
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
     if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
+    ImGui::SameLine();
+    const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
+    ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 1);
 #ifdef DAQ
     if (fgFlag)
     {

@@ -94,6 +94,8 @@ public:
     int windowHeight = 960;
     int windowPosX = 0;
     int windowPosY = 30;
+    // ImGui
+    int ImGui_Thema = 0;
     // Fg
     float w1Freq = 100e3, w1Amp = 1.0, w1Phase=0.0, w2Freq = w1Freq, w2Amp = 0.0, w2Phase = 0.0;
     // Scope

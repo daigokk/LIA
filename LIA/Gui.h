@@ -87,6 +87,10 @@ public:
         glfwTerminate();
     }
     bool initGLFW();
+    void ImGui_SetGrayTheme();
+    void ImGui_SetNeonBlueTheme(); 
+    void ImGui_SetNeonGreenTheme();
+    void ImGui_SetNeonRedTheme();
     bool initImGui();
     void initBeep();
     void deleteBeep();
@@ -95,6 +99,20 @@ public:
     bool windowShouldClose(void) { return glfwWindowShouldClose(this->window); };
 	void pollEvents(void)
     {
+        // Setup Dear ImGui style
+        static int thema = 0;
+        if (thema != pSettings->ImGui_Thema)
+        {
+            thema = pSettings->ImGui_Thema;
+            if (thema == 0) ImGui::StyleColorsDark(); // Default
+            else if (thema == 1) ImGui::StyleColorsClassic();
+            else if (thema == 2) ImGui::StyleColorsLight();
+            else if (thema == 3) this->ImGui_SetGrayTheme();
+            else if (thema == 4) this->ImGui_SetNeonBlueTheme();
+            else if (thema == 5) this->ImGui_SetNeonGreenTheme();
+            else if (thema == 6) this->ImGui_SetNeonRedTheme();
+        }
+
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -195,6 +213,188 @@ inline bool Gui::initGLFW()
     return true;
 }
 
+inline void Gui::ImGui_SetGrayTheme()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+
+    // 背景とウィンドウ
+    colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+    colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
+
+    // ボーダーとフレーム
+    colors[ImGuiCol_Border] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+
+    // ボタン
+    colors[ImGuiCol_Button] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+
+    // スライダーとチェックボックス
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.40f, 0.40f, 0.90f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.50f, 0.50f, 0.95f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(0.60f, 0.60f, 0.90f, 1.00f);
+
+    // タブ
+    colors[ImGuiCol_Tab] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+    colors[ImGuiCol_TabHovered] = ImVec4(0.38f, 0.38f, 0.38f, 1.00f);
+    colors[ImGuiCol_TabActive] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
+
+    // スタイル設定（角丸やパディングなど）
+    style.WindowRounding = 5.0f;
+    style.FrameRounding = 4.0f;
+    style.ScrollbarRounding = 6.0f;
+    style.GrabRounding = 4.0f;
+}
+
+inline void Gui::ImGui_SetNeonBlueTheme()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+
+    style.Colors;
+
+    // タイトルバーの色設定（青系ネオン）
+    colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.30f, 0.50f, 1.00f); // 非アクティブ時
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.80f, 1.00f, 1.00f); // アクティブ時
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.20f, 0.35f, 1.00f); // 折りたたみ時
+
+    // 背景：ダークネイビー
+    colors[ImGuiCol_WindowBg] = ImVec4(0.02f, 0.05f, 0.10f, 1.00f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.03f, 0.06f, 0.12f, 1.00f);
+    colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.08f, 0.15f, 1.00f);
+
+    // フレームとボーダー：ブルーグロー
+    colors[ImGuiCol_Border] = ImVec4(0.00f, 0.70f, 1.00f, 0.60f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.00f, 0.30f, 0.50f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.00f, 0.50f, 0.80f, 1.00f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.00f, 0.70f, 1.00f, 1.00f);
+
+    // ボタン：ネオンブルー
+    colors[ImGuiCol_Button] = ImVec4(0.00f, 0.40f, 0.70f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.00f, 0.60f, 1.00f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.00f, 0.80f, 1.00f, 1.00f);
+
+    // スライダーとチェック：エレクトリックブルー
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.00f, 0.80f, 1.00f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.90f, 1.00f, 1.00f);
+
+    // タブ：ブルーグラデーション
+    colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.30f, 0.50f, 1.00f);
+    colors[ImGuiCol_TabHovered] = ImVec4(0.00f, 0.60f, 0.90f, 1.00f);
+    colors[ImGuiCol_TabActive] = ImVec4(0.00f, 0.80f, 1.00f, 1.00f);
+
+    // スタイル：シャープで近未来的な印象
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScrollbarRounding = 4.0f;
+    style.TabRounding = 3.0f;
+    style.FramePadding = ImVec2(6, 4);
+    style.ItemSpacing = ImVec2(8, 6);
+}
+
+inline void Gui::ImGui_SetNeonGreenTheme()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+
+    // タイトルバーの色設定（緑系ネオン）
+    colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.40f, 0.20f, 1.00f); // 非アクティブ時
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.80f, 0.40f, 1.00f); // アクティブ時
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.25f, 0.12f, 1.00f); // 折りたたみ時
+
+    // 背景：ダークグリーン系
+    colors[ImGuiCol_WindowBg] = ImVec4(0.02f, 0.08f, 0.05f, 1.00f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.03f, 0.10f, 0.06f, 1.00f);
+    colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.12f, 0.08f, 1.00f);
+
+    // フレームとボーダー：ネオングリーンの輝き
+    colors[ImGuiCol_Border] = ImVec4(0.00f, 1.00f, 0.50f, 0.60f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.00f, 0.40f, 0.20f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.00f, 0.60f, 0.30f, 1.00f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.00f, 0.80f, 0.40f, 1.00f);
+
+    // ボタン：鮮やかなグリーン
+    colors[ImGuiCol_Button] = ImVec4(0.00f, 0.60f, 0.30f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.00f, 0.80f, 0.40f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.00f, 1.00f, 0.50f, 1.00f);
+
+    // スライダーとチェック：エレクトリックグリーン
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.00f, 1.00f, 0.60f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.20f, 1.00f, 0.70f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 1.00f, 0.50f, 1.00f);
+
+    // タブ：グリーングラデーション
+    colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.40f, 0.20f, 1.00f);
+    colors[ImGuiCol_TabHovered] = ImVec4(0.00f, 0.70f, 0.35f, 1.00f);
+    colors[ImGuiCol_TabActive] = ImVec4(0.00f, 0.90f, 0.45f, 1.00f);
+
+    // スタイル：シャープで近未来的な印象
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScrollbarRounding = 4.0f;
+    style.TabRounding = 3.0f;
+    style.FramePadding = ImVec2(6, 4);
+    style.ItemSpacing = ImVec2(8, 6);
+}
+
+inline void Gui::ImGui_SetNeonRedTheme()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+
+    // タイトルバーの色設定（赤系ネオン）
+    colors[ImGuiCol_TitleBg] = ImVec4(0.40f, 0.00f, 0.00f, 1.00f); // 通常
+    colors[ImGuiCol_TitleBgActive] = ImVec4(1.00f, 0.20f, 0.20f, 1.00f); // アクティブ時
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.30f, 0.00f, 0.00f, 1.00f); // 折りたたみ時
+
+    // 背景：ダークグレー〜ブラック
+    colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.08f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_PopupBg] = ImVec4(0.10f, 0.04f, 0.04f, 1.00f);
+
+    // フレームとボーダー：赤い光の縁取り
+    colors[ImGuiCol_Border] = ImVec4(1.00f, 0.20f, 0.20f, 0.60f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.40f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.60f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.80f, 0.00f, 0.00f, 1.00f);
+
+    // ボタン：ネオンレッド
+    colors[ImGuiCol_Button] = ImVec4(0.80f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(1.00f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(1.00f, 0.40f, 0.40f, 1.00f);
+
+    // スライダーとチェック：エレクトリックレッド
+    colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 0.30f, 0.30f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(1.00f, 0.50f, 0.50f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 0.40f, 0.40f, 1.00f);
+
+    // タブ：赤いグラデーション
+    colors[ImGuiCol_Tab] = ImVec4(0.50f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_TabHovered] = ImVec4(0.80f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_TabActive] = ImVec4(1.00f, 0.20f, 0.20f, 1.00f);
+
+    // スタイル：シャープでエッジの効いた印象
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 3.0f;
+    style.ScrollbarRounding = 4.0f;
+    style.TabRounding = 3.0f;
+    style.FramePadding = ImVec2(6, 4);
+    style.ItemSpacing = ImVec2(8, 6);
+}
+
 inline bool Gui::initImGui()
 {
     // Setup Dear ImGui context
@@ -207,10 +407,8 @@ inline bool Gui::initImGui()
     ImGui::PushFont(myFont);
 
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
-    //ImGui::StyleColorsLight();
-
+    //ImGui::StyleColorsDark(); // Default
+    
     // Setup scaling
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(pSettings->monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
