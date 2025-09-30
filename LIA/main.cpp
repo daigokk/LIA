@@ -20,9 +20,7 @@ void measurement(std::stop_token st, Settings* pSettings);
 int main(int argc, char* argv[])
 {
     std::ios::sync_with_stdio(false); // For speed of std::cout and cin
-    Settings settings;
-    Gui gui(&settings);
-    if (gui.initialized == false) return -1;
+    static Settings settings;
     std::jthread th_measurement{ measurement, &settings };
     // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
@@ -39,6 +37,8 @@ int main(int argc, char* argv[])
             while (!settings.statusPipe);
         }
     }
+    Gui gui(&settings);
+    if (gui.initialized == false) return -1;
     while (!gui.windowShouldClose())
     {
         if (settings.statusMeasurement == false) break;
@@ -73,7 +73,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pSettings->pDaq = &daq;
     pSettings->sn = daq.device.sn;
-    timer.sleepFor(1.5);
+    timer.sleepFor(0.5);
     daq.scope.start();
 #endif // DAQ
     timer.start();
