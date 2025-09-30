@@ -63,7 +63,7 @@ inline void ControlWindow::show(void)
             ImGui::SetNextItemWidth(nextItemWidth);
             static float oldW1Phase = pSettings->w1Phase;
             ImGui::BeginDisabled();
-            if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->w1Phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->w1Phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
@@ -99,7 +99,7 @@ inline void ControlWindow::show(void)
                 }
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat("Phase (Deg.)", &(pSettings->w2Phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->w2Phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
@@ -124,10 +124,10 @@ inline void ControlWindow::show(void)
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-            ImGui::InputDouble("Ch1 Phase(Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch1 ƒÆ(Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble("Ch2 Phase(Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch2 ƒÆ(Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::EndDisabled(); }
             if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
