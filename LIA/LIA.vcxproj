@@ -117,6 +117,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>14750000</StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -146,6 +147,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>14750000</StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
