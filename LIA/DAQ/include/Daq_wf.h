@@ -33,7 +33,37 @@ public:
         }
 #endif
     }
-    Daq_dwf(int idxDevice = 0)
+    static int getIdxDevice(const std::string sn)
+    {
+        int pcDevice;
+        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
+        for (int i = 0; i < pcDevice; i++)
+        {
+            char szSN[32] = { "" };
+            errChk(FDwfEnumSN(i, szSN), __func__, __FILE__, __LINE__);
+            if (sn == szSN) return i;
+        }
+        return -1;
+	}
+    static int getPcDevice()
+    {
+        int pcDevice;
+        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
+        return pcDevice;
+	}
+    static int getIdxFirstEnabledDevice()
+    {
+        int pcDevice;
+        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
+        for (int i = 0; i < pcDevice; i++)
+        {
+            int flag;
+            errChk(FDwfEnumDeviceIsOpened(i, &flag), __func__, __FILE__, __LINE__);
+            if (flag) return i;
+        }
+        return -1;
+    }
+    void init(int idxDevice)
     {
         int pcDevice;
         errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
@@ -42,6 +72,20 @@ public:
         errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
         awg.pHdwf = &device.hdwf;
         scope.pHdwf = &device.hdwf;
+    }
+    Daq_dwf()
+    {
+		int idxDevice = getIdxFirstEnabledDevice();
+        if (idxDevice == -1)
+        {
+            std::cerr << "No AD is connected." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+		init(idxDevice);
+    }
+    Daq_dwf(int idxDevice)
+    {
+        init(idxDevice);
     }
     ~Daq_dwf()
     {

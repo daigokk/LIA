@@ -20,6 +20,12 @@ void measurement(std::stop_token st, Settings* pSettings);
 int main(int argc, char* argv[])
 {
     std::ios::sync_with_stdio(false); // For std::cout and cin
+    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
+    if (adIdx == -1)
+    {
+        std::cerr << "No AD is connected." << std::endl;
+        return -1;
+    }
     static Settings settings;
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
@@ -61,7 +67,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     static Psd psd(pSettings);
     Timer timer;
 #ifndef DAQ
-    std::cout << "Not connect to AD." << std::endl;
+    std::cout << "Without AD mode." << std::endl;
 #else
     Daq_dwf daq;
     daq.powerSupply(5.0);
