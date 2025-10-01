@@ -210,6 +210,8 @@ inline bool Gui::initGLFW()
 
     /* Make the window's context current */
     glfwMakeContextCurrent(this->window);
+    /* Enable VSync */
+    glfwSwapInterval(1);
     return true;
 }
 
