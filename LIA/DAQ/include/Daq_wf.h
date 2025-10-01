@@ -3,7 +3,7 @@
 #pragma	comment(lib, "DAQ/lib/dwf.lib")
 #include <iostream>         // needed for input/output
 #include <string>           // needed for error handling
-#include <fstream>          // needed for input/output
+//#include <fstream>          // needed for input/output
 #include <dwf.h>
 
 
