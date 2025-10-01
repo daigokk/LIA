@@ -20,12 +20,14 @@ void measurement(std::stop_token st, Settings* pSettings);
 int main(int argc, char* argv[])
 {
     std::ios::sync_with_stdio(false); // For std::cout and cin
+#ifdef DAQ
     int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
     if (adIdx == -1)
     {
         std::cerr << "No AD is connected." << std::endl;
         return -1;
     }
+#endif // DAQ
     static Settings settings;
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
