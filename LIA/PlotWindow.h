@@ -5,6 +5,18 @@
 
 #define MILI_VOLT 0.2f
 
+const ImVec4 colors[] = {
+        ImVec4(1,0,0,1),   // Red
+        ImVec4(0,1,0,1),   // Green
+        ImVec4(0,0,1,1),   // Blue
+        ImVec4(1,1,0,1),   // Yellow
+        ImVec4(1,0,1,1),    // Magenta
+        ImVec4(1,0.645f,0,1),    // Orange
+        ImVec4(0xea / 256.0, 0xa2 / 256.0, 0x22 / 256.0, 1),    // Marigold
+        ImVec4(0xfb / 256.0, 0xbd / 256.0, 0x04 / 256.0, 1),    // Amber
+        ImVec4(0xb0 / 256.0, 0xfc / 256.0, 0x38 / 256.0, 1)   // Chartreuse
+};
+
 void ScientificFormatter(double value, char* buff, int size, void*) {
     snprintf(buff, size, "%.1e", value); // 科学的記法で表示
 }
@@ -333,27 +345,18 @@ inline void XYPlotWindow::show()
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
         }
-        if (!pSettings->flagCh2)
+        ImPlot::PopStyleColor();
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[2], -1.0f, colors[2]);
+        ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
+        if (pSettings->flagCh2)
         {
-            ImPlot::PopStyleColor();
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
-            ImPlot::PopStyleColor();
-        }
-        else {
-            ImPlot::PopStyleColor();
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale);
-            ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
-            ImPlot::PopStyleColor();
-
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
             ImPlot::PlotLine("Ch2", pSettings->xy2Xs.data(), pSettings->xy2Ys.data(),
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale);
-            ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
             ImPlot::PopStyleColor();
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[7], -1.0f, colors[7]);
+            ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         }
         ImPlot::EndPlot();
     }
@@ -418,8 +421,9 @@ inline void ACFMPlotWindow::show()
         ImPlot::PlotLine("##ACFM", &(pSettings->xy1Ys[0]), &(pSettings->xy2Ys[0]),
             pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
         );
-        ImPlot::PlotScatter("##NOW", &(pSettings->xy1Ys[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         ImPlot::PopStyleColor();
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[8], -1.0f, colors[8]);
+        ImPlot::PlotScatter("##NOW", &(pSettings->xy1Ys[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         ImPlot::EndPlot();
     }
     ImGui::End();
