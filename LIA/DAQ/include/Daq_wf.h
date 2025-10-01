@@ -33,11 +33,15 @@ public:
         }
 #endif
     }
-    static int getIdxDevice(const std::string sn)
+    static int getPcDevice()
     {
         int pcDevice;
         errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        for (int i = 0; i < pcDevice; i++)
+        return pcDevice;
+    }
+    static int getIdxDevice(const std::string sn)
+    {
+        for (int i = 0; i < getPcDevice(); i++)
         {
             char szSN[32] = { "" };
             errChk(FDwfEnumSN(i, szSN), __func__, __FILE__, __LINE__);
@@ -45,28 +49,18 @@ public:
         }
         return -1;
 	}
-    static int getPcDevice()
-    {
-        int pcDevice;
-        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        return pcDevice;
-	}
     static int getIdxFirstEnabledDevice()
     {
-        int pcDevice;
-        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
-        for (int i = 0; i < pcDevice; i++)
+        for (int i = 0; i < getPcDevice(); i++)
         {
             int flag;
             errChk(FDwfEnumDeviceIsOpened(i, &flag), __func__, __FILE__, __LINE__);
-            if (flag) return i;
+            if (!flag) return i;
         }
         return -1;
     }
     void init(int idxDevice)
     {
-        int pcDevice;
-        errChk(FDwfEnum(enumfilterAll, &pcDevice), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
         errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
