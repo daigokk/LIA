@@ -178,7 +178,8 @@ inline bool Gui::initGLFW()
     pSettings->monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
 
     if (monitorWidth == 2880 && monitorHeight == 1824)
-    {
+	{ // Surface Pro 7
+        pSettings->ImGuiWindowFlag = ImGuiCond_Always;
         this->window = glfwCreateWindow(
             monitorWidth, 1920,
             "Lock-in amplifier", glfwGetPrimaryMonitor(), NULL);

@@ -42,8 +42,8 @@ inline void RawPlotWindow::show()
 {
     static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0 * pSettings->monitorScale);
     static ImVec2 windowSize = ImVec2(430 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
     ImGui::Begin(this->name);
     
     if (ImGui::Button("Save"))
@@ -116,8 +116,8 @@ inline void TimeChartWindow::show()
 {
     static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     static ImVec2 windowSize = ImVec2(990 * pSettings->monitorScale, 360 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     ImGui::SliderFloat("History", &pSettings->historySec, 1, historySecMax, "%5.1f s");
@@ -253,8 +253,8 @@ inline void DeltaTimeChartWindow::show()
 {
     static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 750 * pSettings->monitorScale);
     static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 210 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT)*pSettings->times.size();
     static float historySec = 10;
@@ -294,9 +294,9 @@ inline void XYPlotWindow::show()
     static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
     if (pSettings->flagSurfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
-    ImGui::Begin(this->name, nullptr, ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag); //ImGui::GetIO().DisplaySize
+    ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     if (ImGui::Button("Clear"))
     {

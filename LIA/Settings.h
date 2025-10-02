@@ -94,6 +94,7 @@ public:
     int windowHeight = 960;
     int windowPosX = 0;
     int windowPosY = 30;
+    int ImGuiWindowFlag = 4;// ImGuiCond_FirstUseEver
     // ImGui
     int ImGui_Thema = 0;
     // Fg

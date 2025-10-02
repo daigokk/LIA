@@ -24,8 +24,8 @@ inline void ControlWindow::show(void)
     bool fgFlag = false;
     static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 920 * pSettings->monitorScale);
     static float nextItemWidth = 170.0f * pSettings->monitorScale;
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(0, 0), pSettings->ImGuiWindowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
     ImGui::Begin(this->name);
     ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", pSettings->sn.data());
@@ -229,6 +229,20 @@ inline void ControlWindow::show(void)
     ImGui::SetNextItemWidth(nextItemWidth);
     const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
     ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 1);
+	static int ImGuiWindowFlagPosDefault = pSettings->ImGuiWindowFlag;
+    if (ImGuiWindowFlagPosDefault != ImGuiCond_Always)
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Window"))
+        {
+            pSettings->ImGuiWindowFlag = ImGuiCond_Always;
+        }
+        else {
+            pSettings->ImGuiWindowFlag = ImGuiWindowFlagPosDefault;
+        }
+    }
+    
+    
 #ifdef DAQ
     if (fgFlag)
     {
