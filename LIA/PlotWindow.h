@@ -408,10 +408,10 @@ inline void ACFMPlotWindow::show()
     }
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        ImPlot::SetupAxes("Bz (V)", "Bx (V)", 0, 0);
+        ImPlot::SetupAxes("Vbz (V)", "Vbx (V)", 0, 0);
         if (pSettings->limit <= MILI_VOLT)
         {
-            ImPlot::SetupAxes("x (mV)", "y (mV)", 0, 0);
+            ImPlot::SetupAxes("Vbz (mV)", "Vbx (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }

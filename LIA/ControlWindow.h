@@ -29,6 +29,8 @@ inline void ControlWindow::show(void)
     ImGui::Begin(this->name);
     ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", pSettings->sn.data());
+	ImGui::SameLine();
+    if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
     if (ImGui::BeginTabBar("Awg"))
     {
         static float lowLimitFreqkHz = (float)(0.5 * 1e-3 / (RAW_SIZE * pSettings->rawDt));
@@ -224,8 +226,6 @@ inline void ControlWindow::show(void)
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator(); 
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
-    if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
-    ImGui::SameLine();
     ImGui::SetNextItemWidth(nextItemWidth);
     const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
     ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 1);
