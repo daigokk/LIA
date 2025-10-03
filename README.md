@@ -1,4 +1,4 @@
-# LIA: Dual-Channel Software Lock-in Amplifier with Digilent Analog Discovery
+# LIA: Dual-Channel Real-time Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## Overview 🔍
   - This software is a Windows-based software Lock-In Amplifier (LIA) designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
