@@ -18,12 +18,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::getline(std::cin, cmd);
         if (cmd.length() == 0) continue; // 空白を受信した時は無視
         std::istringstream iss(cmd);
+        cmd = std::tolower(c);
         iss >> cmd >> value;
         if (cmd == "end")
         {
             break;
         }
-        else if (cmd == "reset" || cmd == "*RST" || cmd == "*rst")
+        else if (cmd == "reset" cmd == "*rst")
         {
             pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
             pSettings->w2Freq = pSettings->w1Freq;
@@ -48,7 +49,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             errcmd = "";
             fgFlag = true;
         }
-        else if (cmd == "*IDN?" || cmd == "*idn?")
+        else if (cmd == "*idn?")
         {
             std::cout << std::format("Digilent,{},{}\n", pSettings->pDaq->device.name, pSettings->pDaq->device.sn);
         }
