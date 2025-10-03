@@ -50,7 +50,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (cmd == "*idn?" || cmd == "*IDN?")
         {
-            std::cout << std::format("Digilent,{},{}", pSettings->pDaq->device.name, pSettings->pDaq->device.sn);
+            std::cout << std::format("Digilent,{},{}\n", pSettings->pDaq->device.name, pSettings->pDaq->device.sn);
         }
         else if (cmd == "error?")
         {
