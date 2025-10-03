@@ -1,8 +1,8 @@
 # LIA: Dual-Channel Real-time Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## Overview 🔍
-  - This software is a Windows-based software Lock-In Amplifier (LIA) designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
-  - The LIA, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), is an instrument that measures the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
+  - This software is a Windows-based software Lock-in Amplifier designed for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research, education, and experimental applications in measurement engineering.
+  - Hardware Lock-in Amplifiers, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), are instruments that measure the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - The principle of this technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
 
@@ -22,6 +22,7 @@
         *pY /= this->size;
     }
     ```
+    - This software, LIA, is a well-balanced solution that addresses the need for “dedicated hardware being too expensive, while building from scratch in Python is too difficult.”
     - The Digilent Waveforms includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). The author recommends verifying the original functionality before using this software.
 
 ## Features ✨
