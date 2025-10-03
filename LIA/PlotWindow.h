@@ -48,30 +48,7 @@ inline void RawPlotWindow::show()
     
     if (ImGui::Button("Save"))
     {
-        const char* filepath = "raw.csv";
-        std::ofstream outputFile(filepath);
-        if (!outputFile)
-        { // ファイルが開けなかった場合
-            std::cerr << "Fail: " << filepath << std::endl;
-        }
-        if (!pSettings->flagCh2)
-        {
-            outputFile << "# t(s), ch1(V))" << std::endl;
-        }
-        else {
-            outputFile << "# t(s), ch1(V), ch2(V)" << std::endl;
-        }
-        for (size_t i = 0; i < pSettings->rawData1.size(); i++)
-        {
-            if (!pSettings->flagCh2)
-            {
-                outputFile << std::format("{:e},{:e},{:e}\n", pSettings->rawDt*i, pSettings->rawData1[i]);
-            }
-            else {
-                outputFile << std::format("{:e},{:e},{:e}\n", pSettings->rawDt * i, pSettings->rawData1[i], pSettings->rawData2[i]);
-            }
-        }
-        outputFile.close();
+		pSettings->saveRawData();
     }
     //ImGui::SameLine();
     ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");

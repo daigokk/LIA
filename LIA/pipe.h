@@ -2,6 +2,7 @@
 #include "Settings.h"
 #include <iostream>
 #include <string>
+#include <algorithm> // std::transform
 #include <format>
 #include <sstream> // std::istringstream
 #include <cmath>
@@ -13,16 +14,20 @@ void pipe(std::stop_token st, Settings* pSettings)
     {
         static std::string errcmd = "";
         bool fgFlag = false;
-        std::string cmd;
+        std::string cmd, argument;
         float value = 0;
         std::getline(std::cin, cmd);
         if (cmd.length() == 0) continue; // 空白を受信した時は無視
+        std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower); // コマンドを小文字に変換
         std::istringstream iss(cmd);
-        iss >> cmd >> value;
-        if (cmd == "end")
-        {
-            break;
+        iss >> cmd >> argument;
+        try {
+            value = std::stof(argument);
         }
+        catch (...) {
+            value = 0;
+        }
+        if (cmd == "end" || cmd == "exit" || cmd == "quit") { break; }
         else if (cmd == "reset" || cmd == "*rst")
         {
             pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
@@ -64,6 +69,42 @@ void pipe(std::stop_token st, Settings* pSettings)
                 errcmd = "";
             }
         }
+        else if (cmd == "pause")
+        {
+            pSettings->flagPause = true;
+        }
+        else if (cmd == "run")
+        {
+            pSettings->flagPause = false;
+        }
+        else if (cmd == ":data:raw:save")
+        {
+            bool flag = false;
+            if (argument.length() > 0) { flag = pSettings->saveRawData(argument.c_str()); }
+            else { flag = pSettings->saveRawData(); }
+            if (!flag) { errcmd = std::format("{} {}", cmd, argument); }
+        }
+        else if (cmd == ":data:raw:size?")
+        {
+            std::cout << pSettings->rawData1.size() << std::endl;
+        }
+        else if (cmd == ":data:raw?")
+        {
+            if (!pSettings->flagCh2)
+            {
+                for (size_t i = 0; i < pSettings->rawData1.size(); i++)
+                {
+                    std::cout << std::format("{:e},{:e}\n", pSettings->rawDt * i, pSettings->rawData1[i]);
+                }
+            }
+            else
+            {
+                for (size_t i = 0; i < pSettings->rawData1.size(); i++)
+                {
+                    std::cout << std::format("{:e},{:e},{:e}\n", pSettings->rawDt * i, pSettings->rawData1[i], pSettings->rawData2[i]);
+                }
+            }
+        }
         else if (cmd == ":data:txy?")
         {
             size_t idx = pSettings->idx;
@@ -86,35 +127,21 @@ void pipe(std::stop_token st, Settings* pSettings)
                 pSettings->y2s[idx]
             );
         }
-        else if (cmd == ":data:ch2:on")
+        else if (cmd == ":chan2:disp")
         {
-            pSettings->flagCh2 = true;
+            if(argument == "on")            pSettings->flagCh2 = true;
+            else if(argument == "off")      pSettings->flagCh2 = false;
+			else                            errcmd = std::format("{} {}", cmd, argument);
         }
-        else if (cmd == ":data:ch2:off")
+        else if (cmd == ":disp:xy:limit")
         {
-            pSettings->flagCh2 = false;
+            if (0.01 <= value && value <= RAW_RANGE * 1.2) { pSettings->limit = value; }
+            else { errcmd = std::format("{} {}", cmd, value); }
         }
-        else if (cmd == ":data:limit")
+        else if (cmd == ":disp:raw:limit")
         {
-            if (0.01 <= value && value <= RAW_RANGE * 1.2)
-            {
-                pSettings->limit = value;
-            }
-            else
-            {
-                errcmd = std::format("{} {}", cmd, value);
-            }
-        }
-        else if (cmd == ":data:raw:limit")
-        {
-            if (0.1 <= value && value <= RAW_RANGE * 1.2)
-            {
-                pSettings->rawLimit = value;
-            }
-            else
-            {
-                errcmd = std::format("{} {}", cmd, value);
-            }
+            if (0.1 <= value && value <= RAW_RANGE * 1.2) { pSettings->rawLimit = value; }
+            else { errcmd = std::format("{} {}", cmd, value); }
         }
         else if (cmd == ":w1:freq?")
         {
@@ -175,6 +202,19 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->w2Phase = value;
             fgFlag = true;
         }
+        else if (cmd == ":calc:offset:auto:once")
+        {
+            pSettings->flagAutoOffset = true;
+        }
+        else if (cmd == ":calc:offset:state")
+        {
+            if (argument == "on") { pSettings->flagAutoOffset = true; }
+            else if (argument == "off")
+            {
+				pSettings->offset1X = 0; pSettings->offset1Y = 0;
+                pSettings->offset2X = 0; pSettings->offset2Y = 0;
+            }
+        }
         else if (cmd == ":calc:hp:freq?")
         {
             std::cout << pSettings->hpFreq << std::endl;
@@ -190,20 +230,11 @@ void pipe(std::stop_token st, Settings* pSettings)
                 errcmd = std::format("{} {}", cmd, value);
             }
         }
-        else if (cmd == ":calc:offset:auto:once")
-        {
-            pSettings->flagAutoOffset = true;
-        }
-        else if (cmd == ":calc:offset:off")
-        {
-            pSettings->offset1X = 0; pSettings->offset1Y = 0;
-            pSettings->offset2X = 0; pSettings->offset2Y = 0;
-        }
-        else if (cmd == ":phase1:offset")
+        else if (cmd == ":calc1:offset:phase")
         {
             pSettings->offset1Phase = value;
         }
-        else if (cmd == ":phase2:offset")
+        else if (cmd == ":calc2:offset:phase")
         {
             pSettings->offset2Phase = value;
         }
@@ -217,6 +248,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             errcmd = std::format("{} {}", cmd, value);
         }
+        std::cout << std::flush;
         std::cin.clear();
 #ifdef DAQ
         if (fgFlag)

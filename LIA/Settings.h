@@ -115,6 +115,8 @@ public:
     volatile bool statusMeasurement = false, statusPipe = false;
     std::string sn = "SN:XXXXXXXXXX";
     bool flagRawData2 = false;
+	std::string filenameRaw = "raw.csv";
+	// Data
     int nofm = 0, idx = 0, tail = 0, size = 0;
     std::array<double, RAW_SIZE> rawTime, rawData1, rawData2;
     std::array<double, MEASUREMENT_SIZE> times, x1s, y1s, x2s, y2s, dts;
@@ -200,6 +202,38 @@ public:
         xy2Xs[xyTail] = x2s[tail];
         xy2Ys[xyTail] = y2s[tail];
         this->_AddPoint(t);
+    }
+    bool saveRawData(const char* filename)
+    {
+        std::ofstream outputFile(filename);
+        if (!outputFile)
+        { // ファイルが開けなかった場合
+            std::cerr << "Fail: " << filename << std::endl;
+            return false;
+        }
+        else {
+            if (!flagCh2)
+            {
+                outputFile << "# t(s), ch1(V)" << std::endl;
+                for (size_t i = 0; i < rawData1.size(); i++)
+                {
+                    outputFile << std::format("{:e},{:e}\n", rawDt * i, rawData1[i]);
+                }
+            }
+            else {
+                outputFile << "# t(s), ch1(V), ch2(V)" << std::endl; 
+                for (size_t i = 0; i < rawData1.size(); i++)
+                {
+                    outputFile << std::format("{:e},{:e},{:e}\n", rawDt * i, rawData1[i], rawData2[i]);
+                }
+            }
+            outputFile.close();
+        }
+        return true;
+    }
+    bool saveRawData()
+    {
+		return saveRawData(this->filenameRaw.c_str());
     }
     ~Settings()
     {
