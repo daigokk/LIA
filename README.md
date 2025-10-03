@@ -116,9 +116,9 @@ class Lia:
   def _query(self, cmd):
     self._send(cmd)
     return self._recieve()
-  def get_txy(self, size=0):
+  def get_txy(self, sec=0):
     dat = []
-    size = int(lia._query(f':data:txy? {size}'))
+    size = int(lia._query(f':data:txy? {sec}'))
     for i in range(size):
       dat.append(list(map(float, lia._recieve().split(","))))
     return np.array(dat)
