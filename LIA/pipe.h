@@ -18,7 +18,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::getline(std::cin, cmd);
         if (cmd.length() == 0) continue; // 空白を受信した時は無視
         std::istringstream iss(cmd);
-        cmd = std::tolower(cmd.data());
+        cmd = std::tolower((char*)cmd.data());
         iss >> cmd >> value;
         if (cmd == "end")
         {
