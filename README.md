@@ -89,70 +89,71 @@
 ## Python Integration 🐍
   - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
   ```
-  import subprocess
-  import numpy as np
-  import matplotlib.pyplot as plt
-  import time
+import subprocess
+import numpy as np
+import matplotlib.pyplot as plt
+import time
 
 
-  class Lia:
-    def __init__(self, path='./lia.exe'):
-      self.process = subprocess.Popen(
-          f'{path} pipe',
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            encoding='utf-8',
-      )
-      print(self._recieve())
-    def __del__(self):
-      self._send('end')
-      time.sleep(1)
-      self.process.kill()
-    def _send(self, cmd:str):
-      self.process.stdin.write(f'{cmd}\n')
-      self.process.stdin.flush()
-    def _recieve(self, ):
-      self.process.stdout.flush()
-      return self.process.stdout.readline()
-    def _query(self, cmd):
-      self._send(cmd)
-      return self._recieve()
-    def get_txy(self):
-      buf = self._query(':data:txy?').split(",")
-      return (float(buf[0]), float(buf[1]), float(buf[2]))
-    def get_fgFreq(self):
-      return float(self._query(':w1:freq?'))
-    def set_fgFreq(self, freq):
-      self._send(f':w1:freq {freq}\n')
-
-  def getDat(lia:Lia):
+class Lia:
+  def __init__(self, path='./lia.exe'):
+    self.process = subprocess.Popen(
+        f'{path} pipe',
+          stdin=subprocess.PIPE,
+          stdout=subprocess.PIPE,
+          encoding='utf-8',
+    )
+    print(self._recieve())
+  def __del__(self):
+    self._send('end')
+    #self.process.kill()
+  def _send(self, cmd:str):
+    self.process.stdin.write(f'{cmd}\n')
+    self.process.stdin.flush()
+  def _recieve(self, ):
+    self.process.stdout.flush()
+    return self.process.stdout.readline()
+  def _query(self, cmd):
+    self._send(cmd)
+    return self._recieve()
+  def get_txy(self, size=0):
     dat = []
-    for i in range(5000):
-      dat.append(lia.get_txy())
-      time.sleep(0.002)
+    size = int(lia._query(f':data:txy? {size}'))
+    for i in range(size):
+      dat.append(list(map(float, lia._recieve().split(","))))
     return np.array(dat)
+  def get_fgFreq(self):
+    return float(self._query(':w1:freq?'))
+  def set_fgFreq(self, freq):
+    self._send(f':w1:freq {freq}\n')
 
-  def makeChart(dat:np.array):
-    fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
-    ax[0].plot(dat[:,0], dat[:,1], label='$V_x$')
-    ax[0].plot(dat[:,0], dat[:,2], label='$V_y$')
-    ax[1].plot(dat[:,1], dat[:,2])
-    ax[0].set_xlabel('Time (s)')
-    ax[0].set_ylabel('$V$ (V)')
-    ax[0].legend()
-    ax[1].set_xlabel('$V_x$ (V)') 
-    ax[1].set_ylabel('$V_y$ (V)')
-    ax[1].set_aspect('equal', 'box')
-    ax[0].grid()
-    ax[1].grid()
-    ax[1].set_xlim(-1.3, 1.3)
-    ax[1].set_ylim(-1.3, 1.3)
-    fig.tight_layout()
-    fig.savefig('chart.svg')
+def makeChart(dat:np.array):
+  fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
+  ax[0].plot(dat[:,0], dat[:,1], label='$V_x$')
+  ax[0].plot(dat[:,0], dat[:,2], label='$V_y$')
+  ax[1].plot(dat[:,1], dat[:,2])
+  ax[0].set_xlabel('Time (s)')
+  ax[0].set_ylabel('$V$ (V)')
+  ax[0].legend()
+  ax[1].set_xlabel('$V_x$ (V)') 
+  ax[1].set_ylabel('$V_y$ (V)')
+  ax[1].set_aspect('equal', 'box')
+  ax[0].grid()
+  ax[1].grid()
+  xlim = np.max(np.abs(dat[:,1]))
+  ylim = np.max(np.abs(dat[:,2]))
+  if xlim < ylim:
+    lim = ylim*1.1
+  else:
+    lim = xlim*1.1
+  ax[1].set_xlim(-lim, lim)
+  ax[1].set_ylim(-lim, lim)
+  fig.tight_layout()
+  fig.savefig('chart.svg')
 
-  lia = Lia('./lia.exe')
-  dat = getDat(lia)
-  makeChart(dat) # Save time series and XY(Lissajous) plots of X/Y components
+lia = Lia('./lia.exe')
+time.sleep(10)
+makeChart(lia.get_txy()) # Save time series and XY(Lissajous) plots of X/Y components
   ```
   - The following figures show X/Y components when the coil is in contact with different materials in the ECT.
 
