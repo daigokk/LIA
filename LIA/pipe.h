@@ -23,7 +23,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             break;
         }
-        else if (cmd == "reset")
+        else if (cmd == "reset" || cmd == "*RST" || cmd == "*rst")
         {
             pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
             pSettings->w2Freq = pSettings->w1Freq;
@@ -48,7 +48,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             errcmd = "";
             fgFlag = true;
         }
-        else if (cmd == "*idn?" || cmd == "*IDN?")
+        else if (cmd == "*IDN?" || cmd == "*idn?")
         {
             std::cout << std::format("Digilent,{},{}\n", pSettings->pDaq->device.name, pSettings->pDaq->device.sn);
         }
