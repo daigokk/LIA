@@ -96,7 +96,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         else if (cmd == ":data:txy?")
         {
             int size = pSettings->size;
-            if (value != 0)
+            if (value > 0)
             {
                 size = value;
                 if (size > pSettings->size) size = pSettings->size;
