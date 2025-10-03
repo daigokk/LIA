@@ -16,7 +16,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::string cmd;
         float value = 0;
         std::getline(std::cin, cmd);
-        if (cmd.length() == 0) continue; // ‹ó”’‚ðŽóM‚µ‚½Žž‚Í–³Ž‹
+        if (cmd.length() == 0) continue; // ç©ºç™½ã‚’å—ä¿¡ã—ãŸæ™‚ã¯ç„¡è¦–
         std::istringstream iss(cmd);
         iss >> cmd >> value;
         if (cmd == "end")
@@ -47,6 +47,22 @@ void pipe(std::stop_token st, Settings* pSettings)
             pSettings->historySec = 10.0f;
             errcmd = "";
             fgFlag = true;
+        }
+        else if (cmd == "*idn?" || cmd == "*IDN?")
+        {
+            std::cout << std::format("Digilent,{},{}", pSettings->pDaq->device.name, pSettings->pDaq->device.sn);
+        }
+        else if (cmd == "error?")
+        {
+            if (errcmd == "")
+            {
+                std::cout << "No error." << std::endl;
+            }
+            else
+            {
+                std::cout << std::format("Last error: '{}'\n", errcmd);
+                errcmd = "";
+            }
         }
         else if (cmd == ":data:txy?")
         {
@@ -190,18 +206,6 @@ void pipe(std::stop_token st, Settings* pSettings)
         else if (cmd == ":phase2:offset")
         {
             pSettings->offset2Phase = value;
-        }
-        else if (cmd == "error?")
-        {
-            if (errcmd == "")
-            {
-                std::cout << "No error." << std::endl;
-            }
-            else
-            {
-                std::cout << std::format("Last error: '{}'\n", errcmd);
-                errcmd = "";
-            }
         }
         else if (cmd.find("?") != -1)
         {
