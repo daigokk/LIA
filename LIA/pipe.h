@@ -98,7 +98,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             int size = pSettings->size;
             if (value > 0)
             {
-                size = value;
+                size = value / MEASUREMENT_DT;
                 if (size > pSettings->size) size = pSettings->size;
             }
             int idx = pSettings->tail - size;
