@@ -107,21 +107,28 @@ class Lia:
     print(self._recieve())
   def __del__(self):
     self._send('end')
-    #self.process.kill()
+    self.process.kill()
   def _send(self, cmd:str):
     self.process.stdin.write(f'{cmd}\n')
     self.process.stdin.flush()
-  def _recieve(self):
+  def _recieve(self, ):
     self.process.stdout.flush()
     return self.process.stdout.readline()
   def _query(self, cmd):
     self._send(cmd)
     return self._recieve()
+  def get_raw(self):
+    dat = []
+    size = int(self._query(f':data:raw:size?'))
+    self._send(':data:raw?')
+    for i in range(size):
+      dat.append(list(map(float, self._recieve().split(","))))
+    return np.array(dat)
   def get_txy(self, sec=0):
     dat = []
-    size = int(lia._query(f':data:txy? {sec}'))
+    size = int(self._query(f':data:txy? {sec}'))
     for i in range(size):
-      dat.append(list(map(float, lia._recieve().split(","))))
+      dat.append(list(map(float, self._recieve().split(","))))
     return np.array(dat)
   def get_fgFreq(self):
     return float(self._query(':w1:freq?'))
@@ -154,7 +161,7 @@ def makeChart(dat:np.array):
 
 lia = Lia('./lia.exe')
 time.sleep(10)
-makeChart(lia.get_txy()) # Save time series and XY(Lissajous) plots of X/Y components
+makeChart(lia.get_txy(1)) # Save time series and XY(Lissajous) plots of X/Y components
   ```
   - The following figures show X/Y components when the coil is in contact with different materials in the ECT.
 
