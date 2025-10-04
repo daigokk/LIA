@@ -82,7 +82,7 @@ void measurement(std::stop_token st, Settings* pSettings)
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pSettings->pDaq = &daq;
     pSettings->sn = daq.device.sn;
-    timer.sleepFor(0.5); 
+    timer.sleepFor(1.0); 
     daq.scope.start();
 #endif // DAQ
     timer.start();
