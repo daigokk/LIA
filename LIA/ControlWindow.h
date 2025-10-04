@@ -134,7 +134,31 @@ inline void ControlWindow::show(void)
             if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Settings"))
+        {
+            ImGui::SetNextItemWidth(nextItemWidth);
+            const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
+            ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 3);
+            static int ImGuiWindowFlagPosDefault = pSettings->ImGuiWindowFlag;
+            if (ImGuiWindowFlagPosDefault != ImGuiCond_Always)
+            {
+                static bool windowLockedFlag = false;
+                ImGui::SameLine();
+                if (windowLockedFlag)
+                {
+                    pSettings->ImGuiWindowFlag = ImGuiCond_Always;
+                    if (ImGui::Button("Unlock")) { windowLockedFlag = false; }
+                }
+                else {
+                    pSettings->ImGuiWindowFlag = ImGuiWindowFlagPosDefault;
+                    if (ImGui::Button("Lock")) { windowLockedFlag = true; }
+                }
+            }
+            ImGui::EndTabItem();
+        }
         ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
+        ImGui::SameLine();
+        ImGui::Checkbox("Beep", &pSettings->flagBeep);
         ImGui::EndTabBar();
     }
     ImGui::Separator();
@@ -188,8 +212,7 @@ inline void ControlWindow::show(void)
     }
     ImGui::Checkbox("Ch2", &pSettings->flagCh2);
     if (stateACFM) ImGui::EndDisabled();
-    ImGui::SameLine();
-    ImGui::Checkbox("Beep", &pSettings->flagBeep);
+    
     ImGui::SameLine();
     ImGui::Checkbox("ACFM", &pSettings->flagACFM);
     ImGui::SetNextItemWidth(nextItemWidth);
@@ -226,21 +249,7 @@ inline void ControlWindow::show(void)
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator(); 
     ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
-    ImGui::SetNextItemWidth(nextItemWidth);
-    const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
-    ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 1);
-	static int ImGuiWindowFlagPosDefault = pSettings->ImGuiWindowFlag;
-    if (ImGuiWindowFlagPosDefault != ImGuiCond_Always)
-    {
-        ImGui::SameLine();
-        if (ImGui::Button("Window"))
-        {
-            pSettings->ImGuiWindowFlag = ImGuiCond_Always;
-        }
-        else {
-            pSettings->ImGuiWindowFlag = ImGuiWindowFlagPosDefault;
-        }
-    }
+    
     if (pSettings->pDaq != nullptr && fgFlag)
     {
         pSettings->pDaq->awg.start(
