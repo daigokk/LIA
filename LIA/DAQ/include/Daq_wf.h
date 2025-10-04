@@ -1,10 +1,9 @@
 #pragma once
 
 #pragma	comment(lib, "DAQ/lib/dwf.lib")
+#include <dwf.h>
 #include <iostream>         // needed for input/output
 #include <string>           // needed for error handling
-//#include <fstream>          // needed for input/output
-#include <dwf.h>
 
 
 class Daq_dwf
@@ -19,7 +18,7 @@ public:
     } device;
     static void errChk(bool ret, const char* func, const char* file, int line)
     {
-#ifndef NODEBUG
+#ifndef NDEBUG
         static char szError[512] = { 0 };
         if (!ret) {
             FDwfGetLastErrorMsg(szError);

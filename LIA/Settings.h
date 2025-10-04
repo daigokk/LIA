@@ -10,9 +10,7 @@
 #include <numbers> // For std::numbers::pi
 #include "inicpp.h"
 
-#ifdef DAQ
 #include <Daq_wf.h>
-#endif // DAQ
 
 constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
 constexpr double RAW_DT = 1e-8; // Most fase dt is 1e-8.
@@ -84,9 +82,7 @@ public:
 class Settings
 {
 public:
-#ifdef DAQ
     Daq_dwf* pDaq = nullptr;
-#endif // DAQ
     // Monitor
     float monitorScale = 1.0f;
     // Window

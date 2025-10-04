@@ -1,11 +1,11 @@
 #pragma once
 #include "Settings.h"
-#include <iostream>
-#include <string>
 #include <algorithm> // std::transform
-#include <format>
-#include <sstream> // std::istringstream
 #include <cmath>
+#include <format>
+#include <iostream>
+#include <sstream> // std::istringstream
+#include <string>
 
 void pipe(std::stop_token st, Settings* pSettings)
 {

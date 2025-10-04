@@ -1,20 +1,17 @@
-#include <iostream>
 #include <format>
+#include <iostream>
+#include <numbers> // For std::numbers::pi
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
-#include <numbers> // For std::numbers::pi
 #include <Windows.h>
 
-#define DAQ
-#ifdef DAQ
 #include <Daq_wf.h>
-#endif // DAQ
 
-#include "Settings.h"
-#include "Psd.h"
 #include "Gui.h"
-#include "Timer.h"
 #include "pipe.h"
+#include "Psd.h"
+#include "Settings.h"
+#include "Timer.h"
 void measurement(std::stop_token st, Settings* pSettings);
 void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
 
