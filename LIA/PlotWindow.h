@@ -106,7 +106,9 @@ inline void TimeChartWindow::show()
     ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
+    if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     ImGui::SliderFloat("History", &pSettings->historySec, 1, historySecMax, "%5.1f s");
+    if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::SameLine();
     if (pSettings->flagPause)
     {
@@ -253,7 +255,7 @@ inline void DeltaTimeChartWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, (MEASUREMENT_DT - 2e-3) * 1e3, (MEASUREMENT_DT + 2e-3) * 1e3, ImGuiCond_Always);
         ImPlot::PlotLine(
-            "x1", &(pSettings->times[0]), &(pSettings->dts[0]),
+            "##dt", &(pSettings->times[0]), &(pSettings->dts[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)
         );
         ImPlot::EndPlot();

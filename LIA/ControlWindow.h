@@ -126,10 +126,10 @@ inline void ControlWindow::show(void)
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-            ImGui::InputDouble((char*)u8"Ch1 ƒÆ(Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch1 ƒÆ (Deg.)", &(pSettings->offset1Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble((char*)u8"Ch2 ƒÆ(Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch2 ƒÆ (Deg.)", &(pSettings->offset2Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::EndDisabled(); }
             if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
@@ -156,11 +156,12 @@ inline void ControlWindow::show(void)
             }
             ImGui::EndTabItem();
         }
-        ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
-        ImGui::SameLine();
-        ImGui::Checkbox("Beep", &pSettings->flagBeep);
-        ImGui::EndTabBar();
     }
+    ImGui::Separator();
+    ImGui::Checkbox("Surface Mode", &pSettings->flagSurfaceMode);
+    ImGui::SameLine();
+    ImGui::Checkbox("Beep", &pSettings->flagBeep);
+    ImGui::EndTabBar();
     ImGui::Separator();
     static ImVec2 autoOffsetSize = ImVec2(200.0f * pSettings->monitorScale, 100.0f * pSettings->monitorScale);
     if (pSettings->flagPause) { ImGui::BeginDisabled(); }
@@ -194,9 +195,9 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Offset value"))
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();
-        ImGui::Text("Ch1 X:%5.2fV, Y:%5.2fV", pSettings->offset1X, pSettings->offset1Y);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->offset1X, pSettings->offset1Y);
         if (!stateCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV, Y:%5.2fV", pSettings->offset2X, pSettings->offset2Y);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->offset2X, pSettings->offset2Y);
         if (!stateCh2) ImGui::EndDisabled();
         ImGui::TreePop();
         if (!stateAutoOffset) ImGui::EndDisabled();
@@ -217,7 +218,7 @@ inline void ControlWindow::show(void)
     ImGui::Checkbox("ACFM", &pSettings->flagACFM);
     ImGui::SetNextItemWidth(nextItemWidth);
     //if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-    if (ImGui::InputFloat("HP Filter(Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
+    if (ImGui::InputFloat("HPF (Hz)", &(pSettings->hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
         if (pSettings->hpFreq < 0.0f) pSettings->hpFreq = 0.0f;
         if (pSettings->hpFreq > 50.0f) pSettings->hpFreq = 50.0f;
@@ -226,7 +227,7 @@ inline void ControlWindow::show(void)
     ImGui::Separator();
     if (ImGui::TreeNode("Monitor"))
     {
-        ImGui::Text("Ch1 X:%5.2fV, Y:%5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
             pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
@@ -234,7 +235,7 @@ inline void ControlWindow::show(void)
             atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
         );
         if (!stateCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV, Y:%5.2fV", pSettings->x2s[pSettings->idx], pSettings->y2s[pSettings->idx]);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->x2s[pSettings->idx], pSettings->y2s[pSettings->idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
             pow(pow(pSettings->x2s[pSettings->idx], 2) + pow(pSettings->y2s[pSettings->idx], 2), 0.5),
@@ -248,8 +249,9 @@ inline void ControlWindow::show(void)
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator(); 
-    ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
-    
+    //ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
+    ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
+
     if (pSettings->pDaq != nullptr && fgFlag)
     {
         pSettings->pDaq->awg.start(
