@@ -16,22 +16,24 @@
 #include "Timer.h"
 #include "pipe.h"
 void measurement(std::stop_token st, Settings* pSettings);
+void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
 
 int main(int argc, char* argv[])
 {
     std::ios::sync_with_stdio(false); // For std::cout and cin
-#ifdef DAQ
-    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
-    if (adIdx == -1)
-    {
-        std::cerr << "No AD is connected." << std::endl;
-        return -1;
-    }
-#endif // DAQ
     static Settings settings;
     Gui gui(&settings);
     if (gui.initialized == false) return -1;
-    std::jthread th_measurement{ measurement, &settings };
+    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
+    std::jthread th_measurement;
+    if (adIdx == -1)
+    {
+        std::cerr << "No AD is connected." << std::endl;
+       th_measurement = std::jthread{ measurementWithoutDaq, &settings };
+    }
+    else {
+        th_measurement = std::jthread{ measurement, &settings };
+    }
     // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
     if (!SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
@@ -68,9 +70,6 @@ void measurement(std::stop_token st, Settings* pSettings)
 {
     static Psd psd(pSettings);
     Timer timer;
-#ifndef DAQ
-    std::cout << "Without AD mode." << std::endl;
-#else
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
@@ -84,7 +83,6 @@ void measurement(std::stop_token st, Settings* pSettings)
     pSettings->sn = daq.device.sn;
     timer.sleepFor(1.0); 
     daq.scope.start();
-#endif // DAQ
     timer.start();
     pSettings->statusMeasurement = true;
     size_t nloop = 0;
@@ -94,7 +92,31 @@ void measurement(std::stop_token st, Settings* pSettings)
         nloop++;
         t = timer.sleepUntil(t);
         if (pSettings->flagPause) continue;
-#ifndef DAQ
+        if (!pSettings->flagCh2)
+        {
+            daq.scope.record(pSettings->rawData1.data());
+        }
+        else {
+            daq.scope.record(pSettings->rawData1.data(), pSettings->rawData2.data());
+        }
+        psd.calc(t);
+    }
+    pSettings->statusMeasurement = false;
+}
+
+void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
+{
+    static Psd psd(pSettings);
+    Timer timer;
+    timer.start();
+    pSettings->statusMeasurement = true;
+    size_t nloop = 0;
+    while (!st.stop_requested())
+    {
+        double t = nloop * MEASUREMENT_DT;
+        nloop++;
+        t = timer.sleepUntil(t);
+        if (pSettings->flagPause) continue;
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
@@ -106,15 +128,6 @@ void measurement(std::stop_token st, Settings* pSettings)
                 pSettings->rawData2[i] = pSettings->w2Amp * std::sin(wt - pSettings->w2Phase);
             }
         }
-#else
-        if (!pSettings->flagCh2)
-        {
-            daq.scope.record(pSettings->rawData1.data());
-        }
-        else {
-            daq.scope.record(pSettings->rawData1.data(), pSettings->rawData2.data());
-        }
-#endif // DAQ
         psd.calc(t);
     }
     pSettings->statusMeasurement = false;
