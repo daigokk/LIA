@@ -241,16 +241,12 @@ inline void ControlWindow::show(void)
             pSettings->ImGuiWindowFlag = ImGuiWindowFlagPosDefault;
         }
     }
-    
-    
-#ifdef DAQ
-    if (fgFlag)
+    if (pSettings->pDaq != nullptr && fgFlag)
     {
         pSettings->pDaq->awg.start(
             pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
             pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
         );
     }
-#endif // DAQ
     ImGui::End();
 }

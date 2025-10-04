@@ -235,15 +235,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         else { errcmd = std::format("{} {}", cmd, value); }
         std::cout << std::flush;
         std::cin.clear();
-#ifdef DAQ
-        if (fgFlag)
+        if (pSettings->pDaq != nullptr && fgFlag)
         {
             pSettings->pDaq->awg.start(
                 pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
                 pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
             );
         }
-#endif // DAQ
     }
     pSettings->statusPipe = false;
 }

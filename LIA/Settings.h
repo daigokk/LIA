@@ -13,7 +13,7 @@
 #include <Daq_wf.h>
 
 constexpr float RAW_RANGE = 2.5f; // AD3: +-2.5 or +-25V
-constexpr double RAW_DT = 1e-8; // Most fase dt is 1e-8.
+constexpr double RAW_DT = 1e-8; // Most fast dt is 1e-8.
 constexpr size_t RAW_SIZE = 5000; // Maximum size of AD2 is 8192.
 constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
