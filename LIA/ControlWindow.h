@@ -139,21 +139,16 @@ inline void ControlWindow::show(void)
             ImGui::SetNextItemWidth(nextItemWidth);
             const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
             ImGui::ListBox("Thema", &pSettings->ImGui_Thema, items, IM_ARRAYSIZE(items), 3);
-            static int ImGuiWindowFlagPosDefault = pSettings->ImGuiWindowFlag;
-            if (ImGuiWindowFlagPosDefault != ImGuiCond_Always)
+            
+            ImGui::SameLine();
+            if (pSettings->ImGuiWindowFlag == ImGuiCond_FirstUseEver)
             {
-                static bool windowLockedFlag = false;
-                ImGui::SameLine();
-                if (windowLockedFlag)
-                {
-                    pSettings->ImGuiWindowFlag = ImGuiCond_Always;
-                    if (ImGui::Button("Unlock")) { windowLockedFlag = false; }
-                }
-                else {
-                    pSettings->ImGuiWindowFlag = ImGuiWindowFlagPosDefault;
-                    if (ImGui::Button("Lock")) { windowLockedFlag = true; }
-                }
+                if (ImGui::Button("Lock")) { pSettings->ImGuiWindowFlag = ImGuiCond_Always; }
             }
+            else {
+                if (ImGui::Button("Unlock")) { pSettings->ImGuiWindowFlag = ImGuiCond_FirstUseEver; }
+            }
+            
             ImGui::EndTabItem();
         }
     }

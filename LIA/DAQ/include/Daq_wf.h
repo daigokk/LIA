@@ -12,9 +12,11 @@ public:
     struct Device
     {
     public:
+		const char manufacturer[32] = "Digilent";
         HDWF hdwf[2] = { 0, 0 };
         char name[256] = { "" };
         char sn[32] = { "" };
+		char version[32] = { "" };
     } device;
     static void errChk(bool ret, const char* func, const char* file, int line)
     {
@@ -60,8 +62,10 @@ public:
     }
     void init(int idxDevice)
     {
+        errChk(FDwfGetVersion(device.version), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
+        
         errChk(FDwfDeviceOpen(idxDevice, &device.hdwf[0]), __func__, __FILE__, __LINE__);
         awg.pHdwf[0] = &device.hdwf[0];
         scope.pHdwf[0] = &device.hdwf[0];
