@@ -84,7 +84,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         {
             if(pSettings->pDaq == nullptr)
             {
-                std::cout << "No AD is connected." << std::endl;
+                std::cout << "No DAQ is connected." << std::endl;
                 cmdMissFlag = false;
 			}
             else {
