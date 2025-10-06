@@ -40,10 +40,10 @@ private:
 
 inline void RawPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(430 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
-    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(430 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
     
     if (ImGui::Button("Save"))
@@ -51,18 +51,18 @@ inline void RawPlotWindow::show()
 		pSettings->saveRawData();
     }
     //ImGui::SameLine();
-    ImGui::SliderFloat("Y limit", &(pSettings->rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(pSettings->plot.rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
     
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
-        if (pSettings->rawLimit <= MILI_VOLT)
+        if (pSettings->plot.rawLimit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time (us)", "v (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->rawLimit, pSettings->rawLimit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.rawLimit, pSettings->plot.rawLimit, ImGuiCond_Always);
         
         if (!pSettings->flagCh2)
         {
@@ -100,14 +100,14 @@ private:
 
 inline void TimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(450 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(990 * pSettings->monitorScale, 360 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
-    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
+    static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(990 * pSettings->window.monitorScale, 360 * pSettings->window.monitorScale);
+    ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-    ImGui::SliderFloat("History", &pSettings->historySec, 1, historySecMax, "%5.1f s");
+    ImGui::SliderFloat("History", &pSettings->plot.historySec, 1, historySecMax, "%5.1f s");
     if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::SameLine();
     if (pSettings->flagPause)
@@ -123,16 +123,16 @@ inline void TimeChartWindow::show()
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
-        if (pSettings->limit <= MILI_VOLT)
+        if (pSettings->plot.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time", "v (mV)", ImPlotAxisFlags_NoTickLabels, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         if (!pSettings->flagPause)
         {
-            ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->historySec, t, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, t - pSettings->plot.historySec, t, ImGuiCond_Always);
         }
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "Ch1y", &(pSettings->times[0]), &(pSettings->y1s[0]),
             pSettings->size, 0, pSettings->tail, sizeof(double)
@@ -150,8 +150,8 @@ inline void TimeChartWindow::show()
             if (flag)
             {
                 *pTimeChartZoomRect = ImPlotRect(
-                    pSettings->times[pSettings->idx] - pSettings->historySec / 2 - pSettings->historySec / 20,
-                    pSettings->times[pSettings->idx] - pSettings->historySec / 2 + pSettings->historySec / 20, -pSettings->limit / 2, pSettings->limit / 2);
+                    pSettings->times[pSettings->idx] - pSettings->plot.historySec / 2 - pSettings->plot.historySec / 20,
+                    pSettings->times[pSettings->idx] - pSettings->plot.historySec / 2 + pSettings->plot.historySec / 20, -pSettings->plot.limit / 2, pSettings->plot.limit / 2);
                 flag = false;
             }
             static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None;
@@ -190,8 +190,8 @@ private:
 
 inline void TimeChartZoomWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(750 * pSettings->monitorScale, 600 * pSettings->monitorScale);
+    static ImVec2 windowPos = ImVec2(0 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(750 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -200,7 +200,7 @@ inline void TimeChartZoomWindow::show()
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = pSettings->times[pSettings->idx];
         ImPlot::SetupAxes("Time (s)", "v (V)", 0, 0);
-        if (pSettings->limit <= MILI_VOLT)
+        if (pSettings->plot.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time (s)", "v (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
@@ -239,10 +239,10 @@ private:
 
 inline void DeltaTimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0 * pSettings->monitorScale, 750 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(450 * pSettings->monitorScale, 210 * pSettings->monitorScale);
-    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
-    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag);
+    static ImVec2 windowPos = ImVec2(0 * pSettings->window.monitorScale, 750 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(450 * pSettings->window.monitorScale, 210 * pSettings->window.monitorScale);
+    ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT)*pSettings->times.size();
     static float historySec = 10;
@@ -278,12 +278,12 @@ public:
 
 inline void XYPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(880 * pSettings->monitorScale, 0 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    if (pSettings->flagSurfaceMode)
+    static ImVec2 windowPos = ImVec2(880 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    if (pSettings->plot.surfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    ImGui::SetNextWindowPos(windowPos, pSettings->ImGuiWindowFlag);
-    ImGui::SetNextWindowSize(windowSize, pSettings->ImGuiWindowFlag); //ImGui::GetIO().DisplaySize
+    ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.1f V");
     if (ImGui::Button("Clear"))
@@ -306,20 +306,20 @@ inline void XYPlotWindow::show()
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
-        if (pSettings->limit <= MILI_VOLT)
+        if (pSettings->plot.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("x (mV)", "y (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        if (pSettings->flagSurfaceMode)
+        if (pSettings->plot.surfaceMode)
         {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit * 4, pSettings->limit * 4, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit / 4, pSettings->limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->plot.limit * 4, pSettings->plot.limit * 4, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.limit / 4, pSettings->plot.limit, ImGuiCond_Always);
         }
         else {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
         }
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
         if (!pSettings->flagCh2)
@@ -334,7 +334,7 @@ inline void XYPlotWindow::show()
             );
         }
         ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[2], -1.0f, colors[2]);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->window.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
         if (pSettings->flagCh2)
         {
@@ -343,14 +343,14 @@ inline void XYPlotWindow::show()
                 pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
             );
             ImPlot::PopStyleColor();
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[7], -1.0f, colors[7]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->window.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##NOW2", &(pSettings->xy2Xs[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         }
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
     ImGui::End();
-    if (pSettings->flagSurfaceMode)
+    if (pSettings->plot.surfaceMode)
         ImGui::PopStyleColor();
 }
 
@@ -370,9 +370,9 @@ public:
 
 inline void ACFMPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(730 * pSettings->monitorScale, 300 * pSettings->monitorScale);
-    static ImVec2 windowSize = ImVec2(560 * pSettings->monitorScale, 600 * pSettings->monitorScale);
-    if (pSettings->flagSurfaceMode)
+    static ImVec2 windowPos = ImVec2(730 * pSettings->window.monitorScale, 300 * pSettings->window.monitorScale);
+    static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    if (pSettings->plot.surfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
@@ -397,20 +397,20 @@ inline void ACFMPlotWindow::show()
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Vbz (V)", "Vbx (V)", 0, 0);
-        if (pSettings->limit <= MILI_VOLT)
+        if (pSettings->plot.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Vbz (mV)", "Vbx (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->limit, pSettings->limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(pSettings->xy1Ys[0]), &(pSettings->xy2Ys[0]),
             pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
         );
         ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->monitorScale, colors[8], -1.0f, colors[8]);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->window.monitorScale, colors[8], -1.0f, colors[8]);
         ImPlot::PlotScatter("##NOW", &(pSettings->xy1Ys[pSettings->xyIdx]), &(pSettings->xy2Ys[pSettings->xyIdx]), 1);
         ImPlot::EndPlot();
     }

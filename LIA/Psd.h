@@ -13,24 +13,24 @@ public:
     Psd(Settings* pSettings)
     {
         this->pSettings = pSettings;
-        oldFreq = pSettings->w1Freq;
+        oldFreq = pSettings->awg.w1Freq;
         init();
     }
     void init()
     {
-        oldFreq = pSettings->w1Freq;
-        size_t halfPeriodSize = (size_t)(0.5 / oldFreq / pSettings->rawDt);
+        oldFreq = pSettings->awg.w1Freq;
+        size_t halfPeriodSize = (size_t)(0.5 / oldFreq / RAW_DT);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
         //#pragma omp parallel for
         for (int i = 0; i < size; i++)
         {
-            this->_sin[i] = 2 * std::sin(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
-            this->_cos[i] = 2 * std::cos(2 * std::numbers::pi * oldFreq * i * pSettings->rawDt);
+            this->_sin[i] = 2 * std::sin(2 * std::numbers::pi * oldFreq * i * RAW_DT);
+            this->_cos[i] = 2 * std::cos(2 * std::numbers::pi * oldFreq * i * RAW_DT);
         }
     }
     void calc(const double t)
     {
-        if (oldFreq != pSettings->w1Freq) init();
+        if (oldFreq != pSettings->awg.w1Freq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
         if (!pSettings->flagCh2)
         {
@@ -44,11 +44,11 @@ public:
             _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
             if (pSettings->flagAutoOffset)
             {
-                pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
+                pSettings->lia.offset1X = _x1; pSettings->lia.offset1Y = _y1;
                 pSettings->flagAutoOffset = false;
             }
-            _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
-            double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
+            _x1 -= pSettings->lia.offset1X; _y1 -= pSettings->lia.offset1Y;
+            double theta1 = pSettings->lia.offset1Phase / 180 * std::numbers::pi;
             pSettings->AddPoint(
                 t,
                 _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
@@ -69,14 +69,14 @@ public:
             _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
             if (pSettings->flagAutoOffset)
             {
-                pSettings->offset1X = _x1; pSettings->offset1Y = _y1;
-                pSettings->offset2X = _x2; pSettings->offset2Y = _y2;
+                pSettings->lia.offset1X = _x1; pSettings->lia.offset1Y = _y1;
+                pSettings->lia.offset2X = _x2; pSettings->lia.offset2Y = _y2;
                 pSettings->flagAutoOffset = false;
             }
-            _x1 -= pSettings->offset1X; _y1 -= pSettings->offset1Y;
-            _x2 -= pSettings->offset2X; _y2 -= pSettings->offset2Y;
-            double theta1 = pSettings->offset1Phase / 180 * std::numbers::pi;
-            double theta2 = pSettings->offset2Phase / 180 * std::numbers::pi;
+            _x1 -= pSettings->lia.offset1X; _y1 -= pSettings->lia.offset1Y;
+            _x2 -= pSettings->lia.offset2X; _y2 -= pSettings->lia.offset2Y;
+            double theta1 = pSettings->lia.offset1Phase / 180 * std::numbers::pi;
+            double theta2 = pSettings->lia.offset2Phase / 180 * std::numbers::pi;
             pSettings->AddPoint(
                 t,
                 _x1 * std::cos(theta1) - _y1 * std::sin(theta1),

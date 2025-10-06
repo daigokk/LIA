@@ -1,484 +1,356 @@
 #pragma once
-#include "Settings.h"
-#include <algorithm> // std::transform
-#include <cmath>
+#include "Settings.h" // 元のコードで必要だったヘッダー
+#include <algorithm>   // std::transform
+#include <cmath>       // std::round
 #include <format>
-#include <functional>
+#include <functional>  // std::function
 #include <iostream>
-#include <sstream> // std::istringstream
+#include <map>         // std::map
+#include <sstream>     // std::istringstream
 #include <string>
+#include <vector>
 
-// 文字列を「:」で分割する関数
-std::vector<std::string> parseColon(const std::string& input) {
-    std::vector<std::string> result;
-    std::string temp;
-
-    for (char ch : input) {
-        if (ch == ':') {
-            if (temp.length() == 0)
-            {
-                temp.clear();
-                continue;
-            }
-            result.push_back(temp);
-            temp.clear();
-        }
-        else {
-            temp += ch;
-        }
+// 汎用的な文字列分割関数
+std::vector<std::string> split(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    if (str.empty()) {
+        return tokens;
     }
-    result.push_back(temp); // 最後の部分を追加
-
-    return result;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter)) {
+        if (token.length() == 0) { continue; }
+        tokens.push_back(token);
+    }
+    return tokens;
 }
 
+
+// pipe関数: コマンドラインからの入力を受け取り処理するメイン関数
 void pipe(std::stop_token st, Settings* pSettings)
 {
     pSettings->statusPipe = true;
+    std::string lastErrorCmd = "";
+    bool awgUpdateRequired = false;
+
+    // コマンドの処理関数を定義するための型エイリアス
+    // 引数: (トークン化されたコマンド, 文字列の引数, 数値の引数) -> 成功/失敗
+    using CommandHandler = std::function<bool(const std::vector<std::string>&, const std::string&, float)>;
+
+    // コマンド名と処理関数をマッピングするディスパッチテーブル
+    std::map<std::string, CommandHandler> commandMap;
+
+    // --- コマンドハンドラの定義 ---
+
+    // 終了コマンド
+    auto exitHandler = [&](const auto&, const auto&, auto) {
+        return false; // falseを返すとメインループが終了する
+        };
+    commandMap["end"] = commandMap["exit"] = commandMap["quit"] = exitHandler;
+
+    // リセットコマンド
+    commandMap["reset"] = commandMap["*rst"] = [&](const auto&, const auto&, auto) {
+        // pSettingsの各メンバを初期値にリセット
+        pSettings->awg.w1Freq = (float)(1.0 / (1000 * RAW_DT));
+        pSettings->awg.w2Freq = pSettings->awg.w1Freq;
+        pSettings->awg.w1Amp = 1.0f;
+        pSettings->awg.w2Amp = 0.0f;
+        pSettings->awg.w1Phase = 0.0f;
+        pSettings->awg.w2Phase = 0.0f;
+        pSettings->flagCh2 = false;
+        pSettings->lia.offset1Phase = 0.0;
+        pSettings->lia.offset1X = 0.0;
+        pSettings->lia.offset1Y = 0.0;
+        pSettings->lia.offset2Phase = 0.0;
+        pSettings->lia.offset2X = 0.0;
+        pSettings->lia.offset2Y = 0.0;
+        pSettings->lia.hpFreq = 0.0f;
+        pSettings->plot.surfaceMode = false;
+        pSettings->plot.beep = false;
+        pSettings->plot.acfm = false;
+        pSettings->plot.limit = 1.5f;
+        pSettings->plot.rawLimit = 1.5f;
+        pSettings->plot.historySec = 10.0f;
+        lastErrorCmd = "";
+        awgUpdateRequired = true;
+        return true;
+        };
+
+    // 識別情報コマンド
+    commandMap["*idn?"] = [&](const auto&, const auto&, auto) {
+        if (pSettings->pDaq == nullptr) {
+            std::cout << "No DAQ is connected." << std::endl;
+        }
+        else {
+            std::cout << std::format("{},{},{},{}\n",
+                pSettings->pDaq->device.manufacturer, pSettings->pDaq->device.name,
+                pSettings->pDaq->device.sn, pSettings->pDaq->device.version);
+        }
+        return true;
+        };
+
+    // エラー問い合わせ
+    commandMap["error?"] = [&](const auto&, const auto&, auto) {
+        if (lastErrorCmd.empty()) {
+            std::cout << "No error." << std::endl;
+        }
+        else {
+            std::cout << std::format("Last error: '{}'\n", lastErrorCmd);
+            lastErrorCmd.clear();
+        }
+        return true;
+        };
+
+    // 一時停止・再開
+    commandMap["pause"] = [&](const auto&, const auto&, auto) { pSettings->flagPause = true; return true; };
+    commandMap["run"] = [&](const auto&, const auto&, auto) { pSettings->flagPause = false; return true; };
+
+    // データ関連コマンド
+    commandMap["data"] = [&](const auto& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
+        const std::string& subCmd = tokens[1];
+
+        if (subCmd == "raw" && tokens.size() > 2) {
+            if (tokens[2] == "save") {
+                return arg.empty() ? pSettings->saveRawData() : pSettings->saveRawData(arg.c_str());
+            }
+            else if (tokens[2] == "size?") {
+                std::cout << pSettings->rawData1.size() << std::endl;
+                return true;
+            }
+        }
+        else if (subCmd == "raw?") {
+            for (int i = 0; i < pSettings->rawData1.size(); ++i) {
+                if (!pSettings->flagCh2) {
+                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pSettings->rawData1[i]);
+                }
+                else {
+                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pSettings->rawData1[i], pSettings->rawData2[i]);
+                }
+            }
+            return true;
+        }
+        else if (subCmd == "txy?") {
+            int size = pSettings->size;
+            if (val > 0) {
+                size = val / MEASUREMENT_DT;
+                if (size > pSettings->size) size = pSettings->size;
+            }
+            int idx = pSettings->tail - size;
+            if (idx < 0) {
+                if (pSettings->nofm <= MEASUREMENT_SIZE) {
+                    idx = 0;
+                    size = pSettings->tail;
+                }
+                else {
+                    idx += MEASUREMENT_SIZE;
+                }
+            }
+            std::cout << size << std::endl;
+            for (int i = 0; i < size; ++i) {
+                if (!pSettings->flagCh2) {
+                    std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx]);
+                }
+                else {
+                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx], pSettings->x2s[idx], pSettings->y2s[idx]);
+                }
+                idx = (idx + 1) % MEASUREMENT_SIZE;
+            }
+            return true;
+        }
+        else if (subCmd == "xy?") {
+            size_t idx = pSettings->idx;
+            std::cout << std::format("{:e},{:e}", pSettings->x1s[idx], pSettings->y1s[idx]);
+            if (pSettings->flagCh2) {
+                std::cout << std::format(",{:e},{:e}", pSettings->x2s[idx], pSettings->y2s[idx]);
+            }
+            std::cout << std::endl;
+            return true;
+        }
+        return false;
+        };
+
+    // 表示関連コマンド
+    commandMap["display"] = commandMap["disp"] = [&](const auto& tokens, const auto&, float val) {
+        if (tokens.size() < 3) return false;
+        if (tokens[1] == "xy" && tokens[2] == "limit") {
+            if (val >= 0.01 && val <= RAW_RANGE * 1.2) {
+                pSettings->plot.limit = val;
+                return true;
+            }
+        }
+        else if (tokens[1] == "raw" && tokens[2] == "limit") {
+            if (val >= 0.1 && val <= RAW_RANGE * 1.2) {
+                pSettings->plot.rawLimit = val;
+                return true;
+            }
+        }
+        return false;
+        };
+
+    // CH2表示設定
+    commandMap[":chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
+        if (arg == "on") { pSettings->flagCh2 = true; return true; }
+        if (arg == "off") { pSettings->flagCh2 = false; return true; }
+        return false;
+        };
+
+    // 波形設定 (W1, W2)
+    auto waveformHandler = [&](bool isW1, const auto& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
+
+        float& freq = isW1 ? pSettings->awg.w1Freq : pSettings->awg.w2Freq;
+        float& amp = isW1 ? pSettings->awg.w1Amp : pSettings->awg.w2Amp;
+        float& phase = isW1 ? pSettings->awg.w1Phase : pSettings->awg.w2Phase;
+
+        static const double lowLimitFreq = 0.5 / (RAW_SIZE * RAW_DT);
+        static const double highLimitFreq = std::round(1.0 / (1000 * RAW_DT));
+        static constexpr double VOLT_MIN = 0.0;
+        static constexpr double VOLT_MAX = 5.0;
+
+        std::string subCmd = tokens[1];
+        bool isQuery = subCmd.back() == '?';
+        if (isQuery) subCmd.pop_back();
+
+        if (subCmd == "phase") {
+            if (isQuery) { std::cout << phase << std::endl; }
+            else { phase = val; awgUpdateRequired = true; }
+            return true;
+        }
+        if (subCmd == "freq" || subCmd == "frequency") {
+            if (isQuery) {
+                if (arg == "min") { std::cout << lowLimitFreq << std::endl; }
+                else if (arg == "max") { std::cout << highLimitFreq << std::endl; }
+                else { std::cout << freq << std::endl; }
+            }
+            else if (val >= lowLimitFreq && val <= highLimitFreq) {
+                freq = val; awgUpdateRequired = true;
+            }
+            else { return false; }
+            return true;
+        }
+        if (subCmd == "volt" || subCmd == "voltage") {
+            if (isQuery) {
+                if (arg == "min") { std::cout << VOLT_MIN << std::endl; }
+                else if (arg == "max") { std::cout << VOLT_MAX << std::endl; }
+                else { std::cout << amp << std::endl; }
+            }
+            else if (val >= VOLT_MIN && val <= VOLT_MAX) {
+                amp = val; awgUpdateRequired = true;
+            }
+            else { return false; }
+            return true;
+        }
+        return false;
+        };
+    commandMap["w1"] = std::bind(waveformHandler, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    commandMap["w2"] = std::bind(waveformHandler, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+
+    // 計算関連コマンド
+    commandMap["calculate"] = commandMap["calc"] = [&](const auto& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
+        if (tokens[1] == "offset" && tokens.size() > 2) {
+            if (tokens[2] == "auto" && tokens.size() > 3 && tokens[3] == "once") {
+                pSettings->flagAutoOffset = true; return true;
+            }
+            if (tokens[2] == "state") {
+                if (arg == "on") { pSettings->flagAutoOffset = true; return true; }
+                if (arg == "off") {
+                    pSettings->lia.offset1X = pSettings->lia.offset1Y = 0;
+                    pSettings->lia.offset2X = pSettings->lia.offset2Y = 0;
+                    return true;
+                }
+            }
+        }
+        else if (tokens[1] == "hpf" && tokens.size() > 2) {
+            std::string subCmd = tokens[2];
+            bool isQuery = subCmd.back() == '?';
+            if (isQuery) subCmd.pop_back();
+
+            if (subCmd == "freq" || subCmd == "frequency") {
+                if (isQuery) { std::cout << pSettings->lia.hpFreq << std::endl; }
+                else if (val >= 0.0 && val <= 50.0) { pSettings->lia.hpFreq = val; }
+                else { return false; }
+                return true;
+            }
+        }
+        return false;
+        };
+    commandMap[":calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->lia.offset1Phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->lia.offset2Phase = val; return true; };
+
+    // --- メインループ ---
     while (!st.stop_requested())
     {
-        static std::string errcmd = "";
-        bool fgFlag = false, cmdMissFlag = true;
-        std::string cmd, argument;
-        float value = 0;
-        std::getline(std::cin, cmd);
-        if (cmd.length() == 0) continue; // 空白を受信した時は無視
-        std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower); // コマンドを小文字に変換
-		std::istringstream iss(cmd);
-        iss >> cmd >> argument;
-        try {
-            value = std::stof(argument);
+        std::string line;
+        if (!std::getline(std::cin, line) || line.empty()) {
+            continue;
         }
-        catch (...) {
+
+        std::string original_line = line; // エラーメッセージ表示用に元の入力を保持
+        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+
+        std::string commandPart, argumentPart;
+        float value = 0;
+        std::istringstream iss(line);
+        iss >> commandPart;
+        iss >> argumentPart; // 最初の引数（主に数値）を取得
+
+        try {
+            value = std::stof(argumentPart);
+        }
+        catch (const std::exception&) {
+            // stofに失敗してもコマンド自体は有効な場合があるため、valueは0のまま継続
             value = 0;
         }
-        std::vector<std::string> parsedCmd = parseColon(cmd);
-        if (parsedCmd[0] == "end" || parsedCmd[0] == "exit" || parsedCmd[0] == "quit") { break; }
-        else if (parsedCmd[0] == "reset" || parsedCmd[0] == "*rst")
-        {
-            pSettings->w1Freq = (float)(1.0 / (1000 * pSettings->rawDt));
-            pSettings->w2Freq = pSettings->w1Freq;
-            pSettings->w1Amp = 1.0f;
-            pSettings->w2Amp = 0.0f;
-            pSettings->w1Phase = 0.0f;
-            pSettings->w2Phase = 0.0f;
-            pSettings->flagCh2 = false;
-            pSettings->offset1Phase = 0.0;
-            pSettings->offset1X = 0.0;
-            pSettings->offset1Y = 0.0;
-            pSettings->offset2Phase = 0.0;
-            pSettings->offset2X = 0.0;
-            pSettings->offset2Y = 0.0;
-            pSettings->hpFreq = 0.0f;
-            pSettings->flagSurfaceMode = false;
-            pSettings->flagBeep = false;
-            pSettings->flagACFM = false;
-            pSettings->limit = 1.5f;
-            pSettings->rawLimit = 1.5f;
-            pSettings->historySec = 10.0f;
-            errcmd = "";
-            fgFlag = true;
-            cmdMissFlag = false;
+
+        // コマンドをコロンで分割
+        auto tokens = split(commandPart, ':');
+        if (tokens.empty() && commandPart.length() > 0) { // :で始まらないコマンド用
+            tokens.push_back(commandPart);
         }
-        else if (parsedCmd[0] == "*idn?")
-        {
-            if(pSettings->pDaq == nullptr)
-            {
-                std::cout << "No DAQ is connected." << std::endl;
-                cmdMissFlag = false;
-			}
+        else if (tokens.empty() && commandPart.empty()) {
+            continue;
+        }
+
+        // コマンドのディスパッチ
+        bool commandOk = false;
+        const std::string& mainCommand = tokens[0].empty() ? commandPart : tokens[0]; // :で始まるコマンドか判定
+
+        if (auto it = commandMap.find(mainCommand); it != commandMap.end()) {
+            // マップからハンドラを見つけて実行
+            commandOk = it->second(tokens, argumentPart, value);
+        }
+        else if (auto it_full = commandMap.find(commandPart); it_full != commandMap.end()) {
+            // :chan2:disp のようなフルパスのコマンドを検索
+            commandOk = it_full->second(tokens, argumentPart, value);
+        }
+
+        if (!commandOk) {
+            if (commandMap.count(mainCommand) && mainCommand.length() > 2) break; // 終了コマンド
+            // エラー処理
+            lastErrorCmd = original_line;
+            if (commandPart.find('?') != std::string::npos) {
+                // クエリが失敗した場合は、エラーメッセージを表示してエラー履歴はクリア
+                std::cout << std::format("Error: '{}'\n", lastErrorCmd);
+                lastErrorCmd.clear();
+            }
             else {
-                std::cout << std::format(
-                    "{},{},{},{}\n",
-                    pSettings->pDaq->device.manufacturer,
-                    pSettings->pDaq->device.name,
-                    pSettings->pDaq->device.sn,
-                    pSettings->pDaq->device.version
-                );
-                cmdMissFlag = false;
-            }
-        }
-        else if (parsedCmd[0] == "error?")
-        {
-            if (errcmd == "")
-            {
-                std::cout << "No error." << std::endl;
-                cmdMissFlag = false;
-            }
-            else
-            {
-                std::cout << std::format("Last error: '{}'\n", errcmd);
-                errcmd = "";
-                cmdMissFlag = false;
-            }
-        }
-        else if (parsedCmd[0] == "pause")
-        {
-            pSettings->flagPause = true;
-            cmdMissFlag = false;
-        }
-        else if (parsedCmd[0] == "run")
-        {
-            pSettings->flagPause = false;
-            cmdMissFlag = false;
-        }
-        else if (parsedCmd[0] == "data")
-        {
-            if (parsedCmd[1] == "raw")
-            {
-                if (parsedCmd[2] == "save")
-                {
-                    bool flag = false;
-                    if (argument.length() > 0)
-                    {
-                        flag = pSettings->saveRawData(argument.c_str());
-                    }
-                    else {
-                        flag = pSettings->saveRawData();
-                    }
-                    if (!flag)
-                    {
-                        errcmd = std::format("{} {}", cmd, argument);
-                        cmdMissFlag = false;
-                    }
-                }
-                else if (parsedCmd[2] == "size?")
-                {
-                    std::cout << pSettings->rawData1.size() << std::endl;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "raw?")
-            {
-                if (!pSettings->flagCh2)
-                {
-                    for (int i = 0; i < pSettings->rawData1.size(); i++)
-                    {
-                        std::cout << std::format("{:e},{:e}\n", pSettings->rawDt * i, pSettings->rawData1[i]);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < pSettings->rawData1.size(); i++)
-                    {
-                        std::cout << std::format("{:e},{:e},{:e}\n", pSettings->rawDt * i, pSettings->rawData1[i], pSettings->rawData2[i]);
-                    }
-                }
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "txy?")
-            {
-                int size = pSettings->size;
-                if (value > 0)
-                {
-                    size = value / MEASUREMENT_DT;
-                    if (size > pSettings->size) size = pSettings->size;
-                }
-                int idx = pSettings->tail - size;
-                if (idx < 0)
-                {
-                    if (pSettings->nofm <= MEASUREMENT_SIZE)
-                    {
-                        idx = 0;
-                        size = pSettings->tail;
-                    }
-                    else { idx += MEASUREMENT_SIZE; }
-                }
-                std::cout << size << std::endl;
-                if (!pSettings->flagCh2)
-                {
-                    for (int i = 0; i < size; i++)
-                    {
-                        std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx]);
-                        idx++;
-                        idx %= MEASUREMENT_SIZE;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < size; i++)
-                    {
-                        std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx], pSettings->x2s[idx], pSettings->y2s[idx]);
-                        idx++;
-                        idx %= MEASUREMENT_SIZE;
-                    }
-                }
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "xy?")
-            {
-                size_t idx = pSettings->idx;
-                std::cout << std::format(
-                    "{:e},{:e}",
-                    pSettings->x1s[idx],
-                    pSettings->y1s[idx]
-                );
-                if (pSettings->flagCh2)
-                {
-                    std::cout << std::format(
-                        "{:e},{:e}",
-                        pSettings->x2s[idx],
-                        pSettings->y2s[idx]
-                    );
-                }
-				std::cout << std::endl;
-                cmdMissFlag = false;
-            }
-        }
-        else if (cmd == ":chan2:disp")
-        {
-            if (argument == "on")
-            {
-                pSettings->flagCh2 = true;
-                cmdMissFlag = false;
-            }
-            else if (argument == "off")
-            {
-                pSettings->flagCh2 = false;
-                cmdMissFlag = false;
-            }
-        }
-        else if (parsedCmd[0] == "disp" || parsedCmd[0] == "display")
-        {
-            if (parsedCmd[1] == "xy" && parsedCmd[2] == "limit")
-            {
-                if (0.01 <= value && value <= RAW_RANGE * 1.2)
-                {
-                    pSettings->limit = value;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "raw" && parsedCmd[2]=="limit")
-            {
-                if (0.1 <= value && value <= RAW_RANGE * 1.2)
-                {
-                    pSettings->rawLimit = value;
-                    cmdMissFlag = false;
-                }
-            }
-        }
-        else if (parsedCmd[0] == "w1")
-        {
-            static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
-            static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
-            if (parsedCmd[1] == "phase?")
-            {
-                std::cout << pSettings->w1Phase << std::endl;
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "phase")
-            {
-                pSettings->w1Phase = value;
-                fgFlag = true;
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "freq?" || parsedCmd[1] == "frequency?")
-            {
-                if (argument.length() > 0)
-                {
-                    if (argument == "min")
-                    {
-                        std::cout << lowLimitFreq << std::endl;
-                        cmdMissFlag = false;
-                    }
-                    else if (argument == "max")
-                    {
-                        std::cout << highLimitFreq << std::endl;
-                        cmdMissFlag = false;
-                    }
-                }
-                else
-                {
-                    std::cout << pSettings->w1Freq << std::endl;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "freq" || parsedCmd[1] == "frequency")
-            {
-                if (lowLimitFreq <= value && value <= highLimitFreq)
-                {
-                    pSettings->w1Freq = value;
-                    fgFlag = true;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "volt?" || parsedCmd[1] == "voltage?")
-            {
-                if (argument.length() > 0)
-                {
-                    if (argument == "min")
-                    {
-                        std::cout << 0.0 << std::endl;
-                        cmdMissFlag = false;
-                    }
-                    else if (argument == "max")
-                    {
-                        std::cout << 5.0 << std::endl;
-                        cmdMissFlag = false;
-                    }
-                }
-                else
-                {
-                    std::cout << pSettings->w1Amp << std::endl;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "volt" || parsedCmd[1] == "voltage")
-            {
-                if (0.0 <= value && value <= 5.0)
-                {
-                    pSettings->w1Amp = value;
-                    fgFlag = true;
-                    cmdMissFlag = false;
-                }
-            }
-        }
-        else if (parsedCmd[0] == "w2")
-        {
-            static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
-            static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
-            if (parsedCmd[1] == "phase?")
-            {
-                std::cout << pSettings->w2Phase << std::endl;
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "phase")
-            {
-                pSettings->w2Phase = value;
-                fgFlag = true;
-                cmdMissFlag = false;
-            }
-            else if (parsedCmd[1] == "freq?" || parsedCmd[1] == "frequency?")
-            {
-                if (argument.length() > 0)
-                {
-                    if (argument == "min")
-                    {
-                        std::cout << lowLimitFreq << std::endl;
-                        cmdMissFlag = false;
-                    }
-                    else if (argument == "max")
-                    {
-                        std::cout << highLimitFreq << std::endl;
-                        cmdMissFlag = false;
-                    }
-                }
-                else
-                {
-                    std::cout << pSettings->w2Freq << std::endl;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "freq" || parsedCmd[1] == "frequency")
-            {
-                if (lowLimitFreq <= value && value <= highLimitFreq)
-                {
-                    pSettings->w2Freq = value;
-                    fgFlag = true;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "volt?" || parsedCmd[1] == "voltage?")
-            {
-                if (argument.length() > 0)
-                {
-                    if (argument == "min")
-                    {
-                        std::cout << 0.0 << std::endl;
-                        cmdMissFlag = false;
-                    }
-                    else if (argument == "max")
-                    {
-                        std::cout << 5.0 << std::endl;
-                        cmdMissFlag = false;
-                    }
-                }
-                else
-                {
-                    std::cout << pSettings->w2Amp << std::endl;
-                    cmdMissFlag = false;
-                }
-            }
-            else if (parsedCmd[1] == "volt" || parsedCmd[1] == "voltage")
-            {
-                if (0.0 <= value && value <= 5.0)
-                {
-                    pSettings->w2Amp = value;
-                    fgFlag = true;
-                    cmdMissFlag = false;
-                }
-            }
-        }
-        else if (parsedCmd[0] == "calc" || parsedCmd[0] == "calculate")
-        {
-            if (parsedCmd[1] == "offset")
-            {
-                if (parsedCmd[2] == "auto" && parsedCmd[3] == "once")
-                {
-                    pSettings->flagAutoOffset = true;
-                    cmdMissFlag = false;
-                }
-                else if (parsedCmd[2] == "state")
-                {
-                    if (argument == "on") {
-                        pSettings->flagAutoOffset = true;
-                        cmdMissFlag = false;
-                    }
-                    else if (argument == "off")
-                    {
-                        pSettings->offset1X = 0; pSettings->offset1Y = 0;
-                        pSettings->offset2X = 0; pSettings->offset2Y = 0;
-                        cmdMissFlag = false;
-                    }
-                }
-            }
-            else if (parsedCmd[1] == "hpf")
-            {
-                if (parsedCmd[2] == "freq?" || parsedCmd[2] == "frequency?")
-                {
-                    std::cout << pSettings->hpFreq << std::endl;
-                    cmdMissFlag = false;
-                }
-                else if (parsedCmd[2] == "freq" || parsedCmd[2] == "frequency")
-                {
-                    if (0.0 <= value && value <= 50.0)
-                    {
-                        pSettings->hpFreq = value;
-                        cmdMissFlag = false;
-                    }
-                }
-            }
-            else if (cmd == ":calc1:offset:phase")
-            {
-                pSettings->offset1Phase = value;
-                cmdMissFlag = false;
-            }
-            else if (cmd == ":calc2:offset:phase")
-            {
-                pSettings->offset2Phase = value;
-                cmdMissFlag = false;
+                // 設定コマンドが失敗した場合は、エラー履歴に保存
+                std::cout << std::format("Error: Invalid command or parameter for '{}'\n", lastErrorCmd);
             }
         }
 
-        if (cmdMissFlag)
-        {
-            if (cmd.find("?") != -1)
-            {
-                errcmd = std::format("{} {}", cmd, value);
-                std::cout << std::format("Error: '{}'\n", errcmd);
-                errcmd = "";
-            }
-            else { errcmd = std::format("{} {}", cmd, value); }
-        }
-        std::cout << std::flush;
-        std::cin.clear();
-        if (pSettings->pDaq != nullptr && fgFlag)
-        {
+        // AWG（任意波形発生器）の更新が必要な場合
+        if (awgUpdateRequired && pSettings->pDaq != nullptr) {
             pSettings->pDaq->awg.start(
-                pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
-                pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
+                pSettings->awg.w1Freq, pSettings->awg.w1Amp, pSettings->awg.w1Phase,
+                pSettings->awg.w2Freq, pSettings->awg.w2Amp, pSettings->awg.w2Phase
             );
+            awgUpdateRequired = false;
         }
+
+        std::cout << std::flush;
     }
     pSettings->statusPipe = false;
 }

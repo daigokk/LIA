@@ -3,6 +3,7 @@
 #include <numbers> // For std::numbers::pi
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
+#define NOMINMAX
 #include <Windows.h>
 
 #include <Daq_wf.h>
@@ -70,14 +71,14 @@ void measurement(std::stop_token st, Settings* pSettings)
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
-        pSettings->w1Freq, pSettings->w1Amp, pSettings->w1Phase,
-        pSettings->w2Freq, pSettings->w2Amp, pSettings->w2Phase
+        pSettings->awg.w1Freq, pSettings->awg.w1Amp, pSettings->awg.w1Phase,
+        pSettings->awg.w2Freq, pSettings->awg.w2Amp, pSettings->awg.w2Phase
     );
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pSettings->pDaq = &daq;
-    pSettings->sn = daq.device.sn;
+    pSettings->device_sn = daq.device.sn;
     timer.sleepFor(1.0); 
     daq.scope.start();
     timer.start();
@@ -117,12 +118,12 @@ void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
-            double wt = 2 * std::numbers::pi * pSettings->w1Freq * i * pSettings->rawDt;
+            double wt = 2 * std::numbers::pi * pSettings->awg.w1Freq * i * RAW_DT;
 
-            pSettings->rawData1[i] = pSettings->w1Amp * std::sin(wt - phase);
+            pSettings->rawData1[i] = pSettings->awg.w1Amp * std::sin(wt - phase);
             if (pSettings->flagCh2)
             {
-                pSettings->rawData2[i] = pSettings->w2Amp * std::sin(wt - pSettings->w2Phase);
+                pSettings->rawData2[i] = pSettings->awg.w2Amp * std::sin(wt - pSettings->awg.w2Phase);
             }
         }
         psd.calc(t);
