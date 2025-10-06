@@ -118,7 +118,7 @@
     def _query(self, cmd):
       self._send(cmd)
       return self._recieve()
-    def get_txy(self, sec):
+    def get_txy(self, sec=0):
       dat = []
       size = int(self._query(f':data:txy? {sec}'))
       for i in range(size):
