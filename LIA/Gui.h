@@ -136,7 +136,9 @@ public:
     void swapBuffers(void){ glfwSwapBuffers(this->window); };
     void show()
     {
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImVec4& col = style.Colors[ImGuiCol_WindowBg];
+        col.w = 0.4f; // RGBはそのまま、alphaのみ置き換え
         this->xyPlotWindow->show();
         this->rawPlotWindow->show();
         this->timeChartWindow->show();
@@ -145,11 +147,9 @@ public:
         if (pSettings->flagACFM) this->acfmPlotWindow->show();
         if (pSettings->flagPause)
         {
-            ImGui::PopStyleColor();
+            col.w = 1.0f;
             this->timeChartZoomWindow->show();
-            ImGui::PushStyleColor(ImGuiCol_WindowBg, 0x4D000000);
         }
-        ImGui::PopStyleColor();
     };
 };
 
