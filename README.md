@@ -118,6 +118,13 @@
     def _query(self, cmd):
       self._send(cmd)
       return self._recieve()
+    def get_raw(self):
+        dat = []
+        size = int(self._query(':data:raw:size?'))
+        self._send(':data:raw?')
+        for i in range(size):
+          dat.append(list(map(float,self._recieve().split(','))))
+        return np.array(dat)
     def get_txy(self, sec=0):
       dat = []
       size = int(self._query(f':data:txy? {sec}'))
