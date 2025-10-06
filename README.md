@@ -46,7 +46,7 @@
 
 ## Getting Started 🛠️
   1. Install Dependencies
-     - Digilent WaveForms SDK
+     - [Digilent WaveForms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/start)
   1. Hardware Setup
      - Connect Analog Discovery 2 or 3 to your PC
      - Example wiring:
@@ -158,6 +158,7 @@
   - Hardware: Digilent Analog Discovery 2 or 3
   - Development: Microsoft Visual Studio 2022 (C++20)
   - Dependencies:
+    - [Digilent WaveForms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/start)
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
