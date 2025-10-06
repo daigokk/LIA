@@ -114,7 +114,7 @@
       self.process.stdin.flush()
     def _recieve(self, ):
       self.process.stdout.flush()
-      return self.process.stdout.readline()
+      return self.process.stdout.readline()[:-1]
     def _query(self, cmd):
       self._send(cmd)
       return self._recieve()
