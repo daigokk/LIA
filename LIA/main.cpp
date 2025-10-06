@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     std::jthread th_measurement;
     if (adIdx == -1)
     {
-        std::cerr << "No AD is connected." << std::endl;
+        std::cout << "No AD is connected." << std::endl;
        th_measurement = std::jthread{ measurementWithoutDaq, &settings };
     }
     else {

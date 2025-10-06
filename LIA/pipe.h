@@ -82,14 +82,21 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (parsedCmd[0] == "*idn?")
         {
-            std::cout << std::format(
-                "{},{},{},{}\n",
-				pSettings->pDaq->device.manufacturer,
-                pSettings->pDaq->device.name,
-                pSettings->pDaq->device.sn,
-                pSettings->pDaq->device.version
-            );
-            cmdMissFlag = false;
+            if(pSettings->pDaq == nullptr)
+            {
+                std::cout << "No AD is connected." << std::endl;
+                cmdMissFlag = false;
+			}
+            else {
+                std::cout << std::format(
+                    "{},{},{},{}\n",
+                    pSettings->pDaq->device.manufacturer,
+                    pSettings->pDaq->device.name,
+                    pSettings->pDaq->device.sn,
+                    pSettings->pDaq->device.version
+                );
+                cmdMissFlag = false;
+            }
         }
         else if (parsedCmd[0] == "error?")
         {
@@ -252,6 +259,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         else if (parsedCmd[0] == "w1")
         {
+            static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
+            static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
             if (parsedCmd[1] == "phase?")
             {
                 std::cout << pSettings->w1Phase << std::endl;
@@ -265,38 +274,69 @@ void pipe(std::stop_token st, Settings* pSettings)
             }
             else if (parsedCmd[1] == "freq?" || parsedCmd[1] == "frequency?")
             {
-                std::cout << pSettings->w1Freq << std::endl;
-                cmdMissFlag = false;
+                if (argument.length() > 0)
+                {
+                    if (argument == "min")
+                    {
+                        std::cout << lowLimitFreq << std::endl;
+                        cmdMissFlag = false;
+                    }
+                    else if (argument == "max")
+                    {
+                        std::cout << highLimitFreq << std::endl;
+                        cmdMissFlag = false;
+                    }
+                }
+                else
+                {
+                    std::cout << pSettings->w1Freq << std::endl;
+                    cmdMissFlag = false;
+                }
             }
             else if (parsedCmd[1] == "freq" || parsedCmd[1] == "frequency")
             {
-                static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
-                static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
                 if (lowLimitFreq <= value && value <= highLimitFreq)
                 {
                     pSettings->w1Freq = value;
                     fgFlag = true;
                     cmdMissFlag = false;
                 }
-
             }
             else if (parsedCmd[1] == "volt?" || parsedCmd[1] == "voltage?")
             {
-                std::cout << pSettings->w1Amp << std::endl;
-                cmdMissFlag = false;
+                if (argument.length() > 0)
+                {
+                    if (argument == "min")
+                    {
+                        std::cout << 0.0 << std::endl;
+                        cmdMissFlag = false;
+                    }
+                    else if (argument == "max")
+                    {
+                        std::cout << 5.0 << std::endl;
+                        cmdMissFlag = false;
+                    }
+                }
+                else
+                {
+                    std::cout << pSettings->w1Amp << std::endl;
+                    cmdMissFlag = false;
+                }
             }
             else if (parsedCmd[1] == "volt" || parsedCmd[1] == "voltage")
             {
-                    if (0.0 <= value && value <= 5.0)
-                    {
-                        pSettings->w1Amp = value;
-                        fgFlag = true;
-                        cmdMissFlag = false;
-                    }
+                if (0.0 <= value && value <= 5.0)
+                {
+                    pSettings->w1Amp = value;
+                    fgFlag = true;
+                    cmdMissFlag = false;
+                }
             }
         }
         else if (parsedCmd[0] == "w2")
         {
+            static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
+            static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
             if (parsedCmd[1] == "phase?")
             {
                 std::cout << pSettings->w2Phase << std::endl;
@@ -310,13 +350,27 @@ void pipe(std::stop_token st, Settings* pSettings)
             }
             else if (parsedCmd[1] == "freq?" || parsedCmd[1] == "frequency?")
             {
-                std::cout << pSettings->w2Freq << std::endl;
-                cmdMissFlag = false;
+                if (argument.length() > 0)
+                {
+                    if (argument == "min")
+                    {
+                        std::cout << lowLimitFreq << std::endl;
+                        cmdMissFlag = false;
+                    }
+                    else if (argument == "max")
+                    {
+                        std::cout << highLimitFreq << std::endl;
+                        cmdMissFlag = false;
+                    }
+                }
+                else
+                {
+                    std::cout << pSettings->w2Freq << std::endl;
+                    cmdMissFlag = false;
+                }
             }
             else if (parsedCmd[1] == "freq" || parsedCmd[1] == "frequency")
             {
-                static double lowLimitFreq = 0.5 / (RAW_SIZE * pSettings->rawDt);
-                static double highLimitFreq = std::round(1.0 / (1000 * pSettings->rawDt));
                 if (lowLimitFreq <= value && value <= highLimitFreq)
                 {
                     pSettings->w2Freq = value;
@@ -326,8 +380,24 @@ void pipe(std::stop_token st, Settings* pSettings)
             }
             else if (parsedCmd[1] == "volt?" || parsedCmd[1] == "voltage?")
             {
-                std::cout << pSettings->w2Amp << std::endl;
-                cmdMissFlag = false;
+                if (argument.length() > 0)
+                {
+                    if (argument == "min")
+                    {
+                        std::cout << 0.0 << std::endl;
+                        cmdMissFlag = false;
+                    }
+                    else if (argument == "max")
+                    {
+                        std::cout << 5.0 << std::endl;
+                        cmdMissFlag = false;
+                    }
+                }
+                else
+                {
+                    std::cout << pSettings->w2Amp << std::endl;
+                    cmdMissFlag = false;
+                }
             }
             else if (parsedCmd[1] == "volt" || parsedCmd[1] == "voltage")
             {
@@ -362,7 +432,7 @@ void pipe(std::stop_token st, Settings* pSettings)
                     }
                 }
             }
-            else if (parsedCmd[1] == "hp")
+            else if (parsedCmd[1] == "hpf")
             {
                 if (parsedCmd[2] == "freq?" || parsedCmd[2] == "frequency?")
                 {
