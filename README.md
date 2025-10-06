@@ -162,9 +162,9 @@
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
 ## References 📚
-<a id="#1"></a>
+<a id="1"></a>
   1. [Kosaka, D., Hoshiba, M., Nakamoto, H.  (2023). Quantitative Assessment of Eddy Current Inspection Technician Skills. In: Tareq Ahram and Waldemar Karwowski (eds) Emerging Technologies and Future of Work. AHFE (2023) International Conference. AHFE Open Access, vol 117. AHFE International, USA.](http://doi.org/10.54941/ahfe1004427)
-<a id="#2"></a>
+<a id="2"></a>
   2. [D. Kosaka, H. Hanawa and K. Hirano, "Method for Estimating Crack Length and Depth Using Radial Basis Function in Eddy Current Testing," 2025 Joint MMM-Intermag Conference (INTERMAG), New Orleans, LA, USA, 2025, pp. 1-6](https://doi.org/10.1109/INTERMAG49787.2025.11087788)]
 ## Acknowledgments 🙏
   This software was supported in part from the Hazardous Materials Safety Techniques Association. It was also developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
