@@ -3,7 +3,7 @@
 #include "settings.h"
 #include "ImGuiWindowBase.h"
 
-#define MILI_VOLT 0.2f
+constexpr auto MILI_VOLT = 0.2f;
 
 const ImVec4 colors[] = {
         ImVec4(1,0,0,1),   // Red

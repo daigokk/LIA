@@ -6,6 +6,17 @@
 #include <cmath>
 #include <numbers> // For std::numbers::pi
 
+enum class ButtonType
+{
+    NON,
+    AwgW1Freq,
+    AwgW1Amp,
+    AwgW1Phase,
+    AwgW2Freq,
+    AwgW2Amp,
+    AwgW2Phase,
+};
+
 class ControlWindow : public ImGuiWindowBase
 {
 private:
@@ -21,6 +32,8 @@ public:
 
 inline void ControlWindow::show(void)
 {
+    ButtonType button = ButtonType::NON;
+    float value = 0;
     bool fgFlag = false;
     static ImVec2 windowSize = ImVec2(450 * pSettings->window.monitorScale, 920 * pSettings->window.monitorScale);
     static float nextItemWidth = 170.0f * pSettings->window.monitorScale;
@@ -49,6 +62,8 @@ inline void ControlWindow::show(void)
                     pSettings->awg.ch[1].freq = freqkHz * 1e3f;
                     fgFlag = true;
                 }
+                button = ButtonType::AwgW1Freq;
+                value = pSettings->awg.ch[0].freq;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             static float oldCh0Amp = pSettings->awg.ch[0].amp;
@@ -61,6 +76,8 @@ inline void ControlWindow::show(void)
                     oldCh0Amp = pSettings->awg.ch[0].amp;
                     fgFlag = true;
                 }
+                button = ButtonType::AwgW1Amp;
+                value = pSettings->awg.ch[0].amp;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             //static float oldCh0Phase = pSettings->awg.ch[0].phase;
@@ -255,4 +272,9 @@ inline void ControlWindow::show(void)
         );
     }
     ImGui::End();
+    if (button != ButtonType::NON)
+    {
+        float tmp[] = { pSettings->timer.elapsedSec(), (float)button, value };
+        //pSettings->cmds.push_back(tmp);
+    }
 }

@@ -10,8 +10,9 @@
 #include <cmath>
 #include <numbers> // For std::numbers::pi
 #include <algorithm> // For std::transform
-#include "inicpp.h"
 #include "Daq_wf.h"
+#include "inicpp.h"
+#include "Timer.h"
 
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
@@ -114,8 +115,10 @@ public:
     };
 
     // --- Public Members ---
+    Timer timer;
     Daq_dwf* pDaq = nullptr;
     std::string device_sn = "SN:XXXXXXXXXX";
+    std::vector<float[3]> cmds;
 
     // Configuration Data
     WindowCfg window;

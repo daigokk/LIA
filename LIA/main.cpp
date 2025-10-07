@@ -5,14 +5,12 @@
 #include <thread> // std::jthread
 #define NOMINMAX
 #include <Windows.h>
-
 #include <Daq_wf.h>
-
 #include "Gui.h"
 #include "pipe.h"
 #include "Psd.h"
 #include "Settings.h"
-#include "Timer.h"
+
 void measurement(std::stop_token st, Settings* pSettings);
 void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
 
@@ -67,7 +65,6 @@ int main(int argc, char* argv[])
 void measurement(std::stop_token st, Settings* pSettings)
 {
     static Psd psd(pSettings);
-    Timer timer;
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
@@ -79,16 +76,16 @@ void measurement(std::stop_token st, Settings* pSettings)
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pSettings->pDaq = &daq;
     pSettings->device_sn = daq.device.sn;
-    timer.sleepFor(1.0); 
+    pSettings->timer.sleepFor(1.0);
     daq.scope.start();
-    timer.start();
+    pSettings->timer.start();
     pSettings->statusMeasurement = true;
     size_t nloop = 0;
     while (!st.stop_requested())
     {
         double t = nloop * MEASUREMENT_DT;
         nloop++;
-        t = timer.sleepUntil(t);
+        t = pSettings->timer.sleepUntil(t);
         if (pSettings->flagPause) continue;
         if (!pSettings->flagCh2)
         {
@@ -105,15 +102,14 @@ void measurement(std::stop_token st, Settings* pSettings)
 void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
 {
     static Psd psd(pSettings);
-    Timer timer;
-    timer.start();
+    pSettings->timer.start();
     pSettings->statusMeasurement = true;
     size_t nloop = 0;
     while (!st.stop_requested())
     {
         double t = nloop * MEASUREMENT_DT;
         nloop++;
-        t = timer.sleepUntil(t);
+        t = pSettings->timer.sleepUntil(t);
         if (pSettings->flagPause) continue;
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
