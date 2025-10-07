@@ -38,34 +38,34 @@ inline void ControlWindow::show(void)
         if (ImGui::BeginTabItem("W1"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = pSettings->awg.w1Freq * 1e-3f;
+            float freqkHz = pSettings->awg.ch[0].freq * 1e-3f;
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
                 if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
                 if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
-                if (pSettings->awg.w1Freq != freqkHz * 1e3f)
+                if (pSettings->awg.ch[0].freq != freqkHz * 1e3f)
                 {
-                    pSettings->awg.w1Freq = freqkHz * 1e3f;
-                    pSettings->awg.w2Freq = freqkHz * 1e3f;
+                    pSettings->awg.ch[0].freq = freqkHz * 1e3f;
+                    pSettings->awg.ch[1].freq = freqkHz * 1e3f;
                     fgFlag = true;
                 }
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldW1Amp = pSettings->awg.w1Amp;
-            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.w1Amp), 0.1f, 0.1f, "%4.1f"))
+            static float oldCh0Amp = pSettings->awg.ch[0].amp;
+            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
             {
-                if (pSettings->awg.w1Amp < 0.1f) pSettings->awg.w1Amp = 0.1f;
-                if (pSettings->awg.w1Amp > 5.0f) pSettings->awg.w1Amp = 5.0f;
-                if (oldW1Amp != pSettings->awg.w1Amp)
+                if (pSettings->awg.ch[0].amp < 0.1f) pSettings->awg.ch[0].amp = 0.1f;
+                if (pSettings->awg.ch[0].amp > 5.0f) pSettings->awg.ch[0].amp = 5.0f;
+                if (oldCh0Amp != pSettings->awg.ch[0].amp)
                 {
-                    oldW1Amp = pSettings->awg.w1Amp;
+                    oldCh0Amp = pSettings->awg.ch[0].amp;
                     fgFlag = true;
                 }
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldW1Phase = pSettings->awg.w1Phase;
+            //static float oldCh0Phase = pSettings->awg.ch[0].phase;
             ImGui::BeginDisabled();
-            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->awg.w1Phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->awg.ch[0].phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
@@ -75,33 +75,33 @@ inline void ControlWindow::show(void)
         if (ImGui::BeginTabItem("W2"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = pSettings->awg.w2Freq * 1e-3f;
+            float freqkHz = pSettings->awg.ch[1].freq * 1e-3f;
             ImGui::BeginDisabled();
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
                 if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
                 if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
-                if (pSettings->awg.w2Freq != freqkHz * 1e3f)
+                if (pSettings->awg.ch[1].freq != freqkHz * 1e3f)
                 {
-                    pSettings->awg.w2Freq = freqkHz * 1e3f;
+                    pSettings->awg.ch[1].freq = freqkHz * 1e3f;
                     fgFlag = true;
                 }
             }
             ImGui::EndDisabled();
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldFg2Amp = pSettings->awg.w2Amp;
-            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.w2Amp), 0.01f, 0.1f, "%4.2f"))
+            static float oldFg2Amp = pSettings->awg.ch[1].amp;
+            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
             {
-                if (pSettings->awg.w2Amp < 0.0f) pSettings->awg.w2Amp = 0.0f;
-                if (pSettings->awg.w2Amp > 5.0f) pSettings->awg.w2Amp = 5.0f;
-                if (oldFg2Amp != pSettings->awg.w2Amp)
+                if (pSettings->awg.ch[1].amp < 0.0f) pSettings->awg.ch[1].amp = 0.0f;
+                if (pSettings->awg.ch[1].amp > 5.0f) pSettings->awg.ch[1].amp = 5.0f;
+                if (oldFg2Amp != pSettings->awg.ch[1].amp)
                 {
-                    oldFg2Amp = pSettings->awg.w2Amp;
+                    oldFg2Amp = pSettings->awg.ch[1].amp;
                     fgFlag = true;
                 }
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->awg.w2Phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"ƒÆ (Deg.)", &(pSettings->awg.ch[1].phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
@@ -126,10 +126,10 @@ inline void ControlWindow::show(void)
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-            ImGui::InputDouble((char*)u8"Ch1 ƒÆ (Deg.)", &(pSettings->lia.offset1Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch1 ƒÆ (Deg.)", &(pSettings->post.offset1Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble((char*)u8"Ch2 ƒÆ (Deg.)", &(pSettings->lia.offset2Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch2 ƒÆ (Deg.)", &(pSettings->post.offset2Phase), 1.0, 10.0, "%3.0f");
             if (!stateCh2) { ImGui::EndDisabled(); }
             if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
@@ -164,7 +164,7 @@ inline void ControlWindow::show(void)
         pSettings->flagAutoOffset = true;
     }
     bool stateAutoOffset = true;
-    if (pSettings->lia.offset1X == 0 && pSettings->lia.offset1Y == 0)
+    if (pSettings->post.offset1X == 0 && pSettings->post.offset1Y == 0)
     {
         stateAutoOffset = false;
         ImGui::BeginDisabled();
@@ -172,8 +172,8 @@ inline void ControlWindow::show(void)
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * pSettings->window.monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
-        pSettings->lia.offset1X = 0.0f; pSettings->lia.offset1Y = 0.0f;
-        pSettings->lia.offset2X = 0.0f; pSettings->lia.offset2Y = 0.0f;
+        pSettings->post.offset1X = 0.0f; pSettings->post.offset1Y = 0.0f;
+        pSettings->post.offset2X = 0.0f; pSettings->post.offset2Y = 0.0f;
     }
     if (!stateAutoOffset) ImGui::EndDisabled();
     if (pSettings->flagPause) { ImGui::EndDisabled(); }
@@ -190,9 +190,9 @@ inline void ControlWindow::show(void)
     if (ImGui::TreeNode("Offset value"))
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->lia.offset1X, pSettings->lia.offset1Y);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->post.offset1X, pSettings->post.offset1Y);
         if (!stateCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->lia.offset2X, pSettings->lia.offset2Y);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->post.offset2X, pSettings->post.offset2Y);
         if (!stateCh2) ImGui::EndDisabled();
         ImGui::TreePop();
         if (!stateAutoOffset) ImGui::EndDisabled();
@@ -213,10 +213,10 @@ inline void ControlWindow::show(void)
     ImGui::Checkbox("ACFM", &pSettings->plot.acfm);
     ImGui::SetNextItemWidth(nextItemWidth);
     //if (pSettings->flagPause) { ImGui::BeginDisabled(); }
-    if (ImGui::InputFloat("HPF (Hz)", &(pSettings->lia.hpFreq), 0.1f, 1.0f, "%4.1f"))
+    if (ImGui::InputFloat("HPF (Hz)", &(pSettings->post.hpFreq), 0.1f, 1.0f, "%4.1f"))
     {
-        if (pSettings->lia.hpFreq < 0.0f) pSettings->lia.hpFreq = 0.0f;
-        if (pSettings->lia.hpFreq > 50.0f) pSettings->lia.hpFreq = 50.0f;
+        if (pSettings->post.hpFreq < 0.0f) pSettings->post.hpFreq = 0.0f;
+        if (pSettings->post.hpFreq > 50.0f) pSettings->post.hpFreq = 50.0f;
     }
     //if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::Separator();
@@ -250,8 +250,8 @@ inline void ControlWindow::show(void)
     if (pSettings->pDaq != nullptr && fgFlag)
     {
         pSettings->pDaq->awg.start(
-            pSettings->awg.w1Freq, pSettings->awg.w1Amp, pSettings->awg.w1Phase,
-            pSettings->awg.w2Freq, pSettings->awg.w2Amp, pSettings->awg.w2Phase
+            pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
+            pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
         );
     }
     ImGui::End();

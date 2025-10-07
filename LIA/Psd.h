@@ -13,12 +13,12 @@ public:
     Psd(Settings* pSettings)
     {
         this->pSettings = pSettings;
-        oldFreq = pSettings->awg.w1Freq;
+        oldFreq = pSettings->awg.ch[0].freq;
         init();
     }
     void init()
     {
-        oldFreq = pSettings->awg.w1Freq;
+        oldFreq = pSettings->awg.ch[0].freq;
         size_t halfPeriodSize = (size_t)(0.5 / oldFreq / RAW_DT);
         size = halfPeriodSize * (size_t)(RAW_SIZE / halfPeriodSize);
         //#pragma omp parallel for
@@ -30,7 +30,7 @@ public:
     }
     void calc(const double t)
     {
-        if (oldFreq != pSettings->awg.w1Freq) init();
+        if (oldFreq != pSettings->awg.ch[0].freq) init();
         double _x1 = 0, _y1 = 0, _x2 = 0, _y2 = 0;
         if (!pSettings->flagCh2)
         {
@@ -44,11 +44,11 @@ public:
             _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
             if (pSettings->flagAutoOffset)
             {
-                pSettings->lia.offset1X = _x1; pSettings->lia.offset1Y = _y1;
+                pSettings->post.offset1X = _x1; pSettings->post.offset1Y = _y1;
                 pSettings->flagAutoOffset = false;
             }
-            _x1 -= pSettings->lia.offset1X; _y1 -= pSettings->lia.offset1Y;
-            double theta1 = pSettings->lia.offset1Phase / 180 * std::numbers::pi;
+            _x1 -= pSettings->post.offset1X; _y1 -= pSettings->post.offset1Y;
+            double theta1 = pSettings->post.offset1Phase / 180 * std::numbers::pi;
             pSettings->AddPoint(
                 t,
                 _x1 * std::cos(theta1) - _y1 * std::sin(theta1),
@@ -69,14 +69,14 @@ public:
             _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
             if (pSettings->flagAutoOffset)
             {
-                pSettings->lia.offset1X = _x1; pSettings->lia.offset1Y = _y1;
-                pSettings->lia.offset2X = _x2; pSettings->lia.offset2Y = _y2;
+                pSettings->post.offset1X = _x1; pSettings->post.offset1Y = _y1;
+                pSettings->post.offset2X = _x2; pSettings->post.offset2Y = _y2;
                 pSettings->flagAutoOffset = false;
             }
-            _x1 -= pSettings->lia.offset1X; _y1 -= pSettings->lia.offset1Y;
-            _x2 -= pSettings->lia.offset2X; _y2 -= pSettings->lia.offset2Y;
-            double theta1 = pSettings->lia.offset1Phase / 180 * std::numbers::pi;
-            double theta2 = pSettings->lia.offset2Phase / 180 * std::numbers::pi;
+            _x1 -= pSettings->post.offset1X; _y1 -= pSettings->post.offset1Y;
+            _x2 -= pSettings->post.offset2X; _y2 -= pSettings->post.offset2Y;
+            double theta1 = pSettings->post.offset1Phase / 180 * std::numbers::pi;
+            double theta2 = pSettings->post.offset2Phase / 180 * std::numbers::pi;
             pSettings->AddPoint(
                 t,
                 _x1 * std::cos(theta1) - _y1 * std::sin(theta1),

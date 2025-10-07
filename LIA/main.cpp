@@ -71,8 +71,8 @@ void measurement(std::stop_token st, Settings* pSettings)
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
-        pSettings->awg.w1Freq, pSettings->awg.w1Amp, pSettings->awg.w1Phase,
-        pSettings->awg.w2Freq, pSettings->awg.w2Amp, pSettings->awg.w2Phase
+        pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
+        pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
     );
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
@@ -118,12 +118,12 @@ void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pSettings->rawTime.size(); i++)
         {
-            double wt = 2 * std::numbers::pi * pSettings->awg.w1Freq * i * RAW_DT;
+            double wt = 2 * std::numbers::pi * pSettings->awg.ch[0].freq * i * RAW_DT;
 
-            pSettings->rawData1[i] = pSettings->awg.w1Amp * std::sin(wt - phase);
+            pSettings->rawData1[i] = pSettings->awg.ch[0].amp * std::sin(wt - phase);
             if (pSettings->flagCh2)
             {
-                pSettings->rawData2[i] = pSettings->awg.w2Amp * std::sin(wt - pSettings->awg.w2Phase);
+                pSettings->rawData2[i] = pSettings->awg.ch[1].amp * std::sin(wt - pSettings->awg.ch[1].phase);
             }
         }
         psd.calc(t);

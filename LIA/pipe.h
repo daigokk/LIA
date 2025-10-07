@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-// 汎用的な文字列分割関数
-std::vector<std::string> split(const std::string& str, char delimiter) {
+// 文字列分割関数
+std::vector<std::string> split(const std::string& str, char delimiter=':') {
     std::vector<std::string> tokens;
     if (str.empty()) {
         return tokens;
@@ -51,20 +51,20 @@ void pipe(std::stop_token st, Settings* pSettings)
     // リセットコマンド
     commandMap["reset"] = commandMap["*rst"] = [&](const auto&, const auto&, auto) {
         // pSettingsの各メンバを初期値にリセット
-        pSettings->awg.w1Freq = (float)(1.0 / (1000 * RAW_DT));
-        pSettings->awg.w2Freq = pSettings->awg.w1Freq;
-        pSettings->awg.w1Amp = 1.0f;
-        pSettings->awg.w2Amp = 0.0f;
-        pSettings->awg.w1Phase = 0.0f;
-        pSettings->awg.w2Phase = 0.0f;
+        pSettings->awg.ch[0].freq = (float)(1.0 / (1000 * RAW_DT));
+        pSettings->awg.ch[1].freq = pSettings->awg.ch[0].freq;
+        pSettings->awg.ch[0].amp = 1.0f;
+        pSettings->awg.ch[1].amp = 0.0f;
+        pSettings->awg.ch[0].phase = 0.0f;
+        pSettings->awg.ch[1].phase = 0.0f;
         pSettings->flagCh2 = false;
-        pSettings->lia.offset1Phase = 0.0;
-        pSettings->lia.offset1X = 0.0;
-        pSettings->lia.offset1Y = 0.0;
-        pSettings->lia.offset2Phase = 0.0;
-        pSettings->lia.offset2X = 0.0;
-        pSettings->lia.offset2Y = 0.0;
-        pSettings->lia.hpFreq = 0.0f;
+        pSettings->post.offset1Phase = 0.0;
+        pSettings->post.offset1X = 0.0;
+        pSettings->post.offset1Y = 0.0;
+        pSettings->post.offset2Phase = 0.0;
+        pSettings->post.offset2X = 0.0;
+        pSettings->post.offset2Y = 0.0;
+        pSettings->post.hpFreq = 0.0f;
         pSettings->plot.surfaceMode = false;
         pSettings->plot.beep = false;
         pSettings->plot.acfm = false;
@@ -199,9 +199,9 @@ void pipe(std::stop_token st, Settings* pSettings)
     auto waveformHandler = [&](bool isW1, const auto& tokens, const std::string& arg, float val) {
         if (tokens.size() < 2) return false;
 
-        float& freq = isW1 ? pSettings->awg.w1Freq : pSettings->awg.w2Freq;
-        float& amp = isW1 ? pSettings->awg.w1Amp : pSettings->awg.w2Amp;
-        float& phase = isW1 ? pSettings->awg.w1Phase : pSettings->awg.w2Phase;
+        float& freq = isW1 ? pSettings->awg.ch[0].freq : pSettings->awg.ch[1].freq;
+        float& amp = isW1 ? pSettings->awg.ch[0].amp : pSettings->awg.ch[1].amp;
+        float& phase = isW1 ? pSettings->awg.ch[0].phase : pSettings->awg.ch[1].phase;
 
         static const double lowLimitFreq = 0.5 / (RAW_SIZE * RAW_DT);
         static const double highLimitFreq = std::round(1.0 / (1000 * RAW_DT));
@@ -256,8 +256,8 @@ void pipe(std::stop_token st, Settings* pSettings)
             if (tokens[2] == "state") {
                 if (arg == "on") { pSettings->flagAutoOffset = true; return true; }
                 if (arg == "off") {
-                    pSettings->lia.offset1X = pSettings->lia.offset1Y = 0;
-                    pSettings->lia.offset2X = pSettings->lia.offset2Y = 0;
+                    pSettings->post.offset1X = pSettings->post.offset1Y = 0;
+                    pSettings->post.offset2X = pSettings->post.offset2Y = 0;
                     return true;
                 }
             }
@@ -268,16 +268,16 @@ void pipe(std::stop_token st, Settings* pSettings)
             if (isQuery) subCmd.pop_back();
 
             if (subCmd == "freq" || subCmd == "frequency") {
-                if (isQuery) { std::cout << pSettings->lia.hpFreq << std::endl; }
-                else if (val >= 0.0 && val <= 50.0) { pSettings->lia.hpFreq = val; }
+                if (isQuery) { std::cout << pSettings->post.hpFreq << std::endl; }
+                else if (val >= 0.0 && val <= 50.0) { pSettings->post.hpFreq = val; }
                 else { return false; }
                 return true;
             }
         }
         return false;
         };
-    commandMap[":calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->lia.offset1Phase = val; return true; };
-    commandMap[":calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->lia.offset2Phase = val; return true; };
+    commandMap[":calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
 
     // --- メインループ ---
     while (!st.stop_requested())
@@ -344,8 +344,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         // AWG（任意波形発生器）の更新が必要な場合
         if (awgUpdateRequired && pSettings->pDaq != nullptr) {
             pSettings->pDaq->awg.start(
-                pSettings->awg.w1Freq, pSettings->awg.w1Amp, pSettings->awg.w1Phase,
-                pSettings->awg.w2Freq, pSettings->awg.w2Amp, pSettings->awg.w2Phase
+                pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
+                pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
             );
             awgUpdateRequired = false;
         }

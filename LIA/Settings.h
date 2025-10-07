@@ -17,7 +17,7 @@
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1e-8;
 constexpr size_t RAW_SIZE = 5000;
-constexpr double MEASUREMENT_DT = 2.0e-3;
+constexpr double MEASUREMENT_DT = 1.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
 constexpr float XY_HISTORY_SEC = 10.0f;
@@ -89,11 +89,20 @@ public:
     };
 
     struct AwgCfg {
-        float w1Freq = 100e3, w1Amp = 1.0, w1Phase = 0.0;
-        float w2Freq = 100e3, w2Amp = 0.0, w2Phase = 0.0;
+        struct Channel {
+            bool enable = true;
+            int func = funcSine;
+            int trigsrc = 0; // None
+            float freq = 100e3;
+            float amp = 1.0;
+            float phase = 0.0;
+		};
+        Channel ch[2];
+        AwgCfg() : ch{ Channel(), Channel() } {
+            ch[1].amp = 0.0f; // Default amp for channel 2 is 0V
+        }
     };
-
-    struct LiaCfg {
+    struct PostCfg {
         double offset1Phase = 0, offset1X = 0, offset1Y = 0;
         double offset2Phase = 0, offset2X = 0, offset2Y = 0;
         float hpFreq = 0;
@@ -112,7 +121,7 @@ public:
     WindowCfg window;
     ImGuiCfg imgui;
     AwgCfg awg;
-    LiaCfg lia;
+    PostCfg post;
     PlotCfg plot;
 
     // State Flags
@@ -161,7 +170,10 @@ public:
             rawTime[i] = i * RAW_DT * 1e6;
         }
     }
-
+    ~Settings() {
+        saveResultsToFile();
+        saveSettingsToFile();
+	}
     // --- Public Methods for Logic and I/O ---
 
     void AddPoint(double t, double x, double y) {
@@ -215,20 +227,20 @@ public:
         liaIni["ImGui"]["theme"] = imgui.theme;
         liaIni["ImGui"]["windowFlag"] = imgui.windowFlag;
 
-        liaIni["Awg"]["w1Freq"] = awg.w1Freq;
-        liaIni["Awg"]["w1Amp"] = awg.w1Amp;
-        liaIni["Awg"]["w2Amp"] = awg.w2Amp;
-        liaIni["Awg"]["w2Phase"] = awg.w2Phase;
+        liaIni["Awg"]["ch[0].freq"] = awg.ch[0].freq;
+        liaIni["Awg"]["ch[0].amp"] = awg.ch[0].amp;
+        liaIni["Awg"]["ch[1].amp"] = awg.ch[1].amp;
+        liaIni["Awg"]["w2Phase"] = awg.ch[1].phase;
 
         liaIni["Scope"]["flagCh2"] = flagCh2;
 
-        liaIni["Lia"]["offset1Phase"] = lia.offset1Phase;
-        liaIni["Lia"]["offset1X"] = lia.offset1X;
-        liaIni["Lia"]["offset1Y"] = lia.offset1Y;
-        liaIni["Lia"]["offset2Phase"] = lia.offset2Phase;
-        liaIni["Lia"]["offset2X"] = lia.offset2X;
-        liaIni["Lia"]["offset2Y"] = lia.offset2Y;
-        liaIni["Lia"]["hpFreq"] = lia.hpFreq;
+        liaIni["Lia"]["offset1Phase"] = post.offset1Phase;
+        liaIni["Lia"]["offset1X"] = post.offset1X;
+        liaIni["Lia"]["offset1Y"] = post.offset1Y;
+        liaIni["Lia"]["offset2Phase"] = post.offset2Phase;
+        liaIni["Lia"]["offset2X"] = post.offset2X;
+        liaIni["Lia"]["offset2Y"] = post.offset2Y;
+        liaIni["Lia"]["hpFreq"] = post.hpFreq;
 
         liaIni["Plot"]["limit"] = plot.limit;
         liaIni["Plot"]["rawLimit"] = plot.rawLimit;
@@ -291,20 +303,20 @@ private:
         imgui.theme = loadValue(liaIni, "ImGui", "theme", imgui.theme);
         imgui.windowFlag = loadValue(liaIni, "ImGui", "windowFlag", imgui.windowFlag);
 
-        awg.w1Freq = loadValue(liaIni, "Awg", "w1Freq", awg.w1Freq);
-        awg.w1Amp = loadValue(liaIni, "Awg", "w1Amp", awg.w1Amp);
-        awg.w2Amp = loadValue(liaIni, "Awg", "w2Amp", awg.w2Amp);
-        awg.w2Phase = loadValue(liaIni, "Awg", "w2Phase", awg.w2Phase);
+        awg.ch[0].freq = loadValue(liaIni, "Awg", "ch[0].freq", awg.ch[0].freq);
+        awg.ch[0].amp = loadValue(liaIni, "Awg", "ch[0].amp", awg.ch[0].amp);
+        awg.ch[1].amp = loadValue(liaIni, "Awg", "ch[1].amp", awg.ch[1].amp);
+        awg.ch[1].phase = loadValue(liaIni, "Awg", "w2Phase", awg.ch[1].phase);
 
         flagCh2 = loadValue(liaIni, "Scope", "flagCh2", flagCh2);
 
-        lia.offset1Phase = loadValue(liaIni, "Lia", "offset1Phase", lia.offset1Phase);
-        lia.offset1X = loadValue(liaIni, "Lia", "offset1X", lia.offset1X);
-        lia.offset1Y = loadValue(liaIni, "Lia", "offset1Y", lia.offset1Y);
-        lia.offset2Phase = loadValue(liaIni, "Lia", "offset2Phase", lia.offset2Phase);
-        lia.offset2X = loadValue(liaIni, "Lia", "offset2X", lia.offset2X);
-        lia.offset2Y = loadValue(liaIni, "Lia", "offset2Y", lia.offset2Y);
-        lia.hpFreq = loadValue(liaIni, "Lia", "hpFreq", lia.hpFreq);
+        post.offset1Phase = loadValue(liaIni, "Lia", "offset1Phase", post.offset1Phase);
+        post.offset1X = loadValue(liaIni, "Lia", "offset1X", post.offset1X);
+        post.offset1Y = loadValue(liaIni, "Lia", "offset1Y", post.offset1Y);
+        post.offset2Phase = loadValue(liaIni, "Lia", "offset2Phase", post.offset2Phase);
+        post.offset2X = loadValue(liaIni, "Lia", "offset2X", post.offset2X);
+        post.offset2Y = loadValue(liaIni, "Lia", "offset2Y", post.offset2Y);
+        post.hpFreq = loadValue(liaIni, "Lia", "hpFreq", post.hpFreq);
 
         plot.limit = loadValue(liaIni, "Plot", "limit", plot.limit);
         plot.rawLimit = loadValue(liaIni, "Plot", "rawLimit", plot.rawLimit);
@@ -316,15 +328,15 @@ private:
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);
         const float highLimitFreq = 1.0f / (1000 * RAW_DT);
-        awg.w1Freq = std::clamp(awg.w1Freq, lowLimitFreq, highLimitFreq);
-        awg.w2Freq = awg.w1Freq; // Sync frequencies
-        awg.w1Amp = std::clamp(awg.w1Amp, 0.1f, 5.0f);
-        awg.w2Amp = std::clamp(awg.w2Amp, 0.0f, 5.0f);
+        awg.ch[0].freq = std::clamp(awg.ch[0].freq, lowLimitFreq, highLimitFreq);
+        awg.ch[1].freq = awg.ch[0].freq; // Sync frequencies
+        awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
+        awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);
         plot.limit = std::clamp(plot.limit, 0.0f, 5.0f);
-        hpfX1.setCutoffFrequency(lia.hpFreq);
-        hpfY1.setCutoffFrequency(lia.hpFreq);
-        hpfX2.setCutoffFrequency(lia.hpFreq);
-        hpfY2.setCutoffFrequency(lia.hpFreq);
+        hpfX1.setCutoffFrequency(post.hpFreq);
+        hpfY1.setCutoffFrequency(post.hpFreq);
+        hpfX2.setCutoffFrequency(post.hpFreq);
+        hpfY2.setCutoffFrequency(post.hpFreq);
     }
 
     // --- Template and static helpers for INI parsing ---
