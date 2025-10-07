@@ -41,7 +41,7 @@ public:
                 _x1 += pSettings->rawData1[i] * this->_sin[i];
                 _y1 += pSettings->rawData1[i] * this->_cos[i];
             }
-            _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
+            _x1 /= size; _y1 /= size;
             if (pSettings->flagAutoOffset)
             {
                 pSettings->post.offset1X = _x1; pSettings->post.offset1Y = _y1;
@@ -65,8 +65,8 @@ public:
                 _x2 += pSettings->rawData2[i] * this->_sin[i];
                 _y2 += pSettings->rawData2[i] * this->_cos[i];
             }
-            _x1 /= this->_sin.size(); _y1 /= this->_sin.size();
-            _x2 /= this->_sin.size(); _y2 /= this->_sin.size();
+            _x1 /= size; _y1 /= size;
+            _x2 /= size; _y2 /= size;
             if (pSettings->flagAutoOffset)
             {
                 pSettings->post.offset1X = _x1; pSettings->post.offset1Y = _y1;
