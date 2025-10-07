@@ -40,6 +40,8 @@ private:
 
 inline void RawPlotWindow::show()
 {
+    ButtonType button = ButtonType::NON;
+    static float value = 0;
     static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
     static ImVec2 windowSize = ImVec2(430 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
@@ -50,9 +52,18 @@ inline void RawPlotWindow::show()
     {
 		pSettings->saveRawData();
     }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::RawSave;
+        value = 0;
+    }
     //ImGui::SameLine();
     ImGui::SliderFloat("Y limit", &(pSettings->plot.rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
-    
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::RawLimit;
+        value = pSettings->plot.rawLimit;
+    }
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
@@ -81,6 +92,10 @@ inline void RawPlotWindow::show()
         ImPlot::EndPlot();
     }
     ImGui::End();
+    if (button != ButtonType::NON)
+    {
+        pSettings->cmds.push_back(std::array<float, 3>{ (float)pSettings->timer.elapsedSec(), (float)button, value });
+    }
 }
 
 class TimeChartWindow : public ImGuiWindowBase
@@ -100,6 +115,8 @@ private:
 
 inline void TimeChartWindow::show()
 {
+    ButtonType button = ButtonType::NON;
+    static float value = 0;
     static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     static ImVec2 windowSize = ImVec2(990 * pSettings->window.monitorScale, 360 * pSettings->window.monitorScale);
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
@@ -108,6 +125,11 @@ inline void TimeChartWindow::show()
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     ImGui::SliderFloat("History", &pSettings->plot.historySec, 1, historySecMax, "%5.1f s");
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::TimeHistory;
+        value = pSettings->plot.historySec;
+    }
     if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::SameLine();
     if (pSettings->flagPause)
@@ -116,6 +138,11 @@ inline void TimeChartWindow::show()
     }
     else {
         if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
+    }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::TimePause;
+        value = pSettings->flagPause;
     }
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
@@ -171,6 +198,10 @@ inline void TimeChartWindow::show()
     }
     ImPlot::PopStyleColor();
     ImGui::End();
+    if (button != ButtonType::NON)
+    {
+        pSettings->cmds.push_back(std::array<float, 3>{ (float)pSettings->timer.elapsedSec(), (float)button, value });
+    }
 }
 
 class TimeChartZoomWindow : public ImGuiWindowBase
@@ -278,6 +309,8 @@ public:
 
 inline void XYPlotWindow::show()
 {
+    ButtonType button = ButtonType::NON;
+    static float value = 0;
     static ImVec2 windowPos = ImVec2(880 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
     static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     if (pSettings->plot.surfaceMode)
@@ -290,9 +323,19 @@ inline void XYPlotWindow::show()
     {
         pSettings->xyTail = 0; pSettings->xyNorm = 0;
     }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::XYClear;
+        value = 0;
+    }
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) {
         pSettings->flagAutoOffset = true;
+    }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::XYAutoOffset;
+        value = 0;
     }
     ImGui::SameLine();
     if (pSettings->flagPause)
@@ -301,6 +344,11 @@ inline void XYPlotWindow::show()
     }
     else {
         if (ImGui::Button("Pause")) { pSettings->flagPause = true; }
+    }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::XYPause;
+        value = pSettings->flagPause;
     }
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
@@ -352,6 +400,10 @@ inline void XYPlotWindow::show()
     ImGui::End();
     if (pSettings->plot.surfaceMode)
         ImGui::PopStyleColor();
+    if (button != ButtonType::NON)
+    {
+        pSettings->cmds.push_back(std::array<float, 3>{ (float)pSettings->timer.elapsedSec(), (float)button, value });
+    }
 }
 
 
@@ -372,8 +424,6 @@ inline void ACFMPlotWindow::show()
 {
     static ImVec2 windowPos = ImVec2(730 * pSettings->window.monitorScale, 300 * pSettings->window.monitorScale);
     static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
-    if (pSettings->plot.surfaceMode)
-        ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);

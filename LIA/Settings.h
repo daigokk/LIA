@@ -14,11 +14,72 @@
 #include "inicpp.h"
 #include "Timer.h"
 
+enum class ButtonType
+{
+    NON,
+    AwgW1Freq,
+    AwgW1Amp,
+    AwgW1Phase,
+    AwgW2Freq,
+    AwgW2Amp,
+    AwgW2Phase,
+    PlotLimit,
+    PostOffset1Phase,
+    PostOffset2Phase,
+    PlotSurfaceMode,
+    PlotBeep,
+    PostAutoOffset,
+    PostOffsetOff,
+    PostPause,
+    DispCh2,
+    PlotACFM,
+    PostHpFreq,
+    RawSave,
+    RawLimit,
+	XYClear,
+	XYAutoOffset,
+	XYPause,
+    TimeHistory,
+    TimePause,
+};
+
+std::string cmdToString(ButtonType button)
+{
+    switch (button)
+    {
+    case ButtonType::NON: return "NON";
+    case ButtonType::AwgW1Freq: return "AwgW1Freq";
+    case ButtonType::AwgW1Amp: return "AwgW1Amp";
+    case ButtonType::AwgW1Phase: return "AwgW1Phase";
+    case ButtonType::AwgW2Freq: return "AwgW2Freq";
+    case ButtonType::AwgW2Amp: return "AwgW2Amp";
+    case ButtonType::AwgW2Phase: return "AwgW2Phase";
+    case ButtonType::PlotLimit: return "PlotLimit";
+    case ButtonType::PostOffset1Phase: return "PostOffset1Phase";
+    case ButtonType::PostOffset2Phase: return "PostOffset2Phase";
+    case ButtonType::PlotSurfaceMode: return "PlotSurfaceMode";
+    case ButtonType::PlotBeep: return "PlotBeep";
+    case ButtonType::PostAutoOffset: return "PostAutoOffset";
+    case ButtonType::PostOffsetOff: return "PostOffsetOff";
+    case ButtonType::PostPause: return "PostPause";
+    case ButtonType::DispCh2: return "DispCh2";
+    case ButtonType::PlotACFM: return "PlotACFM";
+    case ButtonType::PostHpFreq: return "PostHpFreq";
+    case ButtonType::RawSave: return "RawSave";
+    case ButtonType::RawLimit: return "RawLimit";
+    case ButtonType::XYClear: return "XYClear";
+    case ButtonType::XYAutoOffset: return "XYAutoOffset";
+    case ButtonType::XYPause: return "XYPause";
+	case ButtonType::TimeHistory: return "TimeHistory";
+	case ButtonType::TimePause: return "TimePause";
+    default: return "Unknown";
+    }
+}
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1e-8;
 constexpr size_t RAW_SIZE = 5000;
-constexpr double MEASUREMENT_DT = 1.0e-3;
+constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
 constexpr float XY_HISTORY_SEC = 10.0f;
@@ -118,7 +179,7 @@ public:
     Timer timer;
     Daq_dwf* pDaq = nullptr;
     std::string device_sn = "SN:XXXXXXXXXX";
-    std::vector<float[3]> cmds;
+    std::vector<std::array<float,3>> cmds;
 
     // Configuration Data
     WindowCfg window;
@@ -176,6 +237,7 @@ public:
     ~Settings() {
         saveResultsToFile();
         saveSettingsToFile();
+        saveCmdsToFile();
 	}
     // --- Public Methods for Logic and I/O ---
 
@@ -277,6 +339,17 @@ public:
             }
         }
     }
+    void saveCmdsToFile(const std::string& filename = "commands.csv") const {
+		std::ofstream file(filename);
+        if (!file) {
+            std::cerr << "Error: Could not open file " << filename << std::endl;
+            return;
+		}
+        file << "# Time(s), ButtonNo, ButtonName, Value\n";
+        for (const auto& cmd : cmds) {
+            file << std::format("{:e},{:.0f},{:s},{:e}\n", cmd[0], cmd[1], cmdToString((ButtonType)cmd[1]), cmd[2]);
+        }
+	}
 
 private:
     // --- Private Helper Methods ---
