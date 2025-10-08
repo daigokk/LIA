@@ -5,7 +5,7 @@
 #include <thread> // std::jthread
 #include <array>
 #include <cstring> // for std::memset
-#include <intrin.h> 
+#include <intrin.h> // for __cpuid
 
 #define NOMINMAX
 #include <Windows.h>
