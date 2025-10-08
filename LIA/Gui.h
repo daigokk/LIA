@@ -74,6 +74,7 @@ public:
         this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, pSettings);
         this->xyPlotWindow = new XYPlotWindow(this->window, pSettings);
         this->acfmPlotWindow = new ACFMPlotWindow(this->window, pSettings);
+		//std::cout << ImGui::GetVersion() << std::endl;
     }
 	~Gui()
     {

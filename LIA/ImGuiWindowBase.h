@@ -7,11 +7,13 @@
 
 class ImGuiWindowBase
 {
+private:
+GLFWwindow* window = nullptr; 
 public:
     ImGuiWindowBase(GLFWwindow* window, const char name[]) { this->window = window; this->name = name; }
     void show(void) { ImGui::Begin(this->name); ImGui::End(); }
+protected:
     const char* name = nullptr;
-private:
-    GLFWwindow* window = nullptr;
-    
+    ImVec2 windowPos;
+    ImVec2 windowSize;
 };

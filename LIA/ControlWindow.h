@@ -16,6 +16,7 @@ public:
         : ImGuiWindowBase(window, "Control panel")
     {
 		this->pSettings = pSettings;
+        this->windowSize = ImVec2(450 * pSettings->window.monitorScale, 920 * pSettings->window.monitorScale);
     }
     void show(void);
 };
@@ -25,7 +26,6 @@ inline void ControlWindow::show(void)
     ButtonType button = ButtonType::NON;
     static float value = 0;
     bool fgFlag = false;
-    static ImVec2 windowSize = ImVec2(450 * pSettings->window.monitorScale, 920 * pSettings->window.monitorScale);
     static float nextItemWidth = 170.0f * pSettings->window.monitorScale;
     ImGui::SetNextWindowPos(ImVec2(0, 0), pSettings->imgui.windowFlag);
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);

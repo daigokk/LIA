@@ -32,6 +32,8 @@ public:
         : ImGuiWindowBase(window, "Raw waveform")
     {
         this->pSettings = pSettings;
+        this->windowPos = ImVec2(450 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(430 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     }
     void show(void);
 private:
@@ -42,8 +44,7 @@ inline void RawPlotWindow::show()
 {
     ButtonType button = ButtonType::NON;
     static float value = 0;
-    static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(430 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
@@ -75,16 +76,12 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, pSettings->rawTime.data()[0], pSettings->rawTime.data()[pSettings->rawTime.size() - 1], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.rawLimit, pSettings->plot.rawLimit, ImGuiCond_Always);
         
-        if (!pSettings->flagCh2)
+        const char* ch1_label = pSettings->flagCh2 ? "Ch1" : "##Ch1";
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+        ImPlot::PlotLine(ch1_label, pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
+        ImPlot::PopStyleColor();
+        if (pSettings->flagCh2)
         {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::PlotLine("##Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
-            ImPlot::PopStyleColor();
-        }
-        else {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-            ImPlot::PlotLine("Ch1", pSettings->rawTime.data(), pSettings->rawData1.data(), (int)pSettings->rawTime.size());
-            ImPlot::PopStyleColor();
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
             ImPlot::PlotLine("Ch2", pSettings->rawTime.data(), pSettings->rawData2.data(), (int)pSettings->rawTime.size());
             ImPlot::PopStyleColor();
@@ -106,6 +103,8 @@ public:
     {
         this->pSettings = pSettings;
         this->pTimeChartZoomRect = pTimeChartZoomRect;
+        this->windowPos = ImVec2(450 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(990 * pSettings->window.monitorScale, 360 * pSettings->window.monitorScale);
     }
     void show(void);
 private:
@@ -117,8 +116,7 @@ inline void TimeChartWindow::show()
 {
     ButtonType button = ButtonType::NON;
     static float value = 0;
-    static ImVec2 windowPos = ImVec2(450 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(990 * pSettings->window.monitorScale, 360 * pSettings->window.monitorScale);
+    
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
@@ -212,6 +210,8 @@ public:
     {
         this->pSettings = pSettings;
         this->pTimeChartZoomRect = pTimeChartZoomRect;
+        this->windowPos = ImVec2(0 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(750 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     }
     void show(void);
 private:
@@ -221,8 +221,7 @@ private:
 
 inline void TimeChartZoomWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(750 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
+    
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -262,6 +261,8 @@ public:
         : ImGuiWindowBase(window, "DeltTime chart")
     {
         this->pSettings = pSettings;
+        this->windowPos = ImVec2(0 * pSettings->window.monitorScale, 750 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(450 * pSettings->window.monitorScale, 210 * pSettings->window.monitorScale);
     }
     void show(void);
 private:
@@ -270,8 +271,6 @@ private:
 
 inline void DeltaTimeChartWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(0 * pSettings->window.monitorScale, 750 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(450 * pSettings->window.monitorScale, 210 * pSettings->window.monitorScale);
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
@@ -303,6 +302,8 @@ public:
         : ImGuiWindowBase(window, "XY")
     {
         this->pSettings = pSettings;
+        this->windowPos = ImVec2(880 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     }
     void show(void);
 };
@@ -311,8 +312,6 @@ inline void XYPlotWindow::show()
 {
     ButtonType button = ButtonType::NON;
     static float value = 0;
-    static ImVec2 windowPos = ImVec2(880 * pSettings->window.monitorScale, 0 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     if (pSettings->plot.surfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, pSettings->imgui.windowFlag);
@@ -370,17 +369,10 @@ inline void XYPlotWindow::show()
             ImPlot::SetupAxisLimits(ImAxis_Y1, -pSettings->plot.limit, pSettings->plot.limit, ImGuiCond_Always);
         }
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-        if (!pSettings->flagCh2)
-        {
-            ImPlot::PlotLine("##Ch1", &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
-                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
-            );
-        }
-        else {
-            ImPlot::PlotLine("Ch1", &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
-                pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
-            );
-        }
+        const char* ch1_label = pSettings->flagCh2 ? "Ch1" : "##Ch1";
+        ImPlot::PlotLine(ch1_label, &(pSettings->xy1Xs[0]), &(pSettings->xy1Ys[0]),
+            pSettings->xySize, 0, pSettings->xyTail, sizeof(double)
+        );
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * pSettings->window.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("##NOW1", &(pSettings->xy1Xs[pSettings->xyIdx]), &(pSettings->xy1Ys[pSettings->xyIdx]), 1);
@@ -416,14 +408,14 @@ public:
         : ImGuiWindowBase(window, "ACFM")
     {
         this->pSettings = pSettings;
+        this->windowPos = ImVec2(730 * pSettings->window.monitorScale, 300 * pSettings->window.monitorScale);
+        this->windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     }
     void show(void);
 };
 
 inline void ACFMPlotWindow::show()
 {
-    static ImVec2 windowPos = ImVec2(730 * pSettings->window.monitorScale, 300 * pSettings->window.monitorScale);
-    static ImVec2 windowSize = ImVec2(560 * pSettings->window.monitorScale, 600 * pSettings->window.monitorScale);
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
