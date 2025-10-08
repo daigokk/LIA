@@ -22,23 +22,25 @@ void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
 int main(int argc, char* argv[])
 {
     //is_avx2_supported();
-    std::ios::sync_with_stdio(false); // For std::cout and cin
+    // I/Oの高速化
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr); // std::cin と std::cout の同期を解除
     static Settings settings;
     bool guiFlag = true;
 	bool pipeFlag = false;
     std::jthread* pth_pipe = nullptr;
     Gui* pGui = nullptr;
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++) // i=1 から開始（プログラム名はスキップ）
     {
-        if (std::string("pipe") == argv[i])
+        if (std::strcmp("pipe", argv[i]) == 0)
         {
             pipeFlag = true;
         }
-        else if (std::string("nogui") == argv[i])
+        else if (std::strcmp("nogui", argv[i]) == 0)
         {
             guiFlag = false;
-			pipeFlag = true;
-		}
+            pipeFlag = true;
+        }
     }
     if (guiFlag)
     {
@@ -55,7 +57,7 @@ int main(int argc, char* argv[])
     if (adIdx == -1)
     {
         std::cout << "No DAQ is connected." << std::endl;
-       th_measurement = std::jthread{ measurementWithoutDaq, &settings };
+        th_measurement = std::jthread{ measurementWithoutDaq, &settings };
     }
     else {
         th_measurement = std::jthread{ measurement, &settings };
@@ -66,7 +68,7 @@ int main(int argc, char* argv[])
         std::cerr << "Failed to set thread priority.\n";
     }
     while (!settings.statusMeasurement);
-    
+	std::cout << std::flush; // バッファをフラッシュ
     if (guiFlag)
     {
 		// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ

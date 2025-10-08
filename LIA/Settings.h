@@ -297,7 +297,7 @@ public:
         liaIni["Awg"]["ch[0].freq"] = awg.ch[0].freq;
         liaIni["Awg"]["ch[0].amp"] = awg.ch[0].amp;
         liaIni["Awg"]["ch[1].amp"] = awg.ch[1].amp;
-        liaIni["Awg"]["w2Phase"] = awg.ch[1].phase;
+        liaIni["Awg"]["ch[1].phase"] = awg.ch[1].phase;
 
         liaIni["Scope"]["flagCh2"] = flagCh2;
 
@@ -384,7 +384,7 @@ private:
         awg.ch[0].freq = loadValue(liaIni, "Awg", "ch[0].freq", awg.ch[0].freq);
         awg.ch[0].amp = loadValue(liaIni, "Awg", "ch[0].amp", awg.ch[0].amp);
         awg.ch[1].amp = loadValue(liaIni, "Awg", "ch[1].amp", awg.ch[1].amp);
-        awg.ch[1].phase = loadValue(liaIni, "Awg", "w2Phase", awg.ch[1].phase);
+        awg.ch[1].phase = loadValue(liaIni, "Awg", "ch[1].phase", awg.ch[1].phase);
 
         flagCh2 = loadValue(liaIni, "Scope", "flagCh2", flagCh2);
 
