@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         {
             pipeFlag = true;
         }
-        else if (std::strcmp("nogui", argv[i]) == 0)
+        else if (std::strcmp("nogui", argv[i]) == 0 || std::strcmp("headless", argv[i]) == 0)
         {
             guiFlag = false;
             pipeFlag = true;
