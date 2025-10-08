@@ -16,31 +16,32 @@
 
 enum class ButtonType
 {
-    NON,
-    AwgW1Freq,
-    AwgW1Amp,
-    AwgW1Phase,
-    AwgW2Freq,
-    AwgW2Amp,
-    AwgW2Phase,
-    PlotLimit,
-    PostOffset1Phase,
-    PostOffset2Phase,
-    PlotSurfaceMode,
-    PlotBeep,
-    PostAutoOffset,
-    PostOffsetOff,
-    PostPause,
-    DispCh2,
-    PlotACFM,
-    PostHpFreq,
-    RawSave,
-    RawLimit,
-	XYClear,
-	XYAutoOffset,
-	XYPause,
-    TimeHistory,
-    TimePause,
+    NON = 0,
+    Close = 1001,
+    AwgW1Freq = 1011,
+    AwgW1Amp = 1012,
+    AwgW1Phase = 1013,
+    AwgW2Freq = 1021,
+    AwgW2Amp = 1022,
+    AwgW2Phase = 1023,
+    PlotLimit = 1101,
+    PostOffset1Phase = 1201,
+    PostOffset2Phase = 1202,
+    PlotSurfaceMode = 1301,
+    PlotBeep = 1302,
+    PostAutoOffset = 1401,
+    PostOffsetOff = 1402,
+    PostPause = 1403,
+    DispCh2 = 1501,
+    PlotACFM = 1502,
+    PostHpFreq = 1603,
+    RawSave = 2001,
+    RawLimit = 2002,
+    XYClear = 3001,
+    XYAutoOffset = 3002,
+    XYPause = 3003,
+    TimeHistory = 4001,
+    TimePause = 4002,
 };
 
 std::string cmdToString(ButtonType button)
@@ -48,6 +49,7 @@ std::string cmdToString(ButtonType button)
     switch (button)
     {
     case ButtonType::NON: return "NON";
+    case ButtonType::Close: return "Close";
     case ButtonType::AwgW1Freq: return "AwgW1Freq";
     case ButtonType::AwgW1Amp: return "AwgW1Amp";
     case ButtonType::AwgW1Phase: return "AwgW1Phase";
