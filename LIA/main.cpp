@@ -3,6 +3,10 @@
 #include <numbers> // For std::numbers::pi
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
+#include <array>
+#include <cstring> // for std::memset
+#include <intrin.h> 
+
 #define NOMINMAX
 #include <Windows.h>
 #include <Daq_wf.h>
@@ -11,11 +15,13 @@
 #include "Psd.h"
 #include "Settings.h"
 
+bool is_avx2_supported();
 void measurement(std::stop_token st, Settings* pSettings);
 void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
 
 int main(int argc, char* argv[])
 {
+    //is_avx2_supported();
     std::ios::sync_with_stdio(false); // For std::cout and cin
     static Settings settings;
     Gui gui(&settings);
@@ -37,7 +43,7 @@ int main(int argc, char* argv[])
     }
     while (!settings.statusMeasurement);
     std::jthread* pth_pipe = nullptr;
-    for(int i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         if (std::string("pipe") == argv[i])
         {
@@ -125,4 +131,47 @@ void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
         psd.calc(t);
     }
     pSettings->statusMeasurement = false;
+}
+
+
+/**
+ * CPUID命令を使ってAVX2のサポートをチェックする関数
+ * @return AVX2がサポートされていれば true
+ */
+bool is_avx2_supported() {
+	bool avx2_supported = false;
+#ifdef __AVX2__
+    // AVX2が有効な状態でコンパイルされています。
+    // ここにAVX2固有のコード（__m256i, _mm256_... 組み込み関数など）を記述できます。
+    std::cout << "AVX2 is enabled at compile time." << std::endl;
+    avx2_supported = true;
+#else
+    // AVX2は有効になっていません。
+    // AVX2固有のコードを直接使用することはできません。
+    std::cout << "AVX2 is NOT enabled at compile time." << std::endl;
+#endif
+    std::array<int, 4> cpu_info;
+    std::memset(cpu_info.data(), 0, sizeof(cpu_info));
+
+    // EAX=7 (Extended Features) のサブリーフ 0 を呼び出す
+    // EAX=7, ECX=0
+    // MSVC (Windows)
+    __cpuidex(cpu_info.data(), 7, 0);
+
+
+    // EAX=7, サブリーフ 0 の結果は EBX レジスタ (cpu_info[1]) に格納される
+    // AVX2 の機能フラグは EBX のビット 5 (0x20)
+    constexpr int AVX2_FLAG = 1 << 5; // Bit 5
+
+    // EBX & AVX2_FLAG の結果が非ゼロならAVX2をサポート
+
+    if ((cpu_info[1] & AVX2_FLAG) != 0) {
+        std::cout << "Runtime check: AVX2 is supported by the CPU." << std::endl;
+        avx2_supported = true;
+    }
+    else {
+        std::cout << "Runtime check: AVX2 is NOT supported by the CPU." << std::endl;
+    }
+
+    return avx2_supported;
 }

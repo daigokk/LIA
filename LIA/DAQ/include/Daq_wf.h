@@ -2,8 +2,8 @@
 
 #pragma	comment(lib, "DAQ/lib/dwf.lib")
 #include <dwf.h>
-#include <iostream>         // needed for input/output
-#include <string>           // needed for error handling
+#include <iostream>
+#include <string>
 
 
 class Daq_dwf

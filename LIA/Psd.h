@@ -3,10 +3,9 @@
 #include <array>
 #include <vector>
 #include <cmath>
-#include <numbers>      // C++20: 数学定数 (pi)
-#include <numeric>      // std::ranges::inner_product のために必要
-#include <ranges>       // C++20: Rangesライブラリ
-#include <span>         // C++20: span
+#include <numbers>      // std::numbers::pi
+#include <numeric>      // std::inner_product
+#include <span>         // std::span
 
 #include "settings.h"
 
@@ -19,7 +18,7 @@ private:
     double currentFreq = -1.0;
     size_t dataSize = 0;
 
-    // 位相回転を行うヘルパー関数 (C++20の機能ではないがコード整理)
+    // 位相回転を行うヘルパー関数
     static auto rotate_phase(double x, double y, double phase_deg) -> std::pair<double, double>
     {
         const double theta = phase_deg / 180.0 * std::numbers::pi;
@@ -74,7 +73,7 @@ public:
         auto sin_view = sin_span.first(dataSize);
         auto cos_view = cos_span.first(dataSize);
 
-        // 修正: 第2引数をRange(span)から、その開始イテレータに変更
+        // 内積のベクトル計算をfor文からstd::inner_productに変更
         double x1 = std::inner_product(raw1_view.begin(), raw1_view.end(), sin_view.begin(), 0.0);
         double y1 = std::inner_product(raw1_view.begin(), raw1_view.end(), cos_view.begin(), 0.0);
 
@@ -86,7 +85,7 @@ public:
             std::span<const double> raw2_span(pSettings->rawData2);
             auto raw2_view = raw2_span.first(dataSize);
 
-            // こちらも同様に修正
+            // 内積のベクトル計算をfor文からstd::inner_productに変更
             x2 = std::inner_product(raw2_view.begin(), raw2_view.end(), sin_view.begin(), 0.0);
             y2 = std::inner_product(raw2_view.begin(), raw2_view.end(), cos_view.begin(), 0.0);
 
@@ -94,7 +93,6 @@ public:
             y2 /= dataSize;
         }
 
-        // (以降のロジックは変更なし)
         if (pSettings->flagAutoOffset) {
             pSettings->post.offset1X = x1; pSettings->post.offset1Y = y1;
             if (pSettings->flagCh2) {

@@ -42,11 +42,11 @@ void pipe(std::stop_token st, Settings* pSettings)
 
     // --- コマンドハンドラの定義 ---
 
-    // 終了コマンド
-    auto exitHandler = [&](const auto&, const auto&, auto) {
-        return false; // falseを返すとメインループが終了する
-        };
-    commandMap["end"] = commandMap["exit"] = commandMap["quit"] = exitHandler;
+    //// 終了コマンド
+    //auto exitHandler = [&](const auto&, const auto&, auto) {
+    //    return false; // falseを返すとメインループが終了する
+    //    };
+    //commandMap["end"] = commandMap["exit"] = commandMap["quit"] = exitHandler;
 
     // リセットコマンド
     commandMap["reset"] = commandMap["*rst"] = [&](const auto&, const auto&, auto) {
@@ -189,7 +189,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         };
 
     // CH2表示設定
-    commandMap[":chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
+    commandMap[":chan2:disp"] = commandMap["chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
         if (arg == "on") { pSettings->flagCh2 = true; return true; }
         if (arg == "off") { pSettings->flagCh2 = false; return true; }
         return false;
@@ -276,8 +276,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
         return false;
         };
-    commandMap[":calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
-    commandMap[":calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
+    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
 
     // --- メインループ ---
     while (!st.stop_requested())
@@ -295,6 +295,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::istringstream iss(line);
         iss >> commandPart;
         iss >> argumentPart; // 最初の引数（主に数値）を取得
+
+        if (commandPart == "end" || commandPart == "exit" || commandPart == "quit") break;
 
         try {
             value = std::stof(argumentPart);
@@ -327,7 +329,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
 
         if (!commandOk) {
-            if (commandMap.count(mainCommand) && mainCommand.length() > 2) break; // 終了コマンド
+            //if (commandMap.count(mainCommand) && mainCommand.length() > 2) break; // 終了コマンド
             // エラー処理
             lastErrorCmd = original_line;
             if (commandPart.find('?') != std::string::npos) {
