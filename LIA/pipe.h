@@ -267,6 +267,11 @@ void pipe(std::stop_token st, Settings* pSettings)
     commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
     commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
 
+    commandMap["help"] = [&](const auto& tokens, const auto&, auto) {
+        if (tokens.size() < 2) return false;
+        const std::string& subCmd = tokens[1];
+		if (subCmd == "size?") { std::cout << 24 << std::endl; return true; }
+        };
     commandMap["?"] = commandMap["help?"] = [&](const auto&, const auto&, auto) {
         std::cout << "Available commands:\n";
         std::cout << "  reset or *rst               : Reset all settings to default values\n";
