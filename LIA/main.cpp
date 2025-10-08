@@ -80,6 +80,7 @@ int main(int argc, char* argv[])
             pGui->show();
             pGui->rendering();
             pGui->swapBuffers();
+            //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
     else
@@ -88,6 +89,7 @@ int main(int argc, char* argv[])
         while (settings.statusMeasurement)
         {
             if (pth_pipe != nullptr && settings.statusPipe == false) break;
+            //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
     th_measurement.request_stop();
