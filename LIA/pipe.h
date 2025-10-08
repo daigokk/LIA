@@ -195,6 +195,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         return false;
         };
 
+    // ACFM表示設定
+    commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
+        if (arg == "on") { pSettings->plot.acfm = true; return true; }
+        if (arg == "off") { pSettings->plot.acfm = false; return true; }
+        return false;
+        };
+
     // 波形設定 (W1, W2)
     auto waveformHandler = [&](bool isW1, const auto& tokens, const std::string& arg, float val) {
         if (tokens.size() < 2) return false;
@@ -279,6 +286,34 @@ void pipe(std::stop_token st, Settings* pSettings)
     commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
     commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
 
+    commandMap["?"] = commandMap["help?"] = [&](const auto&, const auto&, auto) {
+        std::cout << "Available commands:\n";
+        std::cout << "  reset or *rst               : Reset all settings to default values\n";
+        std::cout << "  *idn?                       : Identify connected DAQ device\n";
+        std::cout << "  error?                      : Show last error message\n";
+        std::cout << "  end, exit, quit             : Exit the program\n";
+        std::cout << "  pause                       : Pause data acquisition\n";
+        std::cout << "  run                         : Resume data acquisition\n";
+        std::cout << "  data:raw:save [filename]    : Save raw data to file (optional filename)\n";
+        std::cout << "  data:raw:size?              : Get size of raw data buffer\n";
+        std::cout << "  data:raw?                   : Output raw data (time, ch1 [, ch2])\n";
+        std::cout << "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)\n";
+        std::cout << "  data:xy?                    : Output latest XY data point\n";
+        std::cout << "  disp|display:xy:limit <value>    : Set XY display limit (0.01 to " << RAW_RANGE * 1.2f << " V)\n";
+        std::cout << "  disp|display:raw:limit <value>   : Set raw display limit (0.1 to " << RAW_RANGE * 1.2f << " V)\n";
+        std::cout << "  chan2:disp on|off           : Enable or disable CH2 display\n";
+		std::cout << "  acfm:disp on|off            : Enable or disable ACFM windo display\n";
+        std::cout << "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency\n";
+        std::cout << "  w1|w2:volt|voltage [min|max|value]   : Set or query waveform voltage\n";
+        std::cout << "  w1|w2:phase [value]         : Set or query waveform phase in degrees\n";
+        std::cout << "  calc|calculate:offset:state on|off   : Enable or disable auto offset\n";
+        std::cout << "  calc|calculate:offset:auto once      : Perform one-time auto offset\n";
+		std::cout << "  calc|calculate:hpf:freq|frequency [value]    : Set or query high-pass filter frequency (0 to 50 Hz)\n";
+        std::cout << "  calc1|calc2:offset:phase [value]     : Set calculation offset phase in degrees\n";
+        std::cout << "  help? or ?                  : Show this help message\n";
+        return true;
+		};
+
     // --- メインループ ---
     while (!st.stop_requested())
     {
@@ -339,7 +374,7 @@ void pipe(std::stop_token st, Settings* pSettings)
             }
             else {
                 // 設定コマンドが失敗した場合は、エラー履歴に保存
-                std::cout << std::format("Error: Invalid command or parameter for '{}'\n", lastErrorCmd);
+                //std::cout << std::format("Error: Invalid command or parameter for '{}'\n", lastErrorCmd);
             }
         }
 

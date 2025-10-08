@@ -24,8 +24,32 @@ int main(int argc, char* argv[])
     //is_avx2_supported();
     std::ios::sync_with_stdio(false); // For std::cout and cin
     static Settings settings;
-    Gui gui(&settings);
-    if (gui.initialized == false) return -1;
+    bool guiFlag = true;
+	bool pipeFlag = false;
+    std::jthread* pth_pipe = nullptr;
+    Gui* pGui = nullptr;
+    for (int i = 0; i < argc; i++)
+    {
+        if (std::string("pipe") == argv[i])
+        {
+            pipeFlag = true;
+        }
+        else if (std::string("nogui") == argv[i])
+        {
+            guiFlag = false;
+			pipeFlag = true;
+		}
+    }
+    if (guiFlag)
+    {
+        pGui = new Gui(&settings);
+        if (pGui->initialized == false) return -1;
+    }
+    if (pipeFlag)
+    {
+        pth_pipe = new std::jthread(pipe, &settings);
+        while (!settings.statusPipe);
+    }
     int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
     std::jthread th_measurement;
     if (adIdx == -1)
@@ -42,26 +66,29 @@ int main(int argc, char* argv[])
         std::cerr << "Failed to set thread priority.\n";
     }
     while (!settings.statusMeasurement);
-    std::jthread* pth_pipe = nullptr;
-    for (int i = 0; i < argc; i++)
+    
+    if (guiFlag)
     {
-        if (std::string("pipe") == argv[i])
+		// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ
+        while (!pGui->windowShouldClose())
         {
-            pth_pipe = new std::jthread(pipe, &settings);
-            while (!settings.statusPipe);
+            if (settings.statusMeasurement == false) break;
+            if (pth_pipe != nullptr && settings.statusPipe == false) break;
+            pGui->beep();
+            /* Poll for and process events */
+            pGui->pollEvents();
+            pGui->show();
+            pGui->rendering();
+            pGui->swapBuffers();
         }
     }
-
-    while (!gui.windowShouldClose())
+    else
     {
-        if (settings.statusMeasurement == false) break;
-        if (pth_pipe != nullptr && settings.statusPipe == false) break;
-        gui.beep();
-        /* Poll for and process events */
-        gui.pollEvents();
-        gui.show();
-        gui.rendering();
-        gui.swapBuffers();
+		// GUIなしモードでは、パイプが閉じられるか測定が終了するまで待機
+        while (settings.statusMeasurement)
+        {
+            if (pth_pipe != nullptr && settings.statusPipe == false) break;
+        }
     }
     th_measurement.request_stop();
     if (pth_pipe != nullptr) pth_pipe->request_stop();
