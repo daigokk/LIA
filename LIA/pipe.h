@@ -51,26 +51,7 @@ void pipe(std::stop_token st, Settings* pSettings)
     // リセットコマンド
     commandMap["reset"] = commandMap["*rst"] = [&](const auto&, const auto&, auto) {
         // pSettingsの各メンバを初期値にリセット
-        pSettings->awg.ch[0].freq = (float)(1.0 / (1000 * RAW_DT));
-        pSettings->awg.ch[1].freq = pSettings->awg.ch[0].freq;
-        pSettings->awg.ch[0].amp = 1.0f;
-        pSettings->awg.ch[1].amp = 0.0f;
-        pSettings->awg.ch[0].phase = 0.0f;
-        pSettings->awg.ch[1].phase = 0.0f;
-        pSettings->flagCh2 = false;
-        pSettings->post.offset1Phase = 0.0;
-        pSettings->post.offset1X = 0.0;
-        pSettings->post.offset1Y = 0.0;
-        pSettings->post.offset2Phase = 0.0;
-        pSettings->post.offset2X = 0.0;
-        pSettings->post.offset2Y = 0.0;
-        pSettings->post.hpFreq = 0.0f;
-        pSettings->plot.surfaceMode = false;
-        pSettings->plot.beep = false;
-        pSettings->plot.acfm = false;
-        pSettings->plot.limit = 1.5f;
-        pSettings->plot.rawLimit = 1.5f;
-        pSettings->plot.historySec = 10.0f;
+        pSettings->reset();
         lastErrorCmd = "";
         awgUpdateRequired = true;
         return true;

@@ -243,6 +243,18 @@ public:
 	}
     // --- Public Methods for Logic and I/O ---
 
+    void reset() {
+		awg = AwgCfg();
+		post = PostCfg();
+        plot = PlotCfg();
+        flagCh2 = false;
+        flagAutoOffset = false;
+        flagPause = false;
+        hpfX1.setCutoffFrequency(post.hpFreq);
+        hpfY1.setCutoffFrequency(post.hpFreq);
+        hpfX2.setCutoffFrequency(post.hpFreq);
+		hpfY2.setCutoffFrequency(post.hpFreq);
+    }
     void AddPoint(double t, double x, double y) {
         x1s[tail] = hpfX1.process(x);
         y1s[tail] = hpfY1.process(y);
