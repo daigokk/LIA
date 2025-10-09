@@ -18,22 +18,24 @@ public:
 		this->pSettings = pSettings;
         this->windowSize = ImVec2(450 * pSettings->window.monitorScale, 920 * pSettings->window.monitorScale);
     }
+    void buttonPressed(const ButtonType button, const float value)
+    {
+        pSettings->cmds.push_back(std::array<float, 3>{ (float)pSettings->timer.elapsedSec(), (float)button, value });
+	}
+    void awg(const float nextItemWidth);
+    void plot(const float nextItemWidth);
+	void post(const float nextItemWidth);
+    void monitor();
+	void functionButtons(const float nextItemWidth);
     void show(void);
 };
 
-inline void ControlWindow::show(void)
+inline void ControlWindow::awg(const float nextItemWidth)
 {
+    // AWG設定のUIをここに実装
     ButtonType button = ButtonType::NON;
-    static float value = 0;
+    float value = 0;
     bool fgFlag = false;
-    static float nextItemWidth = 170.0f * pSettings->window.monitorScale;
-    ImGui::SetNextWindowPos(ImVec2(0, 0), pSettings->imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
-    ImGui::Begin(this->name);
-    ImGui::SetNextItemWidth(nextItemWidth);
-    ImGui::Text("%s", pSettings->device_sn.data());
-    ImGui::SameLine();
-    if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
     if (ImGui::BeginTabBar("Awg"))
     {
         static float lowLimitFreqkHz = (float)(0.5 * 1e-3 / (RAW_SIZE * RAW_DT));
@@ -141,8 +143,23 @@ inline void ControlWindow::show(void)
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
+        if (pSettings->pDaq != nullptr && fgFlag)
+        {
+            pSettings->pDaq->awg.start(
+                pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
+                pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
+            );
+        }
+		if (button != ButtonType::NON) buttonPressed(button, value);
     }
-    bool stateCh2 = pSettings->flagCh2;
+
+}
+
+inline void ControlWindow::plot(const float nextItemWidth)
+{
+    // Plot設定のUIをここに実装
+    ButtonType button = ButtonType::NON;
+    float value = 0;
     if (ImGui::BeginTabBar("Plot window"))
     {
         if (ImGui::BeginTabItem("XY window"))
@@ -170,7 +187,7 @@ inline void ControlWindow::show(void)
                 button = ButtonType::PostOffset1Phase;
                 value = pSettings->post.offset1Phase;
             }
-            if (!stateCh2) { ImGui::BeginDisabled(); }
+            if (!pSettings->flagCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &(pSettings->post.offset2Phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
@@ -178,7 +195,7 @@ inline void ControlWindow::show(void)
                 button = ButtonType::PostOffset2Phase;
                 value = pSettings->post.offset2Phase;
             }
-            if (!stateCh2) { ImGui::EndDisabled(); }
+            if (!pSettings->flagCh2) { ImGui::EndDisabled(); }
             if (pSettings->flagPause) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
         }
@@ -199,23 +216,16 @@ inline void ControlWindow::show(void)
 
             ImGui::EndTabItem();
         }
+        ImGui::EndTabBar();
+        if (button != ButtonType::NON) buttonPressed(button, value);
     }
-    ImGui::Separator();
-    ImGui::Checkbox("Surface Mode", &pSettings->plot.surfaceMode);
-    if (ImGui::IsItemDeactivated()) {
-        // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::PlotSurfaceMode;
-        value = pSettings->plot.surfaceMode;
-    }
-    ImGui::SameLine();
-    ImGui::Checkbox("Beep", &pSettings->plot.beep);
-    if (ImGui::IsItemDeactivated()) {
-        // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::PlotBeep;
-        value = pSettings->plot.beep;
-    }
-    ImGui::EndTabBar();
-    ImGui::Separator();
+}
+
+inline void ControlWindow::post(const float nextItemWidth)
+{
+	// Post設定のUIをここに実装
+	ButtonType button = ButtonType::NON;
+	float value = 0;
     static ImVec2 autoOffsetSize = ImVec2(200.0f * pSettings->window.monitorScale, 100.0f * pSettings->window.monitorScale);
     if (pSettings->flagPause) { ImGui::BeginDisabled(); }
     if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
@@ -264,18 +274,64 @@ inline void ControlWindow::show(void)
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->post.offset1X, pSettings->post.offset1Y);
-        if (!stateCh2) { ImGui::BeginDisabled(); }
+        if (!pSettings->flagCh2) { ImGui::BeginDisabled(); }
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->post.offset2X, pSettings->post.offset2Y);
-        if (!stateCh2) ImGui::EndDisabled();
+        if (!pSettings->flagCh2) ImGui::EndDisabled();
         ImGui::TreePop();
         if (!stateAutoOffset) ImGui::EndDisabled();
     }
-    ImGui::Separator();
+	if (button != ButtonType::NON) buttonPressed(button, value);
+}
 
-    //bool stateACFM = false;
+inline void ControlWindow::monitor()
+{
+	// Monitor設定のUIをここに実装
+    if (ImGui::TreeNode("Monitor"))
+    {
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
+        ImGui::Text(
+            "Amp:%4.2fV, %s:%4.0fDeg.",
+            pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
+            u8"θ",
+            atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
+        );
+        if (!pSettings->flagCh2) { ImGui::BeginDisabled(); }
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->x2s[pSettings->idx], pSettings->y2s[pSettings->idx]);
+        ImGui::Text(
+            "Amp:%4.2fV, %s:%4.0fDeg.",
+            pow(pow(pSettings->x2s[pSettings->idx], 2) + pow(pSettings->y2s[pSettings->idx], 2), 0.5),
+            u8"θ",
+            atan2(pSettings->y2s[pSettings->idx], pSettings->x2s[pSettings->idx]) / std::numbers::pi * 180
+        );
+        if (!pSettings->flagCh2) { ImGui::EndDisabled(); }
+        ImGui::TreePop();
+    }
+}
+
+inline void ControlWindow::functionButtons(const float nextItemWidth)
+{
+	ButtonType button = ButtonType::NON;
+	float value = 0;
+    ImGui::Checkbox("Surface Mode", &pSettings->plot.surfaceMode);
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::PlotSurfaceMode;
+        value = pSettings->plot.surfaceMode;
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("Beep", &pSettings->plot.beep);
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::PlotBeep;
+        value = pSettings->plot.surfaceMode;
+    }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::PlotBeep;
+        value = pSettings->plot.beep;
+    }
     if (pSettings->plot.acfm)
     {
-        //stateACFM = true;
         pSettings->flagCh2 = true;
         ImGui::BeginDisabled();
     }
@@ -300,6 +356,7 @@ inline void ControlWindow::show(void)
     {
         if (pSettings->post.hpFreq < 0.0f) pSettings->post.hpFreq = 0.0f;
         if (pSettings->post.hpFreq > 50.0f) pSettings->post.hpFreq = 50.0f;
+		pSettings->setHPFrequency(pSettings->post.hpFreq);
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -307,44 +364,40 @@ inline void ControlWindow::show(void)
         value = pSettings->post.hpFreq;
     }
     //if (pSettings->flagPause) { ImGui::EndDisabled(); }
-    ImGui::Separator();
-    if (ImGui::TreeNode("Monitor"))
-    {
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", pSettings->x1s[pSettings->idx], pSettings->y1s[pSettings->idx]);
-        ImGui::Text(
-            "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(pSettings->x1s[pSettings->idx], 2) + pow(pSettings->y1s[pSettings->idx], 2), 0.5),
-            u8"θ",
-            atan2(pSettings->y1s[pSettings->idx], pSettings->x1s[pSettings->idx]) / std::numbers::pi * 180
-        );
-        if (!stateCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", pSettings->x2s[pSettings->idx], pSettings->y2s[pSettings->idx]);
-        ImGui::Text(
-            "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(pSettings->x2s[pSettings->idx], 2) + pow(pSettings->y2s[pSettings->idx], 2), 0.5),
-            u8"θ",
-            atan2(pSettings->y2s[pSettings->idx], pSettings->x2s[pSettings->idx]) / std::numbers::pi * 180
-        );
-        if (!stateCh2) { ImGui::EndDisabled(); }
-        ImGui::TreePop();
+    if (button != ButtonType::NON) buttonPressed(button, value);
+}
+
+inline void ControlWindow::show(void)
+{
+    ButtonType button = ButtonType::NON;
+    float value = 0;
+    static float nextItemWidth = 170.0f * pSettings->window.monitorScale;
+    ImGui::SetNextWindowPos(ImVec2(0, 0), pSettings->imgui.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
+    ImGui::Begin(this->name);
+    ImGui::SetNextItemWidth(nextItemWidth);
+    ImGui::Text("%s", pSettings->device_sn.data());
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) { pSettings->statusMeasurement = false; }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::Close;
+        value = 0;
     }
-    int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
+    awg(nextItemWidth);
+    plot(nextItemWidth);
+    ImGui::Separator();
+    post(nextItemWidth);
+    monitor();
+    ImGui::Separator();
+	functionButtons(nextItemWidth);
+    ImGui::Separator();
+	int hours = (int)pSettings->times[pSettings->idx] / (60 * 60);
     int mins = ((int)pSettings->times[pSettings->idx] - hours * 60 * 60) / 60;
     double secs = pSettings->times[pSettings->idx] - hours * 60 * 60 - mins * 60;
     ImGui::Separator();
     //ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
     ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
-
-    if (pSettings->pDaq != nullptr && fgFlag)
-    {
-        pSettings->pDaq->awg.start(
-            pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
-            pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
-        );
-    }
     ImGui::End();
-    if (button != ButtonType::NON)
-    {
-        pSettings->cmds.push_back(std::array<float, 3>{ (float)pSettings->timer.elapsedSec(), (float)button, value });
-    }
+    if (button != ButtonType::NON) buttonPressed(button, value);
 }

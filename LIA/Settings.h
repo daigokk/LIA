@@ -116,7 +116,7 @@ public:
     }
 
     double process(double input) {
-        if (m_cutoffFrequency == 0.0) {
+		if (m_cutoffFrequency == 0.0) {
             m_prevInput = input;
             m_prevOutput = input;
             return input;
@@ -242,7 +242,13 @@ public:
         saveCmdsToFile();
 	}
     // --- Public Methods for Logic and I/O ---
-
+    void setHPFrequency(double freq) {
+        post.hpFreq = freq;
+        hpfX1.setCutoffFrequency(freq);
+        hpfY1.setCutoffFrequency(freq);
+        hpfX2.setCutoffFrequency(freq);
+        hpfY2.setCutoffFrequency(freq);
+	}
     void reset() {
 		awg = AwgCfg();
 		post = PostCfg();

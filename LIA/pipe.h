@@ -277,7 +277,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         std::cout << "  reset or *rst               : Reset all settings to default values\n";
         std::cout << "  *idn?                       : Identify connected DAQ device\n";
         std::cout << "  error?                      : Show last error message\n";
-        std::cout << "  end, exit, quit             : Exit the program\n";
+        std::cout << "  end, exit, quit, close      : Exit the program\n";
         std::cout << "  pause                       : Pause data acquisition\n";
         std::cout << "  run                         : Resume data acquisition\n";
         std::cout << "  data:raw:save [filename]    : Save raw data to file (optional filename)\n";
@@ -317,7 +317,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         iss >> commandPart;
         iss >> argumentPart; // 最初の引数（主に数値）を取得
 
-        if (commandPart == "end" || commandPart == "exit" || commandPart == "quit") break;
+        if (commandPart == "end" || commandPart == "exit" || commandPart == "quit" || commandPart == "close") break;
 
         try {
             value = std::stof(argumentPart);
