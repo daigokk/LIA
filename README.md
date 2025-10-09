@@ -8,7 +8,7 @@
 
   Amplitude: $A=\sqrt{x^2+y^2}$, Phase: $\theta=\arctan{\frac{y}{x}}$
   - The following code demonstrates the simplest implementation of a Core PSD calculation in C++.
-    ```
+    ```c++
     void psd::calc(double* pX, double* pY) {
         *pX = 0;
         *pY = 0;
@@ -89,7 +89,7 @@
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
 ## Python Integration 🐍
   - Control LIA and retrieve data directly from Python (See also [pipe.h](./LIA/pipe.h)). Example: generate time chart and XY(Lissajous) plots.
-  ```
+  ```Python
   import subprocess
   import numpy as np
   import matplotlib.pyplot as plt
