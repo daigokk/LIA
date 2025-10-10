@@ -366,5 +366,5 @@ FodyWeavers.xsd
 imgui.ini
 lia.ini
 ect*.csv
-raw.csv
+raw*.csv
 commands.csv

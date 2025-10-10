@@ -49,7 +49,10 @@ inline void RawPlotWindow::show()
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
     
-    if (ImGui::Button("Save")) { pSettings->saveRawData(); }
+    if (ImGui::Button("Save"))
+    {
+        pSettings->saveRawData(std::format("raw_{}.csv", pSettings->getCurrentTimestamp()));
+    }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::RawSave;
