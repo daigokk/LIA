@@ -128,7 +128,13 @@ inline void TimeChartWindow::show()
     }
     if (pSettings->flagPause) { ImGui::EndDisabled(); }
     ImGui::SameLine();
-    if (ImGui::Button("Save")) { pSettings->saveResultsToFile(RESULTS_FILE, pSettings->plot.historySec); }
+    if (ImGui::Button("Save"))
+    {
+        pSettings->saveResultsToFile(
+            std::format("ect_{}.csv", pSettings->getCurrentTimestamp()),
+            pSettings->plot.historySec
+        );
+    }
     ImGui::SameLine();
     if (pSettings->flagPause)
     {

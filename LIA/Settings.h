@@ -1,9 +1,14 @@
 #pragma once
 
 #include <array>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <format>
 #include <stdexcept>
@@ -89,7 +94,7 @@ constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
 
 // --- Constants for file names ---
 constexpr auto SETTINGS_FILE = "lia.ini";
-constexpr auto RESULTS_FILE = "results.csv";
+constexpr auto RESULTS_FILE = "ect.csv";
 constexpr auto CMDS_FILE = "commands.csv";
 
 //================================================================================
@@ -213,11 +218,26 @@ public:
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize = 0;
 
 private:
+	std::string dirName = ".";
     // --- Private Helper Members ---
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
 
 public:
     Settings() {
+
+        dirName = getCurrentTimestamp();
+        try {
+            if (std::filesystem::create_directory(dirName)) {
+                //std::cout << "ディレクトリを作成しました: " << dirName << std::endl;
+            }
+            else {
+                //std::cout << "ディレクトリの作成に失敗しました（既に存在している可能性あり）" << std::endl;
+            }
+        }
+        catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Filesystem error: " << e.what() << std::endl;
+        }
+
         // Allocate memory for data buffers on the heap
         rawTime.resize(RAW_SIZE);
         rawData1.resize(RAW_SIZE);
@@ -285,8 +305,24 @@ public:
         updateRingBuffers(t);
     }
 
+    std::string getCurrentTimestamp() const {
+        // 現在時刻を取得
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        // std::tm に変換（ローカルタイム）
+        std::tm local_tm;
+        // 安全な localtime_s を使用（Windows環境）
+        if (localtime_s(&local_tm, &now_time) != 0) {
+            throw std::runtime_error("localtime_s failed");
+        }
+        // 文字列に整形
+        std::ostringstream oss;
+        oss << std::put_time(&local_tm, "%Y%m%d%H%M%S");
+        return oss.str();
+    }
+
     bool saveRawData(const std::string& filename = "raw.csv") const {
-        std::ofstream file(filename);
+        std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) {
             std::cerr << "Error: Could not open file " << filename << std::endl;
             return false;
@@ -307,7 +343,7 @@ public:
     }
 
     bool saveResultsToFile(const std::string& filename = RESULTS_FILE, const double sec = 0) const {
-        std::ofstream file(filename);
+        std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) {
             std::cerr << std::format("Error: Could not open file: {}\n", filename);
             return false;
@@ -344,7 +380,7 @@ public:
     }
 
     bool saveCmdsToFile(const std::string& filename = CMDS_FILE) const {
-		std::ofstream file(filename);
+        std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) {
             std::cerr << "Error: Could not open file " << filename << std::endl;
             return false;
@@ -359,7 +395,6 @@ public:
 
 private:
     // --- Private Helper Methods ---
-
     void updateRingBuffers(double t) {
         times[tail] = t;
         dts[tail] = (nofm > 0) ? (times[tail] - times[idx]) * 1e3 : 0.0;
