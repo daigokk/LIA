@@ -50,12 +50,16 @@
   1. Hardware Setup
      - Connect Analog Discovery 2 or 3 to your PC
      - Example wiring:
-       - W1 → CH1+
-       - GND → CH1−
+        - W1 → CH1+
+        - GND → CH1−
+  1. Get "LIA.exe"
+     - Download from [this link](https://github.com/daigokk/LIA/releases/). However, you will need to configure anti-virus software like Windows Defender to mark "LIA.exe" as safe.
+     - Compile using Visual Studio. You need to install the Visual Studio to your PC.
+     - pip install -U git+https://github.com/daigokk/pylockinamp.git
   1. Launch LIA
-      - Run lia.exe
-      - Configure frequency and amplitude via GUI
-      - View results in:
+     - Run "LIA.exe"
+     - Configure frequency and amplitude via GUI
+     - View results in:
         - "Raw waveform" window
         - "XY" window for X/Y component visualization
         - "Time chart" window for Y component
