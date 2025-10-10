@@ -87,6 +87,11 @@ constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
 constexpr float XY_HISTORY_SEC = 10.0f;
 constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
 
+// --- Constants for file names ---
+constexpr auto SETTINGS_FILE = "lia.ini";
+constexpr auto RESULTS_FILE = "results.csv";
+constexpr auto CMDS_FILE = "commands.csv";
+
 //================================================================================
 // Refactored HighPassFilter Class
 //================================================================================
@@ -210,8 +215,6 @@ public:
 private:
     // --- Private Helper Members ---
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
-    std::string m_iniFilename = "lia.ini";
-    std::string m_resultsFilename = "result.csv";
 
 public:
     Settings() {
@@ -299,10 +302,79 @@ public:
                 file << std::format("{:e},{:e}\n", RAW_DT * i, rawData1[i]);
             }
         }
+        file.close();
         return true;
     }
 
-    void saveSettingsToFile() const {
+    bool saveResultsToFile(const std::string& filename = RESULTS_FILE, const double sec = 0) const {
+        std::ofstream file(filename);
+        if (!file) {
+            std::cerr << std::format("Error: Could not open file: {}\n", filename);
+            return false;
+        }
+
+        file << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
+
+        int _size = this->size;
+        if (sec > 0) {
+            _size = sec / MEASUREMENT_DT;
+            if (_size > this->size) _size = this->size;
+        }
+        int idx = this->tail - _size;
+        if (idx < 0) {
+            if (this->nofm <= MEASUREMENT_SIZE) {
+                idx = 0;
+                _size = this->tail;
+            }
+            else {
+                idx += MEASUREMENT_SIZE;
+            }
+        }
+        for (int i = 0; i < _size; ++i) {
+            if (!this->flagCh2) {
+                file << std::format("{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx]);
+            }
+            else {
+                file << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx], this->x2s[idx], this->y2s[idx]);
+            }
+            idx = (idx + 1) % MEASUREMENT_SIZE;
+        }
+        file.close();
+		return true;
+    }
+
+    bool saveCmdsToFile(const std::string& filename = CMDS_FILE) const {
+		std::ofstream file(filename);
+        if (!file) {
+            std::cerr << "Error: Could not open file " << filename << std::endl;
+            return false;
+		}
+        file << "# Time(s), ButtonNo, ButtonName, Value\n";
+        for (const auto& cmd : cmds) {
+            file << std::format("{:e},{:.0f},{:s},{:e}\n", cmd[0], cmd[1], cmdToString((ButtonType)cmd[1]), cmd[2]);
+        }
+        file.close();
+        return true;
+	}
+
+private:
+    // --- Private Helper Methods ---
+
+    void updateRingBuffers(double t) {
+        times[tail] = t;
+        dts[tail] = (nofm > 0) ? (times[tail] - times[idx]) * 1e3 : 0.0;
+        idx = tail;
+        nofm++;
+        tail = nofm % MEASUREMENT_SIZE;
+        size = std::min(nofm, (int)MEASUREMENT_SIZE);
+
+        xyIdx = xyTail;
+        xyNorm++;
+        xyTail = xyNorm % XY_SIZE;
+        xySize = std::min(xyNorm, (int)XY_SIZE);
+    }
+
+    void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {
         ini::IniFile liaIni;
         liaIni["Window"]["width"] = window.width;
         liaIni["Window"]["height"] = window.height;
@@ -334,62 +406,11 @@ public:
         liaIni["Plot"]["beep"] = plot.beep;
         liaIni["Plot"]["acfm"] = plot.acfm;
 
-        liaIni.save(m_iniFilename);
+        liaIni.save(filename);
     }
 
-    void saveResultsToFile() const {
-        std::ofstream file(m_resultsFilename);
-        if (!file) {
-            std::cerr << "Error: Could not open file " << m_resultsFilename << std::endl;
-            return;
-        }
-
-        file << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
-
-        size_t count = std::min((size_t)nofm, MEASUREMENT_SIZE);
-        size_t start_idx = (nofm > MEASUREMENT_SIZE) ? tail : 0;
-
-        for (size_t i = 0; i < count; ++i) {
-            size_t idx = (start_idx + i) % MEASUREMENT_SIZE;
-            if (flagCh2) {
-                file << std::format("{:e},{:e},{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx], x2s[idx], y2s[idx]);
-            }
-            else {
-                file << std::format("{:e},{:e},{:e}\n", times[idx], x1s[idx], y1s[idx]);
-            }
-        }
-    }
-    void saveCmdsToFile(const std::string& filename = "commands.csv") const {
-		std::ofstream file(filename);
-        if (!file) {
-            std::cerr << "Error: Could not open file " << filename << std::endl;
-            return;
-		}
-        file << "# Time(s), ButtonNo, ButtonName, Value\n";
-        for (const auto& cmd : cmds) {
-            file << std::format("{:e},{:.0f},{:s},{:e}\n", cmd[0], cmd[1], cmdToString((ButtonType)cmd[1]), cmd[2]);
-        }
-	}
-
-private:
-    // --- Private Helper Methods ---
-
-    void updateRingBuffers(double t) {
-        times[tail] = t;
-        dts[tail] = (nofm > 0) ? (times[tail] - times[idx]) * 1e3 : 0.0;
-        idx = tail;
-        nofm++;
-        tail = nofm % MEASUREMENT_SIZE;
-        size = std::min(nofm, (int)MEASUREMENT_SIZE);
-
-        xyIdx = xyTail;
-        xyNorm++;
-        xyTail = xyNorm % XY_SIZE;
-        xySize = std::min(xyNorm, (int)XY_SIZE);
-    }
-
-    void loadSettingsFromFile() {
-        ini::IniFile liaIni(m_iniFilename);
+    void loadSettingsFromFile(const std::string& filename = SETTINGS_FILE) {
+        ini::IniFile liaIni(filename);
 
         window.width = loadValue(liaIni, "Window", "width", window.width);
         window.height = loadValue(liaIni, "Window", "height", window.height);

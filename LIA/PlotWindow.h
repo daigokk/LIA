@@ -49,10 +49,7 @@ inline void RawPlotWindow::show()
     ImGui::SetNextWindowSize(windowSize, pSettings->imgui.windowFlag);
     ImGui::Begin(this->name);
     
-    if (ImGui::Button("Save"))
-    {
-		pSettings->saveRawData();
-    }
+    if (ImGui::Button("Save")) { pSettings->saveRawData(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::RawSave;
@@ -122,6 +119,7 @@ inline void TimeChartWindow::show()
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT) * pSettings->times.size();
     if (pSettings->flagPause) { ImGui::BeginDisabled(); }
+    ImGui::SetNextItemWidth(500.0f * pSettings->window.monitorScale);
     ImGui::SliderFloat("History", &pSettings->plot.historySec, 1, historySecMax, "%5.1f s");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -129,6 +127,8 @@ inline void TimeChartWindow::show()
         value = pSettings->plot.historySec;
     }
     if (pSettings->flagPause) { ImGui::EndDisabled(); }
+    ImGui::SameLine();
+    if (ImGui::Button("Save")) { pSettings->saveResultsToFile(RESULTS_FILE, pSettings->plot.historySec); }
     ImGui::SameLine();
     if (pSettings->flagPause)
     {
@@ -142,6 +142,7 @@ inline void TimeChartWindow::show()
         button = ButtonType::TimePause;
         value = pSettings->flagPause;
     }
+    
     //ImGui::SliderFloat("Y limit", &(pSettings->limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に

@@ -365,6 +365,6 @@ FodyWeavers.xsd
 # LIA temporary files
 imgui.ini
 lia.ini
-result.csv
+results.csv
 raw.csv
 commands.csv
