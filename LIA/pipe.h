@@ -26,17 +26,16 @@ const std::vector<std::string> helps = {
     "  data:xy?                    : Output latest XY data point",
     std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V)", RAW_RANGE * 1.2f),
     std::format("  disp|display:raw:limit <value>   : Set raw display limit (0.1 to {} V)", RAW_RANGE * 1.2f),
-    "  chan2:disp or chan2:disp? [on|off]: Enable/disable or query CH2 display state",
-    "  acfm:disp or acfm:disp? [on|off]  : Enable/disable or query ACFM window display state",
+    "  chan2:disp [on|off] or chan2:disp?: Enable/disable or query CH2 display state",
+    "  acfm:disp [on|off] or acfm:disp?  : Enable/disable or query ACFM window display state",
     "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency",
-    "  w1|w2:amp|amplitude [min|max|value]   : Set or query waveform amplitude",
-    "  w1|w2:phase or w1|w2:phase? [value]: Set or query waveform phase in degrees",
-    "  calc|calculate:offset:state [on|off]: Enable/disable auto offset (turns off if 'off')",
-    "  calc|calculate:offset:auto once    : Perform one-time auto offset",
+    "  w1|w2:amp|amplitude [min|max|value]  : Set or query waveform amplitude",
+    "  w1|w2:phase or w1|w2:phase? [value]  : Set or query waveform phase in degrees",
+    "  calc|calculate:offset:state [on|off] : Enable/disable auto offset (turns off if 'off')",
+    "  calc|calculate:offset:auto once      : Perform one-time auto offset",
     "  calc|calculate:hpf:freq|frequency [value]: Set or query high-pass filter frequency (0 to 50 Hz)",
     "  calc1|calc2:offset:phase or calc1|calc2:offset:phase? [value]: Set or query calculation offset phase in degrees",
     "  help? or ?                  : Show this help message",
-    "  help:size?                  : Show the number of help entries"
 };
 
 // 文字列分割関数
