@@ -54,7 +54,7 @@
         - GND → CH1−
   1. Get "LIA.exe"
      - You can obtain "LIA.exe" through one of the following methods:
-        - Download from [this link](https://github.com/daigokk/LIA/releases/). However, you will need to configure anti-virus software like Windows Defender to mark "LIA.exe" as safe.
+        - Download from [this link](https://github.com/daigokk/LIA/releases/). However, you will need to configure anti-virus software like Windows Security to mark "LIA.exe" as safe.
         - Compile using Visual Studio. You need to install the Visual Studio to your PC.
         - pip install -U git+https://github.com/daigokk/pylockinamp.git
   1. Launch LIA
