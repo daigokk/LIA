@@ -62,7 +62,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             static float oldCh0Amp = pSettings->awg.ch[0].amp;
-            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
+            if (ImGui::InputFloat("Amp. (V)", &(pSettings->awg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
             {
                 if (pSettings->awg.ch[0].amp < 0.1f) pSettings->awg.ch[0].amp = 0.1f;
                 if (pSettings->awg.ch[0].amp > 5.0f) pSettings->awg.ch[0].amp = 5.0f;
@@ -115,7 +115,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::EndDisabled();
             ImGui::SetNextItemWidth(nextItemWidth);
             static float oldFg2Amp = pSettings->awg.ch[1].amp;
-            if (ImGui::InputFloat("Volt. (V)", &(pSettings->awg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
+            if (ImGui::InputFloat("Amp. (V)", &(pSettings->awg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
             {
                 if (pSettings->awg.ch[1].amp < 0.0f) pSettings->awg.ch[1].amp = 0.0f;
                 if (pSettings->awg.ch[1].amp > 5.0f) pSettings->awg.ch[1].amp = 5.0f;

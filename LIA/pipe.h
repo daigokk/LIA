@@ -10,6 +10,34 @@
 #include <string>
 #include <vector>
 
+
+const std::vector<std::string> helps = {
+    "Available commands:",
+    "  reset or *rst               : Reset all settings to default values",
+    "  *idn?                       : Identify connected DAQ device",
+        "  error?                      : Show last error message",
+        "  end, exit, quit, close      : Exit the program",
+        "  pause                       : Pause data acquisition",
+        "  run                         : Resume data acquisition",
+        "  data:raw:save [filename]    : Save raw data to file (optional filename)",
+        "  data:raw:size?              : Get size of raw data buffer",
+        "  data:raw?                   : Output raw data (time, ch1 [, ch2])",
+        "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)",
+        "  data:xy?                    : Output latest XY data point",
+        std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V", RAW_RANGE * 1.2f),
+        std::format("  disp|display:raw:limit <value>   : Set raw display limit (0.1 to {} V", RAW_RANGE * 1.2f),
+        "  chan2:disp on | off : Enable or disable CH2 display",
+        "  acfm:disp on|off            : Enable or disable ACFM windo display",
+        "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency",
+        "  w1|w2:volt|voltage [min|max|value]   : Set or query waveform voltage",
+        "  w1|w2:phase [value]         : Set or query waveform phase in degrees",
+        "  calc|calculate:offset:state on|off   : Enable or disable auto offset",
+        "  calc|calculate:offset:auto once      : Perform one-time auto offset",
+        "  calc|calculate:hpf:freq|frequency [value]    : Set or query high-pass filter frequency (0 to 50 Hz)",
+        "  calc1|calc2:offset:phase [value]     : Set calculation offset phase in degrees",
+        "  help? or ?                  : Show this help message"
+};
+
 // 文字列分割関数
 std::vector<std::string> split(const std::string& str, char delimiter=':') {
     std::vector<std::string> tokens;
@@ -176,6 +204,11 @@ void pipe(std::stop_token st, Settings* pSettings)
         return false;
         };
 
+    commandMap[":chan2:disp?"] = commandMap["chan2:disp?"] = [&](const auto&, const auto&, auto) {
+        std::cout << (pSettings->flagCh2 ? "on" : "off") << std::endl;
+        return true;
+        };
+
     // ACFM表示設定
     commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
         if (arg == "on") { pSettings->plot.acfm = true; return true; }
@@ -193,8 +226,8 @@ void pipe(std::stop_token st, Settings* pSettings)
 
         static const double lowLimitFreq = 0.5 / (RAW_SIZE * RAW_DT);
         static const double highLimitFreq = std::round(1.0 / (1000 * RAW_DT));
-        static constexpr double VOLT_MIN = 0.0;
-        static constexpr double VOLT_MAX = 5.0;
+        static constexpr double AWG_AMP_MIN = 0.0;
+        static constexpr double AWG_AMP_MAX = 5.0;
 
         std::string subCmd = tokens[1];
         bool isQuery = subCmd.back() == '?';
@@ -217,13 +250,13 @@ void pipe(std::stop_token st, Settings* pSettings)
             else { return false; }
             return true;
         }
-        if (subCmd == "volt" || subCmd == "voltage") {
+        if (subCmd == "amp" || subCmd == "amplitude") {
             if (isQuery) {
-                if (arg == "min") { std::cout << VOLT_MIN << std::endl; }
-                else if (arg == "max") { std::cout << VOLT_MAX << std::endl; }
+                if (arg == "min") { std::cout << AWG_AMP_MIN << std::endl; }
+                else if (arg == "max") { std::cout << AWG_AMP_MAX << std::endl; }
                 else { std::cout << amp << std::endl; }
             }
-            else if (val >= VOLT_MIN && val <= VOLT_MAX) {
+            else if (val >= AWG_AMP_MIN && val <= AWG_AMP_MAX) {
                 amp = val; awgUpdateRequired = true;
             }
             else { return false; }
@@ -266,37 +299,17 @@ void pipe(std::stop_token st, Settings* pSettings)
         };
     commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
     commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
-
+    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pSettings->post.offset1Phase << std::endl; return true; };
+    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pSettings->post.offset2Phase << std::endl; return true; };
     commandMap["help"] = [&](const auto& tokens, const auto&, auto) {
         if (tokens.size() < 2) return false;
         const std::string& subCmd = tokens[1];
-		if (subCmd == "size?") { std::cout << 24 << std::endl; return true; }
+		if (subCmd == "size?") { std::cout << helps.size() << std::endl; return true; }
         };
     commandMap["?"] = commandMap["help?"] = [&](const auto&, const auto&, auto) {
-        std::cout << "Available commands:\n";
-        std::cout << "  reset or *rst               : Reset all settings to default values\n";
-        std::cout << "  *idn?                       : Identify connected DAQ device\n";
-        std::cout << "  error?                      : Show last error message\n";
-        std::cout << "  end, exit, quit, close      : Exit the program\n";
-        std::cout << "  pause                       : Pause data acquisition\n";
-        std::cout << "  run                         : Resume data acquisition\n";
-        std::cout << "  data:raw:save [filename]    : Save raw data to file (optional filename)\n";
-        std::cout << "  data:raw:size?              : Get size of raw data buffer\n";
-        std::cout << "  data:raw?                   : Output raw data (time, ch1 [, ch2])\n";
-        std::cout << "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)\n";
-        std::cout << "  data:xy?                    : Output latest XY data point\n";
-        std::cout << "  disp|display:xy:limit <value>    : Set XY display limit (0.01 to " << RAW_RANGE * 1.2f << " V)\n";
-        std::cout << "  disp|display:raw:limit <value>   : Set raw display limit (0.1 to " << RAW_RANGE * 1.2f << " V)\n";
-        std::cout << "  chan2:disp on|off           : Enable or disable CH2 display\n";
-		std::cout << "  acfm:disp on|off            : Enable or disable ACFM windo display\n";
-        std::cout << "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency\n";
-        std::cout << "  w1|w2:volt|voltage [min|max|value]   : Set or query waveform voltage\n";
-        std::cout << "  w1|w2:phase [value]         : Set or query waveform phase in degrees\n";
-        std::cout << "  calc|calculate:offset:state on|off   : Enable or disable auto offset\n";
-        std::cout << "  calc|calculate:offset:auto once      : Perform one-time auto offset\n";
-		std::cout << "  calc|calculate:hpf:freq|frequency [value]    : Set or query high-pass filter frequency (0 to 50 Hz)\n";
-        std::cout << "  calc1|calc2:offset:phase [value]     : Set calculation offset phase in degrees\n";
-        std::cout << "  help? or ?                  : Show this help message\n";
+        for(auto& line : helps) {
+            std::cout << line << std::endl;
+		}
         return true;
 		};
 
