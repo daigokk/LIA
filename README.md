@@ -112,7 +112,7 @@
     def _send(self, cmd:str):
       self.process.stdin.write(f'{cmd}\n')
       self.process.stdin.flush()
-    def _recieve(self, ):
+    def _recieve(self):
       self.process.stdout.flush()
       return self.process.stdout.readline()[:-1]
     def _query(self, cmd):
