@@ -13,7 +13,7 @@ public:
     {
     public:
 		const char manufacturer[32] = "Digilent";
-        HDWF hdwf[2] = { 0, 0 };
+        HDWF hdwf = 0;
         char name[256] = { "" };
         char sn[32] = { "" };
 		char version[32] = { "" };
@@ -66,15 +66,9 @@ public:
         errChk(FDwfEnumDeviceName(idxDevice, device.name), __func__, __FILE__, __LINE__);
         errChk(FDwfEnumSN(idxDevice, device.sn), __func__, __FILE__, __LINE__);
         
-        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf[0]), __func__, __FILE__, __LINE__);
-        awg.pHdwf[0] = &device.hdwf[0];
-        scope.pHdwf[0] = &device.hdwf[0];
-        if (getIdxFirstEnabledDevice() >= 0)
-        {
-            errChk(FDwfDeviceOpen(getIdxFirstEnabledDevice(), &device.hdwf[1]), __func__, __FILE__, __LINE__);
-            awg.pHdwf[1] = &device.hdwf[1];
-            scope.pHdwf[1] = &device.hdwf[1];
-        }
+        errChk(FDwfDeviceOpen(idxDevice, &device.hdwf), __func__, __FILE__, __LINE__);
+        awg.pHdwf = &device.hdwf;
+        scope.pHdwf = &device.hdwf;
     }
     Daq_dwf()
     {
@@ -104,97 +98,92 @@ public:
     ~Daq_dwf()
     {
         // close the connection
-        FDwfDeviceClose(device.hdwf[0]);
-        FDwfDeviceClose(device.hdwf[1]);
+        FDwfDeviceClose(device.hdwf);
     }
     void powerSupply(const double volts = 5.0)
     {
         bool flag = true;
         if (volts == 0.0) flag = false;
         errChk( // set voltage(from 0 to 5 V)
-            FDwfAnalogIOChannelNodeSet(device.hdwf[0], 0, 1, abs(volts)),
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 1, abs(volts)),
             __func__, __FILE__, __LINE__
         );
         errChk( // set voltage(from 0 to -5 V)
-            FDwfAnalogIOChannelNodeSet(device.hdwf[0], 1, 1, -abs(volts)),
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 1, -abs(volts)),
             __func__, __FILE__, __LINE__
         );
         errChk( // enable positive supply
-            FDwfAnalogIOChannelNodeSet(device.hdwf[0], 0, 0, flag),
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 0, 0, flag),
             __func__, __FILE__, __LINE__
         );
         errChk( // enable negative supply
-            FDwfAnalogIOChannelNodeSet(device.hdwf[0], 1, 0, flag),
+            FDwfAnalogIOChannelNodeSet(device.hdwf, 1, 0, flag),
             __func__, __FILE__, __LINE__
         );
         errChk( // master enable
-            FDwfAnalogIOEnableSet(device.hdwf[0], flag),
+            FDwfAnalogIOEnableSet(device.hdwf, flag),
             __func__, __FILE__, __LINE__
         );
     }
     class Awg
     {
     public:
-        HDWF* pHdwf[2] = { nullptr, nullptr };
-        FUNC func[4] = { funcSine, funcSine, funcSine, funcSine };
-        const TRIGSRC trigsrc[4] = { trigsrcNone, trigsrcAnalogOut1, trigsrcExternal1, trigsrcExternal1 };
-        double frequency[4] = { 1e3, 1e3, 1e3, 1e3 };
-        double amplitude[4] = { 1.0, 0.0, 1.0, 0.0 };
-        double phaseDeg[4] = { 0.0, 0.0, 0.0, 0.0 };
-        double rgdData[4][5000];
+        HDWF* pHdwf = nullptr;
+        FUNC func[2] = { funcSine, funcSine };
+        const TRIGSRC trigsrc[2] = { trigsrcNone, trigsrcAnalogOut1 };
+        double frequency[2] = { 1e3, 1e3 };
+        double amplitude[2] = { 1.0, 0.0 };
+        double phaseDeg[2] = { 0.0, 0.0 };
+        double rgdData[2][5000];
         void start()
         {
             int nch = 2;
-            if (pHdwf[1] != nullptr) nch = 4;
             for (int i = 0; i < nch; i++)
             {
                 errChk( // enable channel
-                    FDwfAnalogOutNodeEnableSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, true),
+                    FDwfAnalogOutNodeEnableSet(*pHdwf, i, AnalogOutNodeCarrier, true),
                     __func__, __FILE__, __LINE__
                 );
                 errChk( // set function type
-                    FDwfAnalogOutNodeFunctionSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, func[i]),
+                    FDwfAnalogOutNodeFunctionSet(*pHdwf, i, AnalogOutNodeCarrier, func[i]),
                     __func__, __FILE__, __LINE__
                 );
                 if (func[i] == funcCustom)
                 {
-                    FDwfAnalogOutNodeDataSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, rgdData[i], 5000);
+                    FDwfAnalogOutNodeDataSet(*pHdwf, i, AnalogOutNodeCarrier, rgdData[i], 5000);
                 }
                 errChk( // set frequency
-                    FDwfAnalogOutNodeFrequencySet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, frequency[i]),
+                    FDwfAnalogOutNodeFrequencySet(*pHdwf, i, AnalogOutNodeCarrier, frequency[i]),
                     __func__, __FILE__, __LINE__
                 );
                 errChk( // set amplitude or DC voltage
-                    FDwfAnalogOutNodeAmplitudeSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, amplitude[i]),
+                    FDwfAnalogOutNodeAmplitudeSet(*pHdwf, i, AnalogOutNodeCarrier, amplitude[i]),
                     __func__, __FILE__, __LINE__
                 );
                 errChk( // set offset
-                    FDwfAnalogOutNodeOffsetSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, 0.0),
+                    FDwfAnalogOutNodeOffsetSet(*pHdwf, i, AnalogOutNodeCarrier, 0.0),
                     __func__, __FILE__, __LINE__
                 );
                 errChk( // set phase
-                    FDwfAnalogOutNodePhaseSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, phaseDeg[i]),
+                    FDwfAnalogOutNodePhaseSet(*pHdwf, i, AnalogOutNodeCarrier, phaseDeg[i]),
                     __func__, __FILE__, __LINE__
                 );
                 errChk( // Sync phase
-                    FDwfAnalogOutTriggerSourceSet(*pHdwf[i / 2], i % 2, trigsrc[i]),
-                    __func__, __FILE__, __LINE__
-                );
-			}
-            for (int i = 0; i < nch; i++)
-            {
-                errChk( // start signal generation
-                    FDwfAnalogOutConfigure(*pHdwf[i / 2], i % 2, true),
+                    FDwfAnalogOutTriggerSourceSet(*pHdwf, i, trigsrc[i]),
                     __func__, __FILE__, __LINE__
                 );
             }
+            errChk( // start signal generation
+                FDwfAnalogOutConfigure(*pHdwf, -1, true),
+                __func__, __FILE__, __LINE__
+            );
         }
         void start(const double frequency, const double amplitude1, const double phaseDeg1)
         {
             this->frequency[0] = frequency;
             this->amplitude[0] = amplitude1;
             this->phaseDeg[0] = phaseDeg1;
-            for (int i = 1; i < 4; i++)
+            for (int i = 1; i < 2; i++)
             {
                 this->frequency[i] = frequency;
                 this->amplitude[i] = 0.0;
@@ -217,63 +206,53 @@ public:
         }
         void off()
         {
-            int nch = 2;
-            if (pHdwf[1] != nullptr) nch = 4;
-            for (int i = 0; i < nch; i++)
-            {
-                errChk( // disable channel
-                    FDwfAnalogOutNodeEnableSet(*pHdwf[i / 2], i % 2, AnalogOutNodeCarrier, false),
-                    __func__, __FILE__, __LINE__
-                );
-            }
+            errChk( // disable channel
+                FDwfAnalogOutNodeEnableSet(*pHdwf, -1, AnalogOutNodeCarrier, false),
+                __func__, __FILE__, __LINE__
+            );
         }
     } awg;
     class Scope
     {
     public:
-        HDWF* pHdwf[2] = { nullptr, nullptr };
+        HDWF* pHdwf = nullptr;
         double voltsRange = 5.0;
         int bufferSize = 5000;
         double SamplingRate = 100e6;
         double secTimeout = 0.0;
-        TRIGSRC trigSrc[2] = { trigsrcAnalogOut1, trigsrcExternal1 };
+        TRIGSRC trigSrc = trigsrcAnalogOut1;
         int trigChannel = 0;
         TRIGTYPE trigType = trigtypeEdge;
         double trigVoltLevel = 0.0;
         DwfTriggerSlope trigSlope = DwfTriggerSlopeRise;
         void open()
         {
-            int nDevice = 1;
-            if (pHdwf[1] != nullptr) nDevice = 2;
-            for (int i = 0; i < nDevice; i++)
-            {
-                errChk( // enable all channels
-                    FDwfAnalogInChannelEnableSet(*pHdwf[i], -1, true),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set offset voltage(in Volts)
-                    FDwfAnalogInChannelOffsetSet(*pHdwf[i], -1 % 2, 0.0),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set range (maximum signal amplitude in Volts)
-                    FDwfAnalogInChannelRangeSet(*pHdwf[i], -1, voltsRange * 2),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set the buffer size per channel (data point in a recording)
-                    FDwfAnalogInBufferSizeSet(*pHdwf[i], bufferSize),
-                    __func__, __FILE__, __LINE__
-                );
-                FDwfAnalogInBufferSizeGet(*pHdwf[i], &bufferSize);
+            errChk( // enable all channels
+                FDwfAnalogInChannelEnableSet(*pHdwf, -1, true),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set offset voltage(in Volts)
+                FDwfAnalogInChannelOffsetSet(*pHdwf, -1, 0.0),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set range (maximum signal amplitude in Volts)
+                FDwfAnalogInChannelRangeSet(*pHdwf, -1, voltsRange * 2),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set the buffer size per channel (data point in a recording)
+                FDwfAnalogInBufferSizeSet(*pHdwf, bufferSize),
+                __func__, __FILE__, __LINE__
+            );
+            FDwfAnalogInBufferSizeGet(*pHdwf, &bufferSize);
 
-                errChk( // set the acquisition frequency (in Hz)
-                    FDwfAnalogInFrequencySet(*pHdwf[i], SamplingRate),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // disable averaging (for more info check the documentation)
-                    FDwfAnalogInChannelFilterSet(*pHdwf[i], -1, filterAverageFit),
-                    __func__, __FILE__, __LINE__
-                );
-            }
+            errChk( // set the acquisition frequency (in Hz)
+                FDwfAnalogInFrequencySet(*pHdwf, SamplingRate),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // disable averaging (for more info check the documentation)
+                FDwfAnalogInChannelFilterSet(*pHdwf, -1, filterAverageFit),
+                __func__, __FILE__, __LINE__
+            );
             return;
         }
         void open(const double voltsRange, const int bufferSize, const double SamplingRate)
@@ -285,43 +264,40 @@ public:
         }
         void trigger()
         {
-            int nDevice = 1;
-            if (pHdwf[1] != nullptr) nDevice = 2;
-            for (int i = 0; i < nDevice; i++)
-            {
-                errChk( // enable/disable auto triggering
-                    FDwfAnalogInTriggerAutoTimeoutSet(*pHdwf[i], secTimeout),
-                    __func__, __FILE__, __LINE__
-                );
-                errChk( // set trigger source
-                    FDwfAnalogInTriggerSourceSet(*pHdwf[i], trigSrc[i]),
-                    __func__, __FILE__, __LINE__
-                );
 
-                // set trigger channel
-                if (trigSrc[i] != trigsrcAnalogOut1)
+            errChk( // enable/disable auto triggering
+                FDwfAnalogInTriggerAutoTimeoutSet(*pHdwf, secTimeout),
+                __func__, __FILE__, __LINE__
+            );
+            errChk( // set trigger source
+                FDwfAnalogInTriggerSourceSet(*pHdwf, trigSrc),
+                __func__, __FILE__, __LINE__
+            );
+
+            // set trigger channel
+            if (trigSrc != trigsrcAnalogOut1)
+            {
+                if (trigSrc == trigsrcDetectorAnalogIn)
                 {
-                    if (trigSrc[i] == trigsrcDetectorAnalogIn)
-                    {
-                        errChk(
-                            FDwfAnalogInTriggerChannelSet(*pHdwf[i], trigChannel),
-                            __func__, __FILE__, __LINE__
-                        );
-                    }
-                    errChk( // set trigger type
-                        FDwfAnalogInTriggerTypeSet(*pHdwf[i], trigType),
-                        __func__, __FILE__, __LINE__
-                    );
-                    errChk( // set trigger type
-                        FDwfAnalogInTriggerLevelSet(*pHdwf[i], trigVoltLevel),
-                        __func__, __FILE__, __LINE__
-                    );
-                    errChk( // set trigger edge
-                        FDwfAnalogInTriggerConditionSet(*pHdwf[i], trigSlope),
+                    errChk(
+                        FDwfAnalogInTriggerChannelSet(*pHdwf, trigChannel),
                         __func__, __FILE__, __LINE__
                     );
                 }
+                errChk( // set trigger type
+                    FDwfAnalogInTriggerTypeSet(*pHdwf, trigType),
+                    __func__, __FILE__, __LINE__
+                );
+                errChk( // set trigger type
+                    FDwfAnalogInTriggerLevelSet(*pHdwf, trigVoltLevel),
+                    __func__, __FILE__, __LINE__
+                );
+                errChk( // set trigger edge
+                    FDwfAnalogInTriggerConditionSet(*pHdwf, trigSlope),
+                    __func__, __FILE__, __LINE__
+                );
             }
+
             return;
         }
         void trigger(
@@ -330,7 +306,7 @@ public:
         )
         {
             this->secTimeout = secTimeout;
-            this->trigSrc[0] = trigSrc;
+            this->trigSrc = trigSrc;
             this->trigChannel = trigChannel;
             this->trigType = trigType;
             this->trigVoltLevel = trigVoltLevel;
@@ -339,15 +315,10 @@ public:
         }
         void start()
         {
-            int nDevice = 1;
-            if (pHdwf[1] != nullptr) nDevice = 2;
-            for (int i = 0; i < nDevice; i++)
-            {
-                errChk( // set up the instrument
-                    FDwfAnalogInConfigure(*pHdwf[i], true, true),
-                    __func__, __FILE__, __LINE__
-                );
-            }
+            errChk( // set up the instrument
+                FDwfAnalogInConfigure(*pHdwf, true, true),
+                __func__, __FILE__, __LINE__
+            );
         }
         void record(double buffer1[])
         {
@@ -355,12 +326,12 @@ public:
             DwfState sts;
             do {
                 errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf[0], true, &sts),
+                    FDwfAnalogInStatus(*pHdwf, true, &sts),
                     __func__, __FILE__, __LINE__
                 );
             } while (sts != stsDone);
             errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf[0], 0, buffer1, bufferSize),
+                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             return;
@@ -371,16 +342,16 @@ public:
             DwfState sts;
             do {
                 errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf[0], true, &sts),
+                    FDwfAnalogInStatus(*pHdwf, true, &sts),
                     __func__, __FILE__, __LINE__
                 );
             } while (sts != stsDone);
             errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf[0], 0, buffer1, bufferSize),
+                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf[0], 1, buffer2, bufferSize),
+                FDwfAnalogInStatusData(*pHdwf, 1, buffer2, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             return;
@@ -391,16 +362,16 @@ public:
             DwfState sts;
             do {
                 errChk( // read store buffer status
-                    FDwfAnalogInStatus(*pHdwf[1], true, &sts),
+                    FDwfAnalogInStatus(*pHdwf, true, &sts),
                     __func__, __FILE__, __LINE__
                 );
             } while (sts != stsDone);
             errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf[1], 0, buffer1, bufferSize),
+                FDwfAnalogInStatusData(*pHdwf, 0, buffer1, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             errChk( // read store buffer
-                FDwfAnalogInStatusData(*pHdwf[1], 1, buffer2, bufferSize),
+                FDwfAnalogInStatusData(*pHdwf, 1, buffer2, bufferSize),
                 __func__, __FILE__, __LINE__
             );
             return;
