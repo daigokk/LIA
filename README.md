@@ -67,7 +67,7 @@
        ```bash
        lia.exe pipe
        ```
-       - Headless mode:
+       - Headless pipe mode:
        ```bash
        lia.exe nogui
        ```
