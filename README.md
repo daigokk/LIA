@@ -59,9 +59,15 @@
         - pip install -U git+https://github.com/daigokk/pylockinamp.git
   1. Launch LIA
      - Run "LIA.exe"
+       - Normal mode:
+       ```bash
+       lia.exe
+       ```
+       - Pipe mode:
        ```bash
        lia.exe pipe
        ```
+       - Headless mode:
        ```bash
        lia.exe nogui
        ```
