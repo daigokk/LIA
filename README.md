@@ -88,7 +88,7 @@
   - The AD620 and INA128/129 are known as effective instrument amplifiers.
   - The provision of power for the amplifier and sensors, such as coils, can be facilitated by programmable Power Supplies of the AD.
   - However, it is imperative to exercise caution with regard to the power supply limitations inherent to the AD. For instance, the maximum voltage from AD is ±5V, and the current is constrained by the capabilities of the USB connection or any additional AC adapters connected.
-  - Due to maximum input voltage range of the AD is ±25V, the default voltage for this software is ±2.5V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
+  - Due to maximum input voltage range of the AD is ±25V, the default range for this software is ±2.5V, which allows for the possibility of supplying higher voltages through external power sources. It is imperative to exercise caution and avoid the application of excessive voltage or current to the AD to avert potential damage.
   - For information about ECT, please refer to [an old document created by Hocking NDT](https://www.scribd.com/doc/48834808/An-Introduction-to-Eddy-Current-Theory-and-technology) or the following YouTube video (in Japanese):
 
     [![Youtube (In Japanese)](./docs/images/ECT.jpg)](https://www.youtube.com/watch?v=P5mSKKPTCwQ)
