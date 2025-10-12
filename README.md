@@ -59,6 +59,12 @@
         - pip install -U git+https://github.com/daigokk/pylockinamp.git
   1. Launch LIA
      - Run "LIA.exe"
+       ```bash
+       lia.exe pipe
+       ```
+       ```bash
+       lia.exe nogui
+       ```
      - Configure frequency and amplitude via GUI
      - View results in:
         - "Raw waveform" window
