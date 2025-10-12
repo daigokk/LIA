@@ -22,8 +22,8 @@
         *pY /= this->size;
     }
     ```
-    - This software, LIA, is a well-balanced solution that addresses the need for “Dedicated hardware being too expensive, while building from scratch in Python is too difficult.”
-    - The Digilent Waveforms includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). The author recommends verifying the original functionality before using this software.
+  - This software, LIA, is a well-balanced solution that addresses the need for “Dedicated hardware being too expensive, while building from scratch in Python is too difficult.”
+  - The Digilent Waveforms includes lock-in functionality as a standard feature. For details, please refer to: [here](https://digilent.com/blog/how-to-separate-the-signal-from-the-noise/), [here](https://digilent.com/reference/test-and-measurement/guides/waveforms-oscilloscope?s[]=lockin#lock-in_amplifier), and [here](https://forum.digilent.com/topic/31231-lock-in-amplifier-phase-measurement-in-degrees-and-not-voltage/#comment-95389). The author recommends verifying the original functionality before using this software.
 
 ## Features ✨
   - 🎛️ Dual-channel lock-in detection
