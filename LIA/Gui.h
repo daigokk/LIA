@@ -64,26 +64,24 @@ public:
     DeltaTimeChartWindow* deltaTimeChartWindow = nullptr;
     XYPlotWindow* xyPlotWindow = nullptr;
     ACFMPlotWindow* acfmPlotWindow = nullptr;
-    LiaConfig* pLiaConfig = nullptr;
-    Gui(LiaConfig* pLiaConfig)
+    LiaConfig& liaConfig;
+	Gui(LiaConfig& liaConfig) : liaConfig(liaConfig)
     {
-        this->pLiaConfig = pLiaConfig;
         if (!this->initGLFW()) { this->initialized = false; return; }
         if (!this->initImGui()) { this->initialized = false; return; }
         this->initBeep();
-        this->controlWindow = new ControlWindow(this->window, pLiaConfig);
-        this->rawPlotWindow = new RawPlotWindow(this->window, pLiaConfig);
-        this->timeChartWindow = new TimeChartWindow(this->window, pLiaConfig, &timeChartZoomRect);
-        this->timeChartZoomWindow = new TimeChartZoomWindow(this->window, pLiaConfig, &timeChartZoomRect);
-        this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, pLiaConfig);
-        this->xyPlotWindow = new XYPlotWindow(this->window, pLiaConfig);
-        this->acfmPlotWindow = new ACFMPlotWindow(this->window, pLiaConfig);
-		//std::cout << ImGui::GetVersion() << std::endl;
+        this->controlWindow = new ControlWindow(this->window, liaConfig);
+        this->rawPlotWindow = new RawPlotWindow(this->window, liaConfig);
+        this->timeChartWindow = new TimeChartWindow(this->window, liaConfig, timeChartZoomRect);
+        this->timeChartZoomWindow = new TimeChartZoomWindow(this->window, liaConfig, timeChartZoomRect);
+        this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, liaConfig);
+        this->xyPlotWindow = new XYPlotWindow(this->window, liaConfig);
+        this->acfmPlotWindow = new ACFMPlotWindow(this->window, liaConfig);
     }
 	~Gui()
     {
-        glfwGetWindowSize(window, &(pLiaConfig->window.width), &(pLiaConfig->window.height));
-        glfwGetWindowPos(window, &(pLiaConfig->window.posX), &(pLiaConfig->window.posY));
+        glfwGetWindowSize(window, &(liaConfig.window.width), &(liaConfig.window.height));
+        glfwGetWindowPos(window, &(liaConfig.window.posX), &(liaConfig.window.posY));
         ImPlot::DestroyContext();
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -106,9 +104,9 @@ public:
     {
         // Setup Dear ImGui style
         static int thema = 0;
-        if (thema != pLiaConfig->imgui.theme)
+        if (thema != liaConfig.imgui.theme)
         {
-            thema = pLiaConfig->imgui.theme;
+            thema = liaConfig.imgui.theme;
             if (thema == 0) ImGui::StyleColorsDark(); // Default
             else if (thema == 1) ImGui::StyleColorsClassic();
             else if (thema == 2) ImGui::StyleColorsLight();
@@ -149,8 +147,8 @@ public:
         this->timeChartWindow->show();
         this->deltaTimeChartWindow->show();
         this->controlWindow->show();
-        if (pLiaConfig->plot.acfm) this->acfmPlotWindow->show();
-        if (pLiaConfig->flagPause)
+        if (liaConfig.plot.acfm) this->acfmPlotWindow->show();
+        if (liaConfig.flagPause)
         {
             col.w = 1.0f;
             this->timeChartZoomWindow->show();
@@ -173,26 +171,26 @@ inline bool Gui::initGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_POSITION_X, pLiaConfig->window.posX);
-    glfwWindowHint(GLFW_POSITION_Y, pLiaConfig->window.posY);
+    glfwWindowHint(GLFW_POSITION_X, liaConfig.window.posX);
+    glfwWindowHint(GLFW_POSITION_Y, liaConfig.window.posY);
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     int xpos, ypos;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &monitorWidth, &monitorHeight);
     //std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
 
-    pLiaConfig->window.monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
+    liaConfig.window.monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
 
     if (monitorWidth == 2880 && monitorHeight == 1824)
 	{ // Surface Pro 7
-        pLiaConfig->imgui.windowFlag = ImGuiCond_Always;
+        liaConfig.imgui.windowFlag = ImGuiCond_Always;
         this->window = glfwCreateWindow(
             monitorWidth, 1920,
             "Lock-in amplifier", glfwGetPrimaryMonitor(), NULL);
     }
     else{
         this->window = glfwCreateWindow(
-            (int)(pLiaConfig->window.width * pLiaConfig->window.monitorScale),
-            (int)(pLiaConfig->window.height * pLiaConfig->window.monitorScale),
+            (int)(liaConfig.window.width * liaConfig.window.monitorScale),
+            (int)(liaConfig.window.height * liaConfig.window.monitorScale),
             "Lock-in amplifier", NULL, NULL
         );
     }
@@ -441,8 +439,8 @@ inline bool Gui::initImGui()
     
     // Setup scaling
     ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(pLiaConfig->window.monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
-    style.FontScaleDpi = pLiaConfig->window.monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+    style.ScaleAllSizes(liaConfig.window.monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = liaConfig.window.monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(this->window, true);
@@ -479,11 +477,11 @@ inline void Gui::deleteBeep()
 
 inline void Gui::beep()
 {
-    if (pLiaConfig->plot.beep)
+    if (liaConfig.plot.beep)
     {
-        int idx = pLiaConfig->idx;
-        double amplitude = pow(pLiaConfig->x1s[idx] * pLiaConfig->x1s[idx] + pLiaConfig->y1s[idx] * pLiaConfig->y1s[idx], 0.5);
-        double phase = atan2(pLiaConfig->y1s[idx], pLiaConfig->x1s[idx]) / std::numbers::pi * 180;
+        int idx = liaConfig.idx;
+        double amplitude = pow(liaConfig.x1s[idx] * liaConfig.x1s[idx] + liaConfig.y1s[idx] * liaConfig.y1s[idx], 0.5);
+        double phase = atan2(liaConfig.y1s[idx], liaConfig.x1s[idx]) / std::numbers::pi * 180;
         if (amplitude > 0.1)
         {
             if (phase < -80)

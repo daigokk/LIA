@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     }
     if (guiFlag)
     {
-        pGui = new Gui(&settings);
+        pGui = new Gui(settings);
         if (pGui->initialized == false) return -1;
     }
     if (pipeFlag)
