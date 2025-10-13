@@ -1,119 +1,80 @@
 ﻿#pragma once
 
-#include <array>
-#include <vector>
 #include <cmath>
 #include <numbers>      // std::numbers::pi
 #include <numeric>      // std::inner_product
-#include <span>         // std::span
-
-#include "settings.h"
+#include <valarray>
 
 
 class Psd
 {
 private:
-    std::array<double, RAW_SIZE> _sin_table, _cos_table;
-    Settings* pSettings = nullptr;
-    double currentFreq = -1.0;
-    size_t dataSize = 0;
-
-    // 位相回転を行うヘルパー関数
-    static auto rotate_phase(double x, double y, double phase_deg) -> std::pair<double, double>
-    {
-        const double theta = phase_deg / 180.0 * std::numbers::pi;
-        const double cos_t = std::cos(theta);
-        const double sin_t = std::sin(theta);
-        return { x * cos_t - y * sin_t, x * sin_t + y * cos_t };
-    }
+    std::valarray<double> sinTable_;
+    std::valarray<double> cosTable_;
+    double samplingInterval_ = 0.0;
+    int sampleSize_ = 0;
 
 public:
-    explicit Psd(Settings* settings) : pSettings(settings) {}
-
-    void init()
+    double currentFreq = 0.0;
+	double currentPhase_deg = 0.0;
+    void initialize(double frequency, double samplingInterval, int sampleSize)
     {
-        currentFreq = pSettings->awg.ch[0].freq;
-        const size_t halfPeriodSize = static_cast<size_t>(0.5 / currentFreq / RAW_DT);
-        if (halfPeriodSize == 0) {
-            dataSize = 0;
-            return;
+        if (currentFreq == frequency &&
+            samplingInterval_ == samplingInterval &&
+            sampleSize_ == sampleSize)
+        {
+            return; // 再計算不要
         }
-        dataSize = halfPeriodSize * (RAW_SIZE / halfPeriodSize);
-        if (dataSize > RAW_SIZE) dataSize = RAW_SIZE;
 
-        const double angle_delta = 2.0 * std::numbers::pi * currentFreq * RAW_DT;
-        const double s = std::sin(angle_delta);
-        const double c = std::cos(angle_delta);
+        currentFreq = frequency;
+        samplingInterval_ = samplingInterval;
+        sampleSize_ = sampleSize;
 
-        _sin_table[0] = 0.0;
-        _cos_table[0] = 2.0;
+        const int halfPeriodSamples = static_cast<int>(0.5 / currentFreq / samplingInterval_);
+        const int usableSize = halfPeriodSamples * (sampleSize_ / halfPeriodSamples);
 
-        for (size_t i = 0; i < dataSize - 1; ++i) {
-            const double sin_i = 0.5 * _sin_table[i];
-            const double cos_i = 0.5 * _cos_table[i];
-            _sin_table[i + 1] = 2.0 * (sin_i * c + cos_i * s);
-            _cos_table[i + 1] = 2.0 * (cos_i * c - sin_i * s);
+        sinTable_.resize(usableSize);
+        cosTable_.resize(usableSize);
+
+        const double angularFreq = 2.0 * std::numbers::pi * currentFreq;
+
+        for (int i = 0; i < usableSize; ++i)
+        {
+            double wt = angularFreq * i * samplingInterval_;
+            sinTable_[i] = 2.0 * std::sin(wt);
+            cosTable_[i] = 2.0 * std::cos(wt);
         }
     }
 
-    void calc(const double t)
+    auto calculate(const double rawData[]) const -> std::pair<double, double>
     {
-        if (currentFreq != pSettings->awg.ch[0].freq) {
-            init();
-        }
-        if (dataSize == 0) return;
-
-        // C++20: std::span を使ってデータへの安全なビューを作成
-        std::span<const double> raw1_span(pSettings->rawData1);
-        std::span<const double> sin_span(_sin_table);
-        std::span<const double> cos_span(_cos_table);
-
-        // C++20: 計算範囲を .first() で指定
-        auto raw1_view = raw1_span.first(dataSize);
-        auto sin_view = sin_span.first(dataSize);
-        auto cos_view = cos_span.first(dataSize);
-
-        // 内積のベクトル計算をfor文からstd::inner_productに変更
-        double x1 = std::inner_product(raw1_view.begin(), raw1_view.end(), sin_view.begin(), 0.0);
-        double y1 = std::inner_product(raw1_view.begin(), raw1_view.end(), cos_view.begin(), 0.0);
-
-        x1 /= dataSize;
-        y1 /= dataSize;
-
-        double x2 = 0.0, y2 = 0.0;
-        if (pSettings->flagCh2) {
-            std::span<const double> raw2_span(pSettings->rawData2);
-            auto raw2_view = raw2_span.first(dataSize);
-
-            // 内積のベクトル計算をfor文からstd::inner_productに変更
-            x2 = std::inner_product(raw2_view.begin(), raw2_view.end(), sin_view.begin(), 0.0);
-            y2 = std::inner_product(raw2_view.begin(), raw2_view.end(), cos_view.begin(), 0.0);
-
-            x2 /= dataSize;
-            y2 /= dataSize;
+		double sumX = 0.0, sumY = 0.0;
+        const double* pCos = &cosTable_[0];
+        const double* pSin = &sinTable_[0];
+//#pragma omp parallel for reduction(+:sumX, sumY)
+        for (int i = 0; i < cosTable_.size(); ++i)
+        {
+            sumX += pCos[i] * rawData[i];
+            sumY += pSin[i] * rawData[i];
         }
 
-        if (pSettings->flagAutoOffset) {
-            pSettings->post.offset1X = x1; pSettings->post.offset1Y = y1;
-            if (pSettings->flagCh2) {
-                pSettings->post.offset2X = x2; pSettings->post.offset2Y = y2;
-            }
-            pSettings->flagAutoOffset = false;
-        }
+        const double invSize = 1.0 / static_cast<double>(cosTable_.size());
+		return { sumX * invSize, sumY * invSize };
+    }
 
-        x1 -= pSettings->post.offset1X;
-        y1 -= pSettings->post.offset1Y;
-
-        auto [final_x1, final_y1] = rotate_phase(x1, y1, pSettings->post.offset1Phase);
-
-        if (pSettings->flagCh2) {
-            x2 -= pSettings->post.offset2X;
-            y2 -= pSettings->post.offset2Y;
-            auto [final_x2, final_y2] = rotate_phase(x2, y2, pSettings->post.offset2Phase);
-            pSettings->AddPoint(t, final_x1, final_y1, final_x2, final_y2);
+    // 位相回転を行うヘルパー関数
+    auto rotate_phase(double x, double y, double phase_deg) -> std::pair<double, double>
+    {
+        static double currentPhase_deg = phase_deg;
+        static double theta = currentPhase_deg / 180.0 * std::numbers::pi;
+        static double sin_t = std::sin(theta);
+        static double cos_t = std::cos(theta);
+        if (currentPhase_deg != phase_deg) {
+            currentPhase_deg = phase_deg;
+            theta = currentPhase_deg / 180.0 * std::numbers::pi;
+            sin_t = std::sin(theta);
+            cos_t = std::cos(theta);
         }
-        else {
-            pSettings->AddPoint(t, final_x1, final_y1);
-        }
+        return { x * cos_t - y * sin_t, x * sin_t + y * cos_t };
     }
 };

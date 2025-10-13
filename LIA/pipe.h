@@ -1,5 +1,5 @@
 #pragma once
-#include "Settings.h"
+#include "LiaConfig.h"
 #include <algorithm>   // std::transform
 #include <cmath>       // std::round
 #include <format>
@@ -55,9 +55,9 @@ std::vector<std::string> split(const std::string& str, char delimiter = ':') {
 
 
 // pipe関数: コマンドラインからの入力を受け取り処理するメイン関数
-void pipe(std::stop_token st, Settings* pSettings)
+void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 {
-    pSettings->statusPipe = true;
+    pLiaConfig->statusPipe = true;
     std::string lastErrorCmd = "";
     bool awgUpdateRequired = false;
 
@@ -88,7 +88,7 @@ void pipe(std::stop_token st, Settings* pSettings)
         if (tokens.size() < 2) return false;
 
         // 参照でチャンネル設定を取得
-        auto& ch = isW1 ? pSettings->awg.ch[0] : pSettings->awg.ch[1];
+        auto& ch = isW1 ? pLiaConfig->awg.ch[0] : pLiaConfig->awg.ch[1];
 
         static const double lowLimitFreq = 0.5 / (RAW_SIZE * RAW_DT);
         static const double highLimitFreq = std::round(1.0 / (1000 * RAW_DT));
@@ -136,7 +136,7 @@ void pipe(std::stop_token st, Settings* pSettings)
 
     // リセット
     commandMap["reset"] = [&](const auto&, const auto&, auto) {
-        pSettings->reset();
+        pLiaConfig->reset();
         lastErrorCmd = "";
         awgUpdateRequired = true;
         return true;
@@ -144,13 +144,13 @@ void pipe(std::stop_token st, Settings* pSettings)
 
     // 識別情報
     commandMap["*idn?"] = [&](const auto&, const auto&, auto) {
-        if (pSettings->pDaq == nullptr) {
+        if (pLiaConfig->pDaq == nullptr) {
             std::cout << "No DAQ is connected." << std::endl;
         }
         else {
             std::cout << std::format("{},{},{},{}\n",
-                pSettings->pDaq->device.manufacturer, pSettings->pDaq->device.name,
-                pSettings->pDaq->device.sn, pSettings->pDaq->device.version);
+                pLiaConfig->pDaq->device.manufacturer, pLiaConfig->pDaq->device.name,
+                pLiaConfig->pDaq->device.sn, pLiaConfig->pDaq->device.version);
         }
         return true;
         };
@@ -168,8 +168,8 @@ void pipe(std::stop_token st, Settings* pSettings)
         };
 
     // 一時停止・再開
-    commandMap["pause"] = [&](const auto&, const auto&, auto) { pSettings->flagPause = true; return true; };
-    commandMap["run"] = [&](const auto&, const auto&, auto) { pSettings->flagPause = false; return true; };
+    commandMap["pause"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = true; return true; };
+    commandMap["run"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = false; return true; };
 
     // ヘルプ
     commandMap["help?"] = commandMap["?"] = [&](const auto&, const auto&, auto) {
@@ -194,36 +194,36 @@ void pipe(std::stop_token st, Settings* pSettings)
         if (subCmd == "raw") {
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
-                    return arg.empty() ? pSettings->saveRawData() : pSettings->saveRawData(arg.c_str());
+                    return arg.empty() ? pLiaConfig->saveRawData() : pLiaConfig->saveRawData(arg.c_str());
                 }
                 else if (tokens[2] == "size?") {
-                    std::cout << pSettings->rawData1.size() << std::endl;
+                    std::cout << pLiaConfig->rawData1.size() << std::endl;
                     return true;
                 }
             }
         }
         else if (subCmd == "raw?") {
-            for (int i = 0; i < pSettings->rawData1.size(); ++i) {
-                if (!pSettings->flagCh2) {
-                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pSettings->rawData1[i]);
+            for (int i = 0; i < pLiaConfig->rawData1.size(); ++i) {
+                if (!pLiaConfig->flagCh2) {
+                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData1[i]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pSettings->rawData1[i], pSettings->rawData2[i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData1[i], pLiaConfig->rawData2[i]);
                 }
             }
             return true;
         }
         else if (subCmd == "txy?") {
-            int size = pSettings->size;
+            int size = pLiaConfig->size;
             if (val > 0) {
                 size = val / MEASUREMENT_DT;
-                if (size > pSettings->size) size = pSettings->size;
+                if (size > pLiaConfig->size) size = pLiaConfig->size;
             }
-            int idx = pSettings->tail - size;
+            int idx = pLiaConfig->tail - size;
             if (idx < 0) {
-                if (pSettings->nofm <= MEASUREMENT_SIZE) {
+                if (pLiaConfig->nofm <= MEASUREMENT_SIZE) {
                     idx = 0;
-                    size = pSettings->tail;
+                    size = pLiaConfig->tail;
                 }
                 else {
                     idx += MEASUREMENT_SIZE;
@@ -231,21 +231,21 @@ void pipe(std::stop_token st, Settings* pSettings)
             }
             std::cout << size << std::endl;
             for (int i = 0; i < size; ++i) {
-                if (!pSettings->flagCh2) {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx]);
+                if (!pLiaConfig->flagCh2) {
+                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->x1s[idx], pLiaConfig->y1s[idx]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pSettings->times[idx], pSettings->x1s[idx], pSettings->y1s[idx], pSettings->x2s[idx], pSettings->y2s[idx]);
+                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->x1s[idx], pLiaConfig->y1s[idx], pLiaConfig->x2s[idx], pLiaConfig->y2s[idx]);
                 }
                 idx = (idx + 1) % MEASUREMENT_SIZE;
             }
             return true;
         }
         else if (subCmd == "xy?") {
-            size_t idx = pSettings->idx;
-            std::cout << std::format("{:e},{:e}", pSettings->x1s[idx], pSettings->y1s[idx]);
-            if (pSettings->flagCh2) {
-                std::cout << std::format(",{:e},{:e}", pSettings->x2s[idx], pSettings->y2s[idx]);
+            size_t idx = pLiaConfig->idx;
+            std::cout << std::format("{:e},{:e}", pLiaConfig->x1s[idx], pLiaConfig->y1s[idx]);
+            if (pLiaConfig->flagCh2) {
+                std::cout << std::format(",{:e},{:e}", pLiaConfig->x2s[idx], pLiaConfig->y2s[idx]);
             }
             std::cout << std::endl;
             return true;
@@ -258,13 +258,13 @@ void pipe(std::stop_token st, Settings* pSettings)
         if (tokens.size() < 3) return false;
         if (tokens[1] == "xy" && tokens[2] == "limit") {
             if (val >= 0.01 && val <= RAW_RANGE * 1.2) {
-                pSettings->plot.limit = val;
+                pLiaConfig->plot.limit = val;
                 return true;
             }
         }
         else if (tokens[1] == "raw" && tokens[2] == "limit") {
             if (val >= 0.1 && val <= RAW_RANGE * 1.2) {
-                pSettings->plot.rawLimit = val;
+                pLiaConfig->plot.rawLimit = val;
                 return true;
             }
         }
@@ -273,23 +273,23 @@ void pipe(std::stop_token st, Settings* pSettings)
 
     // CH2表示設定 (フルコマンドで登録)
     commandMap[":chan2:disp"] = commandMap["chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
-        if (arg == "on") { pSettings->flagCh2 = true; return true; }
-        if (arg == "off") { pSettings->flagCh2 = false; return true; }
+        if (arg == "on") { pLiaConfig->flagCh2 = true; return true; }
+        if (arg == "off") { pLiaConfig->flagCh2 = false; return true; }
         return false;
         };
     commandMap[":chan2:disp?"] = commandMap["chan2:disp?"]  = [&](const auto&, const auto&, auto) {
-        std::cout << (pSettings->flagCh2 ? "on" : "off") << std::endl;
+        std::cout << (pLiaConfig->flagCh2 ? "on" : "off") << std::endl;
         return true;
         };
 
     // ACFM表示設定 (フルコマンドで登録)
     commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
-        if (arg == "on") { pSettings->plot.acfm = true; return true; }
-        if (arg == "off") { pSettings->plot.acfm = false; return true; }
+        if (arg == "on") { pLiaConfig->plot.acfm = true; return true; }
+        if (arg == "off") { pLiaConfig->plot.acfm = false; return true; }
         return false;
         };
     commandMap[":acfm:disp?"] = commandMap["acfm:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pSettings->plot.acfm ? "on" : "off") << std::endl;
+        std::cout << (pLiaConfig->plot.acfm ? "on" : "off") << std::endl;
         return true;
         };
 
@@ -305,19 +305,19 @@ void pipe(std::stop_token st, Settings* pSettings)
             if (tokens.size() > 2) {
                 if (tokens[2] == "auto") {
                     if (tokens.size() > 3 && tokens[3] == "once") {
-                        pSettings->flagAutoOffset = true; return true;
+                        pLiaConfig->flagAutoOffset = true; return true;
                     }
                 }
                 else if (tokens[2] == "state") {
-                    if (arg == "on") { pSettings->flagAutoOffset = true; return true; }
+                    if (arg == "on") { pLiaConfig->flagAutoOffset = true; return true; }
                     if (arg == "off") {
-                        pSettings->post.offset1X = pSettings->post.offset1Y = 0;
-                        pSettings->post.offset2X = pSettings->post.offset2Y = 0;
-                        pSettings->flagAutoOffset = false; // state off で自動オフセットもオフにする
+                        pLiaConfig->post.offset1X = pLiaConfig->post.offset1Y = 0;
+                        pLiaConfig->post.offset2X = pLiaConfig->post.offset2Y = 0;
+                        pLiaConfig->flagAutoOffset = false; // state off で自動オフセットもオフにする
                         return true;
                     }
                     if (arg == "state?") {
-                        std::cout << (pSettings->flagAutoOffset ? "on" : "off") << std::endl;
+                        std::cout << (pLiaConfig->flagAutoOffset ? "on" : "off") << std::endl;
                         return true;
                     }
                 }
@@ -329,8 +329,8 @@ void pipe(std::stop_token st, Settings* pSettings)
             if (isQuery) subCmd.pop_back();
 
             if (subCmd == "freq" || subCmd == "frequency") {
-                if (isQuery) { std::cout << pSettings->post.hpFreq << std::endl; }
-                else if (val >= 0.0 && val <= 50.0) { pSettings->post.hpFreq = val; }
+                if (isQuery) { std::cout << pLiaConfig->post.hpFreq << std::endl; }
+                else if (val >= 0.0 && val <= 50.0) { pLiaConfig->post.hpFreq = val; }
                 else { return false; }
                 return true;
             }
@@ -339,10 +339,10 @@ void pipe(std::stop_token st, Settings* pSettings)
         };
 
     // 計算オフセット位相 (フルコマンドで登録)
-    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset1Phase = val; return true; };
-    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pSettings->post.offset2Phase = val; return true; };
-    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pSettings->post.offset1Phase << std::endl; return true; };
-    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pSettings->post.offset2Phase << std::endl; return true; };
+    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset1Phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset2Phase = val; return true; };
+    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset1Phase << std::endl; return true; };
+    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset2Phase << std::endl; return true; };
 
 
     // --- メインループ ---
@@ -407,15 +407,15 @@ void pipe(std::stop_token st, Settings* pSettings)
         }
 
         // AWG（任意波形発生器）の更新が必要な場合
-        if (awgUpdateRequired && pSettings->pDaq != nullptr) {
-            pSettings->pDaq->awg.start(
-                pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
-                pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
+        if (awgUpdateRequired && pLiaConfig->pDaq != nullptr) {
+            pLiaConfig->pDaq->awg.start(
+                pLiaConfig->awg.ch[0].freq, pLiaConfig->awg.ch[0].amp, pLiaConfig->awg.ch[0].phase,
+                pLiaConfig->awg.ch[1].freq, pLiaConfig->awg.ch[1].amp, pLiaConfig->awg.ch[1].phase
             );
             awgUpdateRequired = false;
         }
 
         std::cout << std::flush;
     }
-    pSettings->statusPipe = false;
+    pLiaConfig->statusPipe = false;
 }

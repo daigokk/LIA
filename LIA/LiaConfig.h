@@ -1,22 +1,24 @@
 #pragma once
 
+#include <algorithm> // For std::transform
 #include <array>
 #include <chrono>
-#include <ctime>
-#include <iomanip> // std::put_time
-#include <sstream>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <filesystem>
-#include <iostream>
-#include <format>
-#include <stdexcept>
 #include <cmath>
+#include <ctime>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iomanip> // std::put_time
+#include <iostream>
 #include <numbers> // For std::numbers::pi
-#include <algorithm> // For std::transform
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "Daq_wf.h"
 #include "inicpp.h"
+#include "Psd.h"
 #include "Timer.h"
 
 enum class ButtonType
@@ -98,7 +100,7 @@ constexpr auto RESULTS_FILE = "ect.csv";
 constexpr auto CMDS_FILE = "commands.csv";
 
 //================================================================================
-// Refactored HighPassFilter Class
+// HighPassFilter Class
 //================================================================================
 class HighPassFilter {
 private:
@@ -146,7 +148,7 @@ public:
 //================================================================================
 // Main Settings Class
 //================================================================================
-class Settings {
+class LiaConfig {
 public:
     // --- Grouped Configuration Structs ---
     struct WindowCfg {
@@ -221,9 +223,10 @@ private:
 	std::string dirName = ".";
     // --- Private Helper Members ---
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
+    Psd psd;
 
 public:
-    Settings() {
+    LiaConfig() {
 
         dirName = getCurrentTimestamp();
         try {
@@ -259,7 +262,7 @@ public:
             rawTime[i] = i * RAW_DT * 1e6;
         }
     }
-    ~Settings() {
+    ~LiaConfig() {
         saveResultsToFile();
         saveSettingsToFile();
         saveCmdsToFile();
@@ -305,6 +308,38 @@ public:
         updateRingBuffers(t);
     }
 
+    void update(double t) {
+        if (psd.currentFreq != awg.ch[0].freq) {
+            psd.initialize(awg.ch[0].freq, RAW_DT, rawData1.size());
+        }
+
+        auto [x1, y1] = psd.calculate(rawData1.data());
+		auto [x2, y2] = flagCh2 ? psd.calculate(rawData2.data()) : std::pair<double, double>{ 0.0, 0.0 };
+        
+        if (flagAutoOffset) {
+           post.offset1X = x1; post.offset1Y = y1;
+            if (flagCh2) {
+                post.offset2X = x2; post.offset2Y = y2;
+            }
+            flagAutoOffset = false;
+        }
+
+        x1 -= post.offset1X;
+        y1 -= post.offset1Y;
+
+        auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, post.offset1Phase);
+
+        if (flagCh2) {
+            x2 -= post.offset2X;
+            y2 -= post.offset2Y;
+            auto [final_x2, final_y2] = psd.rotate_phase(x2, y2, post.offset2Phase);
+            AddPoint(t, final_x1, final_y1, final_x2, final_y2);
+        }
+        else {
+            AddPoint(t, final_x1, final_y1);
+        }
+	}
+
     std::string getCurrentTimestamp() const {
         // 現在時刻を取得
         auto now = std::chrono::system_clock::now();
@@ -328,16 +363,18 @@ public:
             return false;
         }
 
-        file << (flagCh2 ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
+        std::stringstream ss;
+        ss << (flagCh2 ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
 
         for (size_t i = 0; i < rawData1.size(); ++i) {
             if (flagCh2) {
-                file << std::format("{:e},{:e},{:e}\n", RAW_DT * i, rawData1[i], rawData2[i]);
+                ss << std::format("{:e},{:e},{:e}\n", RAW_DT * i, rawData1[i], rawData2[i]);
             }
             else {
-                file << std::format("{:e},{:e}\n", RAW_DT * i, rawData1[i]);
+                ss << std::format("{:e},{:e}\n", RAW_DT * i, rawData1[i]);
             }
         }
+        file << ss.str(); // メモリからファイルへ一括書き込み
         file.close();
         return true;
     }
@@ -349,7 +386,8 @@ public:
             return false;
         }
 
-        file << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
+        std::stringstream ss;
+        ss << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
 
         int _size = this->size;
         if (sec > 0) {
@@ -368,13 +406,14 @@ public:
         }
         for (int i = 0; i < _size; ++i) {
             if (!this->flagCh2) {
-                file << std::format("{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx]);
+                ss << std::format("{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx]);
             }
             else {
-                file << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx], this->x2s[idx], this->y2s[idx]);
+                ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx], this->x2s[idx], this->y2s[idx]);
             }
             idx = (idx + 1) % MEASUREMENT_SIZE;
         }
+        file << ss.str(); // メモリからファイルへ一括書き込み
         file.close();
 		return true;
     }
@@ -400,12 +439,12 @@ private:
         dts[tail] = (nofm > 0) ? (times[tail] - times[idx]) * 1e3 : 0.0;
         idx = tail;
         nofm++;
-        tail = nofm % MEASUREMENT_SIZE;
+        if (++tail == MEASUREMENT_SIZE) { tail = 0; }
         size = std::min(nofm, (int)MEASUREMENT_SIZE);
 
         xyIdx = xyTail;
         xyNorm++;
-        xyTail = xyNorm % XY_SIZE;
+        if (++xyTail == XY_SIZE) { xyTail = 0; }
         xySize = std::min(xyNorm, (int)XY_SIZE);
     }
 

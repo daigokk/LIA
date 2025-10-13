@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <numbers> // For std::numbers::pi
 
+
 class Wave
 {
 private:

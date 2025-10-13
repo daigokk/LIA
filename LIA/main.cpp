@@ -13,11 +13,11 @@
 #include "Gui.h"
 #include "pipe.h"
 #include "Psd.h"
-#include "Settings.h"
+#include "LiaConfig.h"
 
 bool is_avx2_supported();
-void measurement(std::stop_token st, Settings* pSettings);
-void measurementWithoutDaq(std::stop_token st, Settings* pSettings);
+void measurement(std::stop_token st, LiaConfig* pLiaConfig);
+void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig);
 
 int main(int argc, char* argv[])
 {
@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     // I/Oの高速化
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr); // std::cin と std::cout の同期を解除
-    static Settings settings;
+    static LiaConfig settings;
     bool guiFlag = true;
 	bool pipeFlag = false;
     std::jthread* pth_pipe = nullptr;
@@ -99,69 +99,67 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void measurement(std::stop_token st, Settings* pSettings)
+void measurement(std::stop_token st, LiaConfig* pLiaConfig)
 {
-    static Psd psd(pSettings);
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
-        pSettings->awg.ch[0].freq, pSettings->awg.ch[0].amp, pSettings->awg.ch[0].phase,
-        pSettings->awg.ch[1].freq, pSettings->awg.ch[1].amp, pSettings->awg.ch[1].phase
+        pLiaConfig->awg.ch[0].freq, pLiaConfig->awg.ch[0].amp, pLiaConfig->awg.ch[0].phase,
+        pLiaConfig->awg.ch[1].freq, pLiaConfig->awg.ch[1].amp, pLiaConfig->awg.ch[1].phase
     );
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
     std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
-    pSettings->pDaq = &daq;
-    pSettings->device_sn = daq.device.sn;
-    pSettings->timer.sleepFor(1.0);
+    pLiaConfig->pDaq = &daq;
+    pLiaConfig->device_sn = daq.device.sn;
+    pLiaConfig->timer.sleepFor(1.0);
     daq.scope.start();
-    pSettings->timer.start();
-    pSettings->statusMeasurement = true;
+    pLiaConfig->timer.start();
+    pLiaConfig->statusMeasurement = true;
     size_t nloop = 0;
     while (!st.stop_requested())
     {
         double t = nloop * MEASUREMENT_DT;
         nloop++;
-        t = pSettings->timer.sleepUntil(t);
-        if (pSettings->flagPause) continue;
-        if (!pSettings->flagCh2)
+        t = pLiaConfig->timer.sleepUntil(t);
+        if (pLiaConfig->flagPause) continue;
+        if (!pLiaConfig->flagCh2)
         {
-            daq.scope.record(pSettings->rawData1.data());
+            daq.scope.record(pLiaConfig->rawData1.data());
         }
         else {
-            daq.scope.record(pSettings->rawData1.data(), pSettings->rawData2.data());
+            daq.scope.record(pLiaConfig->rawData1.data(), pLiaConfig->rawData2.data());
         }
-        psd.calc(t);
+        pLiaConfig->update(t);
     }
-    pSettings->statusMeasurement = false;
+    pLiaConfig->statusMeasurement = false;
 }
 
-void measurementWithoutDaq(std::stop_token st, Settings* pSettings)
+void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
 {
-    static Psd psd(pSettings);
-    pSettings->timer.start();
-    pSettings->statusMeasurement = true;
+    pLiaConfig->timer.start();
+    pLiaConfig->statusMeasurement = true;
     size_t nloop = 0;
     while (!st.stop_requested())
     {
         double t = nloop * MEASUREMENT_DT;
         nloop++;
-        t = pSettings->timer.sleepUntil(t);
-        if (pSettings->flagPause) continue;
+        t = pLiaConfig->timer.sleepUntil(t);
+        if (pLiaConfig->flagPause) continue;
         double phase = 2 * std::numbers::pi * t / 60;
-        for (size_t i = 0; i < pSettings->rawTime.size(); i++)
+        for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++)
         {
-            double wt = 2 * std::numbers::pi * pSettings->awg.ch[0].freq * i * RAW_DT;
+            double wt = 2 * std::numbers::pi * pLiaConfig->awg.ch[0].freq * i * RAW_DT;
 
-            pSettings->rawData1[i] = pSettings->awg.ch[0].amp * std::sin(wt - phase);
-            if (pSettings->flagCh2)
+            pLiaConfig->rawData1[i] = pLiaConfig->awg.ch[0].amp * std::sin(wt - phase);
+            if (pLiaConfig->flagCh2)
             {
-                pSettings->rawData2[i] = pSettings->awg.ch[1].amp * std::sin(wt - pSettings->awg.ch[1].phase);
+                pLiaConfig->rawData2[i] = pLiaConfig->awg.ch[1].amp * std::sin(wt - pLiaConfig->awg.ch[1].phase);
             }
         }
-        psd.calc(t);
+        pLiaConfig->update(t);
     }
-    pSettings->statusMeasurement = false;
+    pLiaConfig->statusMeasurement = false;
 }
 
 

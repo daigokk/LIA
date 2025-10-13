@@ -56,7 +56,7 @@
     <ClInclude Include="PlotWindow.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Settings.h">
+    <ClInclude Include="LiaConfig.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Timer.h">
