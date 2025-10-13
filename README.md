@@ -71,7 +71,7 @@
        ```bash
        lia.exe nogui
        ```
-     - Configure frequency and amplitude via GUI
+     - Configure frequency and amplitude via GUI and/or pipe communication.
      - View results in:
         - "Raw waveform" window
         - "XY" window for X/Y component visualization
