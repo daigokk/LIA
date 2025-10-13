@@ -94,6 +94,7 @@ public:
     void ImGui_SetNeonBlueTheme(); 
     void ImGui_SetNeonGreenTheme();
     void ImGui_SetNeonRedTheme();
+    void ImGui_SetEvaTheme();
     bool initImGui();
     void initBeep();
     void deleteBeep();
@@ -114,6 +115,7 @@ public:
             else if (thema == 4) this->ImGui_SetNeonBlueTheme();
             else if (thema == 5) this->ImGui_SetNeonGreenTheme();
             else if (thema == 6) this->ImGui_SetNeonRedTheme();
+            else if (thema == 7) this->ImGui_SetEvaTheme();
         }
 
         glfwPollEvents();
@@ -421,6 +423,38 @@ inline void Gui::ImGui_SetNeonRedTheme()
     style.TabRounding = 3.0f;
     style.FramePadding = ImVec2(6, 4);
     style.ItemSpacing = ImVec2(8, 6);
+}
+
+inline void Gui::ImGui_SetEvaTheme()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowRounding = 4.0f;
+    style.FrameRounding = 3.0f;
+    style.GrabRounding = 2.0f;
+    style.ScrollbarRounding = 3.0f;
+    style.FramePadding = ImVec2(6, 4);
+    style.ItemSpacing = ImVec2(8, 6);
+    style.WindowPadding = ImVec2(8, 8);
+
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_Text] = ImVec4(0.9f, 0.9f, 0.9f, 1.00f);
+    colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.08f, 1.00f); // 黒紫
+    colors[ImGuiCol_Border] = ImVec4(0.3f, 0.0f, 0.4f, 0.6f);     // 紫
+    colors[ImGuiCol_FrameBg] = ImVec4(0.1f, 0.1f, 0.15f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.0f, 0.4f, 0.8f);     // 紫
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.5f, 0.0f, 0.7f, 1.00f);     // 濃紫
+    colors[ImGuiCol_TitleBg] = ImVec4(0.0f, 0.3f, 0.0f, 1.00f);     // 初号機の緑
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.5f, 0.0f, 1.00f);     // 明るい緑
+    colors[ImGuiCol_Button] = ImVec4(0.3f, 0.0f, 0.4f, 1.00f);     // 紫
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.5f, 0.0f, 0.7f, 1.00f);     // 濃紫
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.0f, 0.6f, 0.0f, 1.00f);     // 緑
+    colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 0.8f, 0.0f, 1.00f);     // 緑
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.6f, 0.0f, 0.8f, 1.00f);     // 紫
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.0f, 1.0f, 1.00f);     // 明るい紫
+    colors[ImGuiCol_Header] = ImVec4(0.2f, 0.0f, 0.3f, 1.00f);     // 紫
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.4f, 0.0f, 0.6f, 1.00f);     // 濃紫
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 0.6f, 0.0f, 1.00f);     // 緑
 }
 
 inline bool Gui::initImGui()

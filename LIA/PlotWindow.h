@@ -460,5 +460,4 @@ inline void ACFMPlotWindow::show()
         ImPlot::EndPlot();
     }
     ImGui::End();
-    
 }

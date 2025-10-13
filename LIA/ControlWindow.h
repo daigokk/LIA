@@ -201,7 +201,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
         if (ImGui::BeginTabItem("Settings"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed" };
+            const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed", "Eva"};
             ImGui::ListBox("Thema", &liaConfig.imgui.theme, items, IM_ARRAYSIZE(items), 3);
 
             ImGui::SameLine();
