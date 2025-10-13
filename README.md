@@ -63,7 +63,7 @@
        ```bash
        lia.exe
        ```
-       - Pipe mode[Python Integration](## Python Integration):
+       - Pipe mode (See [Python Integration](## Python Integration)):
        ```bash
        lia.exe pipe
        ```
