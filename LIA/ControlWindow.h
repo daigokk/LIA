@@ -43,8 +43,8 @@ inline void ControlWindow::awg(const float nextItemWidth)
             float freqkHz = liaConfig.awg.ch[0].freq * 1e-3f;
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
-                if (freqkHz < LOW_LIMIT_FREQ) freqkHz = LOW_LIMIT_FREQ;
-                if (freqkHz > HIGH_LIMIT_FREQ) freqkHz = HIGH_LIMIT_FREQ;
+                if (freqkHz < LOW_LIMIT_FREQ * 1e-3) freqkHz = LOW_LIMIT_FREQ * 1e-3;
+                if (freqkHz > HIGH_LIMIT_FREQ * 1e-3) freqkHz = HIGH_LIMIT_FREQ * 1e-3;
                 if (liaConfig.awg.ch[0].freq != freqkHz * 1e3f)
                 {
                     liaConfig.awg.ch[0].freq = freqkHz * 1e3f;
@@ -96,8 +96,8 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::BeginDisabled();
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
-                if (freqkHz < LOW_LIMIT_FREQ) freqkHz = LOW_LIMIT_FREQ;
-                if (freqkHz > HIGH_LIMIT_FREQ) freqkHz = HIGH_LIMIT_FREQ;
+                if (freqkHz < LOW_LIMIT_FREQ * 1e-3) freqkHz = LOW_LIMIT_FREQ * 1e-3;
+                if (freqkHz > HIGH_LIMIT_FREQ * 1e-3) freqkHz = HIGH_LIMIT_FREQ * 1e-3;
                 if (liaConfig.awg.ch[1].freq != freqkHz * 1e3f)
                 {
                     liaConfig.awg.ch[1].freq = freqkHz * 1e3f;
@@ -147,7 +147,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
                 liaConfig.awg.ch[1].freq, liaConfig.awg.ch[1].amp, liaConfig.awg.ch[1].phase
             );
         }
-		if (button != ButtonType::NON) buttonPressed(button, value);
+        if (button != ButtonType::NON) buttonPressed(button, value);
     }
 
 }

@@ -23,8 +23,8 @@
 
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
-constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
+constexpr double RAW_DT = 1.0 / 100e6;
+constexpr size_t RAW_SIZE = 5000;// 50e-6 / RAW_DT;
 constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
