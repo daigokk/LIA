@@ -21,6 +21,26 @@
 #include "Psd.h"
 #include "Timer.h"
 
+// --- Constants remain the same ---
+constexpr float RAW_RANGE = 2.5f;
+constexpr double RAW_DT = 1e-8;
+constexpr size_t RAW_SIZE = 5000;
+constexpr double MEASUREMENT_DT = 2.0e-3;
+constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
+constexpr float XY_HISTORY_SEC = 10.0f;
+constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
+
+constexpr float LOW_LIMIT_FREQ = 0.5 / (RAW_SIZE * RAW_DT);
+constexpr float HIGH_LIMIT_FREQ = 1.0 / (1000 * RAW_DT);
+constexpr float AWG_AMP_MIN = 0.0;
+constexpr float AWG_AMP_MAX = 5.0;
+
+// --- Constants for file names ---
+constexpr auto SETTINGS_FILE = "lia.ini";
+constexpr auto RESULTS_FILE = "ect.csv";
+constexpr auto CMDS_FILE = "commands.csv";
+
 enum class ButtonType
 {
     NON = 0,
@@ -84,20 +104,6 @@ std::string cmdToString(ButtonType button)
     default: return "Unknown";
     }
 }
-// --- Constants remain the same ---
-constexpr float RAW_RANGE = 2.5f;
-constexpr double RAW_DT = 1e-8;
-constexpr size_t RAW_SIZE = 5000;
-constexpr double MEASUREMENT_DT = 2.0e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 10;
-constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
-constexpr float XY_HISTORY_SEC = 10.0f;
-constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
-
-// --- Constants for file names ---
-constexpr auto SETTINGS_FILE = "lia.ini";
-constexpr auto RESULTS_FILE = "ect.csv";
-constexpr auto CMDS_FILE = "commands.csv";
 
 //================================================================================
 // HighPassFilter Class

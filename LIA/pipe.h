@@ -90,11 +90,6 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         // 参照でチャンネル設定を取得
         auto& ch = isW1 ? pLiaConfig->awg.ch[0] : pLiaConfig->awg.ch[1];
 
-        static const double lowLimitFreq = 0.5 / (RAW_SIZE * RAW_DT);
-        static const double highLimitFreq = std::round(1.0 / (1000 * RAW_DT));
-        static constexpr double AWG_AMP_MIN = 0.0;
-        static constexpr double AWG_AMP_MAX = 5.0;
-
         std::string subCmd = tokens[1];
         bool isQuery = subCmd.back() == '?';
         if (isQuery) subCmd.pop_back();
@@ -106,11 +101,11 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         }
         else if (subCmd == "freq" || subCmd == "frequency") {
             if (isQuery) {
-                if (arg == "min") { std::cout << lowLimitFreq << std::endl; }
-                else if (arg == "max") { std::cout << highLimitFreq << std::endl; }
+                if (arg == "min") { std::cout << LOW_LIMIT_FREQ << std::endl; }
+                else if (arg == "max") { std::cout << HIGH_LIMIT_FREQ << std::endl; }
                 else { std::cout << ch.freq << std::endl; }
             }
-            else if (val >= lowLimitFreq && val <= highLimitFreq) {
+            else if (val >= LOW_LIMIT_FREQ && val <= HIGH_LIMIT_FREQ) {
                 ch.freq = val; awgUpdateRequired = true;
             }
             else { return false; } // 無効な値

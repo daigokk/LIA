@@ -37,16 +37,14 @@ inline void ControlWindow::awg(const float nextItemWidth)
     bool fgFlag = false;
     if (ImGui::BeginTabBar("Awg"))
     {
-        static float lowLimitFreqkHz = (float)(0.5 * 1e-3 / (RAW_SIZE * RAW_DT));
-        static float highLimitFreqkHz = (float)(1e-3f / (1000 * RAW_DT));
         if (ImGui::BeginTabItem("W1"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
             float freqkHz = liaConfig.awg.ch[0].freq * 1e-3f;
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
-                if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
-                if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
+                if (freqkHz < LOW_LIMIT_FREQ) freqkHz = LOW_LIMIT_FREQ;
+                if (freqkHz > HIGH_LIMIT_FREQ) freqkHz = HIGH_LIMIT_FREQ;
                 if (liaConfig.awg.ch[0].freq != freqkHz * 1e3f)
                 {
                     liaConfig.awg.ch[0].freq = freqkHz * 1e3f;
@@ -64,7 +62,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
             {
                 if (liaConfig.awg.ch[0].amp < 0.1f) liaConfig.awg.ch[0].amp = 0.1f;
-                if (liaConfig.awg.ch[0].amp > 5.0f) liaConfig.awg.ch[0].amp = 5.0f;
+                if (liaConfig.awg.ch[0].amp > 5.0f) liaConfig.awg.ch[0].amp = AWG_AMP_MAX;
                 if (oldCh0Amp != liaConfig.awg.ch[0].amp)
                 {
                     oldCh0Amp = liaConfig.awg.ch[0].amp;
@@ -98,8 +96,8 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::BeginDisabled();
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
-                if (freqkHz < lowLimitFreqkHz) freqkHz = lowLimitFreqkHz;
-                if (freqkHz > highLimitFreqkHz) freqkHz = highLimitFreqkHz;
+                if (freqkHz < LOW_LIMIT_FREQ) freqkHz = LOW_LIMIT_FREQ;
+                if (freqkHz > HIGH_LIMIT_FREQ) freqkHz = HIGH_LIMIT_FREQ;
                 if (liaConfig.awg.ch[1].freq != freqkHz * 1e3f)
                 {
                     liaConfig.awg.ch[1].freq = freqkHz * 1e3f;
@@ -117,7 +115,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
             {
                 if (liaConfig.awg.ch[1].amp < 0.0f) liaConfig.awg.ch[1].amp = 0.0f;
-                if (liaConfig.awg.ch[1].amp > 5.0f) liaConfig.awg.ch[1].amp = 5.0f;
+                if (liaConfig.awg.ch[1].amp > 5.0f) liaConfig.awg.ch[1].amp = AWG_AMP_MAX;
                 if (oldFg2Amp != liaConfig.awg.ch[1].amp)
                 {
                     oldFg2Amp = liaConfig.awg.ch[1].amp;
