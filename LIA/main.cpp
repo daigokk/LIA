@@ -21,6 +21,16 @@ void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig);
 
 int main(int argc, char* argv[])
 {
+    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
+    if (adIdx != -1)
+    {
+        std::cout << "Analog Discovery is detected." << std::endl;
+    }
+    else
+    {
+        std::cout << "No DAQ is connected." << std::endl;
+    }
+    
     //is_avx2_supported();
     // I/Oの高速化
     std::ios::sync_with_stdio(false);
@@ -35,11 +45,13 @@ int main(int argc, char* argv[])
         if (std::strcmp("pipe", argv[i]) == 0)
         {
             pipeFlag = true;
+            std::cout << "Pipe mode." << std::endl;
         }
         else if (std::strcmp("nogui", argv[i]) == 0 || std::strcmp("headless", argv[i]) == 0)
         {
             guiFlag = false;
             pipeFlag = true;
+            std::cout << "Headless pipe mode." << std::endl;
         }
     }
     if (guiFlag)
@@ -52,11 +64,10 @@ int main(int argc, char* argv[])
         pth_pipe = new std::jthread(pipe, &settings);
         while (!settings.statusPipe);
     }
-    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
+    
     std::jthread th_measurement;
     if (adIdx == -1)
     {
-        std::cout << "No DAQ is connected." << std::endl;
         th_measurement = std::jthread{ measurementWithoutDaq, &settings };
     }
     else {
@@ -109,7 +120,6 @@ void measurement(std::stop_token st, LiaConfig* pLiaConfig)
     );
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
-    std::cout << std::format("{:s}({:s}) is selected.\n", daq.device.name, daq.device.sn);
     pLiaConfig->pDaq = &daq;
     pLiaConfig->device_sn = daq.device.sn;
     pLiaConfig->timer.sleepFor(1.0);
