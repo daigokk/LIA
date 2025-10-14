@@ -45,13 +45,13 @@ int main(int argc, char* argv[])
         if (std::strcmp("pipe", argv[i]) == 0)
         {
             pipeFlag = true;
-            std::cout << "Pipe mode." << std::endl;
+            //std::cout << "Pipe mode." << std::endl;
         }
         else if (std::strcmp("nogui", argv[i]) == 0 || std::strcmp("headless", argv[i]) == 0)
         {
             guiFlag = false;
             pipeFlag = true;
-            std::cout << "Headless pipe mode." << std::endl;
+            //std::cout << "Headless pipe mode." << std::endl;
         }
     }
     if (guiFlag)

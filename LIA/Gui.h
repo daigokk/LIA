@@ -204,23 +204,7 @@ inline bool Gui::initGLFW()
         glfwTerminate();
 		return false;
     }
-    GLFWimage icons[1];
-    // WindowsAPI関数を使用して、実行ファイルのリソースからアイコンを読み込みます
-    // LoadIcon() は自動的に適切なサイズのアイコンを抽出します
-    HICON hIcon = (HICON)LoadImage(
-        GetModuleHandle(NULL),          // モジュールハンドル (現在の実行ファイル)
-        MAKEINTRESOURCE(IDI_ICON1), // アイコンリソースID
-        IMAGE_ICON,                     // ロードするリソースの種類
-        0, 0,                           // サイズ (0, 0はリソースファイルのサイズを使用)
-        LR_DEFAULTSIZE | LR_SHARED      // フラグ
-    );
-
-    HWND hwnd = glfwGetWin32Window(window); // window は GLFWwindow* の変数
-
-    // 適切なサイズのアイコンを設定
-    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon); // タスクバー用 (大きい方)
-    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon); // ウィンドウタイトルバー用 (小さい方)
-
+    
     if (!glewInit())
     {
         this->initialized = false;
@@ -234,6 +218,25 @@ inline bool Gui::initGLFW()
     glfwMakeContextCurrent(this->window);
     /* Enable VSync */
     glfwSwapInterval(1);
+
+    GLFWimage icons[1];
+    // WindowsAPI関数を使用して、実行ファイルのリソースからアイコンを読み込みます
+    // LoadIcon() は自動的に適切なサイズのアイコンを抽出します
+    HICON hIcon = (HICON)LoadImage(
+        GetModuleHandle(NULL),          // モジュールハンドル (現在の実行ファイル)
+        MAKEINTRESOURCE(IDI_ICON1), // アイコンリソースID
+        IMAGE_ICON,                     // ロードするリソースの種類
+        0, 0,                           // サイズ (0, 0はリソースファイルのサイズを使用)
+        LR_DEFAULTSIZE | LR_SHARED      // フラグ
+    );
+    if (!hIcon) {
+        std::cerr << "Failed to load icon." << std::endl;
+    }
+    HWND hwnd = glfwGetWin32Window(window); // window は GLFWwindow* の変数
+    glfwShowWindow(window); // ウィンドウを表示
+    // 適切なサイズのアイコンを設定
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon); // タスクバー用 (大きい方)
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon); // ウィンドウタイトルバー用 (小さい方)
 
     return true;
 }
