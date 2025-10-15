@@ -1,247 +1,180 @@
 #pragma once
 
-#pragma	comment(lib, "opengl32.lib")
-#pragma	comment(lib, "GUI/lib/glew32s.lib")
-#pragma	comment(lib, "GUI/lib/glfw3_mt.lib")
+// リンカ設定（Windows API + OpenGL + GLFW）
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "./GLFW/glfw3_mt.lib")
 
-#define GLEW_STATIC
+// ImGui & ImPlot
+#include <IMGUI/imgui.h>
+#include <IMGUI/imgui_impl_glfw.h>
+#include <IMGUI/imgui_impl_opengl3.h>
+#include <IMGUI/implot.h>
 
-#include <GL/glew.h>
+// GLFW & 標準ライブラリ
 #include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-
 #include <iostream>
-#include <cmath>
-#include <vector>
-#include <string>
-#include <format>
-#include <numbers> // For std::numbers::pi
 
-#include "LiaConfig.h"
-#include "ImGuiWindowBase.h"
-#include "ControlWindow.h"
-#include "PlotWindow.h"
-#include "Wave.hpp"
-#include "resource.h"
+class Gui {
+public:
+    static void Initialize(
+        const char title[], 
+        const int windowPosX, const int windowPosY,
+        const int windowWidth, const int windowHeight
+    );
+    static void Shutdown();
+    static void BeginFrame();
+    static void EndFrame();
+    static GLFWwindow* GetWindow() { return window_; }
+	static void setStyle(const int theme);
+	static void ImGui_SetGrayTheme();
+	static void ImGui_SetNeonBlueTheme();
+	static void ImGui_SetNeonGreenTheme();
+	static void ImGui_SetNeonRedTheme();
+	static void ImGui_SetEvaTheme();
+    static float monitorScale;
+    static bool SurfacePro7;
+private:
+    static GLFWwindow* window_;
+    static int monitorWidth;
+    static int monitorHeight;
+    static int windowFlag;
+};
 
+// static メンバー定義 一度しか実行してはいけないため、基本的にはソースコード(.cpp)ファイルに記述
+GLFWwindow* Gui::window_ = nullptr;
+float Gui::monitorScale = 1.0f;
+int Gui::monitorWidth = 0;
+int Gui::monitorHeight = 0;
+bool Gui::SurfacePro7 = false;
+int Gui::windowFlag = 4; // ImGuiCond_FirstUseEver
 
-void glfw_error_callback(int error, const char* description)
-{
-    std::cerr << std::format("GLFW Error {}: {}", error, description) << std::endl;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    {
+// ESCキーでウィンドウを閉じるコールバック
+void HandleKeyInput(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
 
-void window_size_callback(GLFWwindow* window, int widtt, int height)
-{
-    //std::cout << std::format("Window w:{}, h:{}", widtt, height) << std::endl;
-}
 
-
-class Gui
-{
-private:
-    const char* glsl_version = "#version 460";
-    GLFWwindow* window = nullptr;
-    ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
-    int monitorWidth = 0;
-    int monitorHeight = 0;
-    Wave* waves[9];
-public:
-	bool initialized = true;
-    ImPlotRect timeChartZoomRect;
-    ControlWindow* controlWindow = nullptr;
-    RawPlotWindow* rawPlotWindow = nullptr;
-    TimeChartWindow* timeChartWindow = nullptr;
-    TimeChartZoomWindow* timeChartZoomWindow = nullptr;
-    DeltaTimeChartWindow* deltaTimeChartWindow = nullptr;
-    XYPlotWindow* xyPlotWindow = nullptr;
-    ACFMPlotWindow* acfmPlotWindow = nullptr;
-    LiaConfig& liaConfig;
-	Gui(LiaConfig& liaConfig) : liaConfig(liaConfig)
-    {
-        if (!this->initGLFW()) { this->initialized = false; return; }
-        if (!this->initImGui()) { this->initialized = false; return; }
-        this->initBeep();
-        this->controlWindow = new ControlWindow(this->window, liaConfig);
-        this->rawPlotWindow = new RawPlotWindow(this->window, liaConfig);
-        this->timeChartWindow = new TimeChartWindow(this->window, liaConfig, timeChartZoomRect);
-        this->timeChartZoomWindow = new TimeChartZoomWindow(this->window, liaConfig, timeChartZoomRect);
-        this->deltaTimeChartWindow = new DeltaTimeChartWindow(this->window, liaConfig);
-        this->xyPlotWindow = new XYPlotWindow(this->window, liaConfig);
-        this->acfmPlotWindow = new ACFMPlotWindow(this->window, liaConfig);
-    }
-	~Gui()
-    {
-        glfwGetWindowSize(window, &(liaConfig.window.width), &(liaConfig.window.height));
-        glfwGetWindowPos(window, &(liaConfig.window.posX), &(liaConfig.window.posY));
-        ImPlot::DestroyContext();
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-        glfwDestroyWindow(this->window);
-        glfwTerminate();
-    }
-    bool initGLFW();
-    void ImGui_SetGrayTheme();
-    void ImGui_SetNeonBlueTheme(); 
-    void ImGui_SetNeonGreenTheme();
-    void ImGui_SetNeonRedTheme();
-    void ImGui_SetEvaTheme();
-    bool initImGui();
-    void initBeep();
-    void deleteBeep();
-    void beep();
-	void clear(void) { glClear(GL_COLOR_BUFFER_BIT); };
-    bool windowShouldClose(void) { return glfwWindowShouldClose(this->window); };
-	void pollEvents(void)
-    {
-        // Setup Dear ImGui style
-        static int thema = 0;
-        if (thema != liaConfig.imgui.theme)
-        {
-            thema = liaConfig.imgui.theme;
-            if (thema == 0) ImGui::StyleColorsDark(); // Default
-            else if (thema == 1) ImGui::StyleColorsClassic();
-            else if (thema == 2) ImGui::StyleColorsLight();
-            else if (thema == 3) this->ImGui_SetGrayTheme();
-            else if (thema == 4) this->ImGui_SetNeonBlueTheme();
-            else if (thema == 5) this->ImGui_SetNeonGreenTheme();
-            else if (thema == 6) this->ImGui_SetNeonRedTheme();
-            else if (thema == 7) this->ImGui_SetEvaTheme();
-        }
-
-        glfwPollEvents();
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame(); 
-	};
-    void rendering(void)
-    {
-        ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(
-            this->clear_color.x * this->clear_color.w,
-            this->clear_color.y * this->clear_color.w,
-            this->clear_color.z * this->clear_color.w,
-            this->clear_color.w
-        );
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    };
-    void swapBuffers(void){ glfwSwapBuffers(this->window); };
-    void show()
-    {
-        ImGuiStyle& style = ImGui::GetStyle();
-        ImVec4& col = style.Colors[ImGuiCol_WindowBg];
-        col.w = 0.4f; // RGBはそのまま、alphaのみ置き換え
-        this->xyPlotWindow->show();
-        this->rawPlotWindow->show();
-        this->timeChartWindow->show();
-        this->deltaTimeChartWindow->show();
-        this->controlWindow->show();
-        if (liaConfig.plot.acfm) this->acfmPlotWindow->show();
-        if (liaConfig.flagPause)
-        {
-            col.w = 1.0f;
-            this->timeChartZoomWindow->show();
-        }
-    };
-};
-
-inline bool Gui::initGLFW()
-{
-    glfwSetErrorCallback(glfw_error_callback);
-    /* Initialize the library */
-    if (!glfwInit())
-    {
-        this->initialized = false;
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return false;
+// 初期化処理
+void Gui::Initialize(
+    const char title[],
+    const int windowPosX, const int windowPosY,
+    const int windowWidth, const int windowHeight
+) {
+    if (!glfwInit()) {
+        std::cerr << "[Error] Failed to initialize GLFW\n";
+        return;
     }
 
-    /* Create a windowed mode window and its OpenGL context */
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    // OpenGL コンテキスト設定
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_POSITION_X, liaConfig.window.posX);
-    glfwWindowHint(GLFW_POSITION_Y, liaConfig.window.posY);
+    glfwWindowHint(GLFW_POSITION_X, windowPosX);
+    glfwWindowHint(GLFW_POSITION_Y, windowPosY);
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     int xpos, ypos;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &monitorWidth, &monitorHeight);
     //std::cout << std::format("Monitor w:{}, h:{}", monitorWidth, monitorHeight) << std::endl;
 
-    liaConfig.window.monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
+    monitorScale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor); // Valid on GLFW 3.3+ only
 
     if (monitorWidth == 2880 && monitorHeight == 1824)
-	{ // Surface Pro 7
-        liaConfig.imgui.windowFlag = ImGuiCond_Always;
-        this->window = glfwCreateWindow(
+    { // Surface Pro 7
+        SurfacePro7 = true;
+        window_ = glfwCreateWindow(
             monitorWidth, 1920,
-            "Lock-in amplifier", glfwGetPrimaryMonitor(), NULL);
+            title, glfwGetPrimaryMonitor(), NULL);
     }
-    else{
-        this->window = glfwCreateWindow(
-            (int)(liaConfig.window.width * liaConfig.window.monitorScale),
-            (int)(liaConfig.window.height * liaConfig.window.monitorScale),
-            "Lock-in amplifier", NULL, NULL
+    else {
+        window_ = glfwCreateWindow(
+            (int)(windowWidth * monitorScale),
+            (int)(windowHeight * monitorScale),
+            title, NULL, NULL
         );
     }
 
-    if (!this->window)
-    {
-        this->initialized = false;
-        std::cerr << "Failed to create GLFW window." << std::endl;
-        glfwTerminate();
-		return false;
-    }
-    
-    if (!glewInit())
-    {
-        this->initialized = false;
-        std::cerr << "Failed to initialize GLEW." << std::endl;
-		return false;
-    }
-    glfwSetKeyCallback(this->window, key_callback);
-    glfwSetWindowSizeCallback(this->window, window_size_callback);
+    glfwMakeContextCurrent(window_);
+    glfwSwapInterval(1); // VSync 有効化
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(this->window);
-    /* Enable VSync */
-    glfwSwapInterval(1);
+    // ImGui & ImPlot 初期化
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImPlot::CreateContext();
 
-    GLFWimage icons[1];
-    // WindowsAPI関数を使用して、実行ファイルのリソースからアイコンを読み込みます
-    // LoadIcon() は自動的に適切なサイズのアイコンを抽出します
-    HICON hIcon = (HICON)LoadImage(
-        GetModuleHandle(NULL),          // モジュールハンドル (現在の実行ファイル)
-        MAKEINTRESOURCE(IDI_ICON1), // アイコンリソースID
-        IMAGE_ICON,                     // ロードするリソースの種類
-        0, 0,                           // サイズ (0, 0はリソースファイルのサイズを使用)
-        LR_DEFAULTSIZE | LR_SHARED      // フラグ
-    );
-    if (!hIcon) {
-        std::cerr << "Failed to load icon." << std::endl;
-    }
-    HWND hwnd = glfwGetWin32Window(window); // window は GLFWwindow* の変数
-    glfwShowWindow(window); // ウィンドウを表示
-    // 適切なサイズのアイコンを設定
-    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon); // タスクバー用 (大きい方)
-    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon); // ウィンドウタイトルバー用 (小さい方)
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.FontGlobalScale = 1.f; // 全体のフォントスケールを変更
+    ImFont* myFont = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/Lucon.ttf", 32.0f);
+    ImGui::PushFont(myFont);
 
-    return true;
+    // Setup scaling
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.ScaleAllSizes(monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+
+
+    // バックエンド初期化
+    ImGui_ImplGlfw_InitForOpenGL(window_, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    // キー入力コールバック登録
+    glfwSetKeyCallback(window_, HandleKeyInput);
 }
 
-inline void Gui::ImGui_SetGrayTheme()
+// 終了処理
+void Gui::Shutdown() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImPlot::DestroyContext();
+    ImGui::DestroyContext();
+
+    if (window_) {
+        glfwDestroyWindow(window_);
+        window_ = nullptr;
+    }
+
+    glfwTerminate();
+}
+
+// フレーム開始処理
+void Gui::BeginFrame() {
+    glfwPollEvents();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+// フレーム描画処理
+void Gui::EndFrame() {
+    if (!window_) return;
+
+    ImGui::Render();
+
+    int width, height;
+    glfwGetFramebufferSize(window_, &width, &height);
+    glViewport(0, 0, width, height);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwSwapBuffers(window_);
+}
+
+void Gui::setStyle(const int theme) {
+    // ImGuiスタイル設定
+    if (theme == 0) ImGui::StyleColorsDark(); // Default
+    else if (theme == 1) ImGui::StyleColorsClassic();
+    else if (theme == 2) ImGui::StyleColorsLight();
+    else if (theme == 3) ImGui_SetGrayTheme();
+    else if (theme == 4) ImGui_SetNeonBlueTheme();
+    else if (theme == 5) ImGui_SetNeonGreenTheme();
+    else if (theme == 6) ImGui_SetNeonRedTheme();
+    else if (theme == 7) ImGui_SetEvaTheme();
+}
+void Gui::ImGui_SetGrayTheme()
 {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -285,7 +218,7 @@ inline void Gui::ImGui_SetGrayTheme()
     style.GrabRounding = 4.0f;
 }
 
-inline void Gui::ImGui_SetNeonBlueTheme()
+void Gui::ImGui_SetNeonBlueTheme()
 {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -334,7 +267,7 @@ inline void Gui::ImGui_SetNeonBlueTheme()
     style.ItemSpacing = ImVec2(8, 6);
 }
 
-inline void Gui::ImGui_SetNeonGreenTheme()
+void Gui::ImGui_SetNeonGreenTheme()
 {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -381,7 +314,7 @@ inline void Gui::ImGui_SetNeonGreenTheme()
     style.ItemSpacing = ImVec2(8, 6);
 }
 
-inline void Gui::ImGui_SetNeonRedTheme()
+void Gui::ImGui_SetNeonRedTheme()
 {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -428,7 +361,7 @@ inline void Gui::ImGui_SetNeonRedTheme()
     style.ItemSpacing = ImVec2(8, 6);
 }
 
-inline void Gui::ImGui_SetEvaTheme()
+void Gui::ImGui_SetEvaTheme()
 {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -458,156 +391,4 @@ inline void Gui::ImGui_SetEvaTheme()
     colors[ImGuiCol_Header] = ImVec4(0.2f, 0.0f, 0.3f, 1.00f);     // 紫
     colors[ImGuiCol_HeaderHovered] = ImVec4(0.4f, 0.0f, 0.6f, 1.00f);     // 濃紫
     colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 0.6f, 0.0f, 1.00f);     // 緑
-}
-
-inline bool Gui::initImGui()
-{
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.FontGlobalScale = 1.f; // 全体のフォントスケールを変更
-    ImFont* myFont = io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/Lucon.ttf", 32.0f);
-    ImGui::PushFont(myFont);
-
-    // Setup Dear ImGui style
-    //ImGui::StyleColorsDark(); // Default
-    
-    // Setup scaling
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(liaConfig.window.monitorScale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
-    style.FontScaleDpi = liaConfig.window.monitorScale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
-
-    // Setup Platform/Renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(this->window, true);
-    ImGui_ImplOpenGL3_Init(this->glsl_version);
-
-    ImPlot::CreateContext();
-    return true;
-}
-
-inline void Gui::initBeep()
-{
-    for (int i = 0; i < 9; i++)
-    {
-        waves[i] = new Wave(4800, 1);
-    }
-    waves[0]->makeSin(100);
-    waves[1]->makeSin(261.626);
-    waves[2]->makeSin(293.665);
-    waves[3]->makeSin(329.628);
-    waves[4]->makeSin(349.228);
-    waves[5]->makeSin(391.995);
-    waves[6]->makeSin(440.000);
-    waves[7]->makeSin(493.883);
-    waves[8]->makeSin(523.251);
-}
-
-inline void Gui::deleteBeep()
-{
-    for (int i = 0; i < 9; i++)
-    {
-        delete waves[i];
-    }
-}
-
-inline void Gui::beep()
-{
-    if (liaConfig.plot.beep)
-    {
-        int idx = liaConfig.idx;
-        double amplitude = pow(liaConfig.x1s[idx] * liaConfig.x1s[idx] + liaConfig.y1s[idx] * liaConfig.y1s[idx], 0.5);
-        double phase = atan2(liaConfig.y1s[idx], liaConfig.x1s[idx]) / std::numbers::pi * 180;
-        if (amplitude > 0.1)
-        {
-            if (phase < -80)
-            {
-                waves[0]->stop();
-                waves[1]->play();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else if (-80 <= phase && phase < -60) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->play();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else if (-60 <= phase && phase < -55) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->play();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else if (-55 <= phase && phase < 0) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->play();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else if (0 <= phase && phase < 30) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->stop();
-                waves[7]->play();
-                waves[8]->stop();
-            }
-            else if (30 <= phase && phase < 60) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->play();
-                waves[6]->stop();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else if (60 <= phase) {
-                waves[0]->stop();
-                waves[1]->stop();
-                waves[2]->stop();
-                waves[3]->stop();
-                waves[4]->stop();
-                waves[5]->stop();
-                waves[6]->play();
-                waves[7]->stop();
-                waves[8]->stop();
-            }
-            else {
-                for (int i = 0; i < 9; i++) waves[i]->stop();
-            }
-        }
-        else {
-            for (int i = 0; i < 9; i++) waves[i]->stop();
-        }
-    }
-    else {
-        for (int i = 0; i < 9; i++) waves[i]->stop();
-    }
 }

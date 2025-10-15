@@ -105,7 +105,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)GUI\include;$(ProjectDir)DAQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)DAQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>
       </Optimization>
       <FavorSizeOrSpeed>
@@ -128,7 +128,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)GUI\include;$(ProjectDir)DAQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)DAQ\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -150,17 +150,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GUI\include\IMGUI\imgui.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\imgui_draw.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\imgui_impl_glfw.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\imgui_tables.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\imgui_widgets.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\implot.cpp" />
-    <ClCompile Include="GUI\include\IMGUI\implot_items.cpp" />
+    <ClCompile Include="IMGUI\imgui.cpp" />
+    <ClCompile Include="IMGUI\imgui_draw.cpp" />
+    <ClCompile Include="IMGUI\imgui_impl_glfw.cpp" />
+    <ClCompile Include="IMGUI\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="IMGUI\imgui_tables.cpp" />
+    <ClCompile Include="IMGUI\imgui_widgets.cpp" />
+    <ClCompile Include="IMGUI\implot.cpp" />
+    <ClCompile Include="IMGUI\implot_items.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Beep.h" />
+    <ClInclude Include="GuiSub.h" />
     <ClInclude Include="Psd.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Wave.hpp" />

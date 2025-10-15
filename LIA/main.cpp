@@ -10,10 +10,11 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <Daq_wf.h>
-#include "Gui.h"
 #include "pipe.h"
 #include "Psd.h"
+#include "Gui.h"
 #include "LiaConfig.h"
+#include "GuiSub.h"
 
 bool is_avx2_supported();
 void measurement(std::stop_token st, LiaConfig* pLiaConfig);
@@ -35,11 +36,12 @@ int main(int argc, char* argv[])
     // I/Oの高速化
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr); // std::cin と std::cout の同期を解除
+	std::cout.tie(nullptr); // std::cout と std::cin の同期を解除
     static LiaConfig settings;
     bool guiFlag = true;
 	bool pipeFlag = false;
     std::jthread* pth_pipe = nullptr;
-    Gui* pGui = nullptr;
+	GuiSub* pGuiSub = nullptr;
     for (int i = 1; i < argc; i++) // i=1 から開始（プログラム名はスキップ）
     {
         if (std::strcmp("pipe", argv[i]) == 0)
@@ -56,8 +58,17 @@ int main(int argc, char* argv[])
     }
     if (guiFlag)
     {
-        pGui = new Gui(settings);
-        if (pGui->initialized == false) return -1;
+        Gui::Initialize(
+            "Lock-in amplifier",
+            settings.window.posX, settings.window.posY,
+            settings.window.width, settings.window.height
+        );
+        if (Gui::GetWindow() == nullptr) return -1;
+		settings.window.monitorScale = Gui::monitorScale;
+        if(Gui::SurfacePro7) {
+            settings.imgui.windowFlag = ImGuiCond_Always;
+		}
+		pGuiSub = new GuiSub(Gui::GetWindow(), settings);
     }
     if (pipeFlag)
     {
@@ -82,19 +93,20 @@ int main(int argc, char* argv[])
 	std::cout << std::flush; // バッファをフラッシュ
     if (guiFlag)
     {
-		// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ
-        while (!pGui->windowShouldClose())
+		//// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ
+        while (!glfwWindowShouldClose(Gui::GetWindow()))
         {
             if (settings.statusMeasurement == false) break;
             if (pth_pipe != nullptr && settings.statusPipe == false) break;
-            pGui->beep();
-            /* Poll for and process events */
-            pGui->pollEvents();
-            pGui->show();
-            pGui->rendering();
-            pGui->swapBuffers();
-            //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            Gui::BeginFrame();
+
+			pGuiSub->show();
+
+            Gui::EndFrame();
         }
+        glfwGetWindowSize(Gui::GetWindow(), &(settings.window.width), &(settings.window.height));
+        glfwGetWindowPos(Gui::GetWindow(), &(settings.window.posX), &(settings.window.posY));
+        Gui::EndFrame();
     }
     else
     {
