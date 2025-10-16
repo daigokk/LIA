@@ -164,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="Beep.h" />
     <ClInclude Include="GuiSub.h" />
+    <ClInclude Include="IniWrapper.h" />
     <ClInclude Include="Psd.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Wave.hpp" />
