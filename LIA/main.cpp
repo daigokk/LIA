@@ -41,16 +41,14 @@ int main(int argc, char* argv[])
     bool guiFlag = true;
 	bool pipeFlag = false;
     std::jthread* pth_pipe = nullptr;
-	GuiSub* pGuiSub = nullptr;
-    for (int i = 1; i < argc; i++) // i=1 から開始（プログラム名はスキップ）
-    {
-        if (std::strcmp("pipe", argv[i]) == 0)
-        {
+    std::unique_ptr<GuiSub> pGuiSub;
+    for (int i = 1; i < argc; ++i) {
+        const std::string_view arg(argv[i]);
+        if (arg == "pipe") {
             pipeFlag = true;
             //std::cout << "Pipe mode." << std::endl;
         }
-        else if (std::strcmp("nogui", argv[i]) == 0 || std::strcmp("headless", argv[i]) == 0)
-        {
+        else if (arg == "nogui" || arg == "headless") {
             guiFlag = false;
             pipeFlag = true;
             //std::cout << "Headless pipe mode." << std::endl;
@@ -68,7 +66,7 @@ int main(int argc, char* argv[])
         if(Gui::SurfacePro7) {
             settings.imgui.windowFlag = ImGuiCond_Always;
 		}
-		pGuiSub = new GuiSub(Gui::GetWindow(), settings);
+        pGuiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
     }
     if (pipeFlag)
     {
@@ -76,14 +74,9 @@ int main(int argc, char* argv[])
         while (!settings.statusPipe);
     }
     
-    std::jthread th_measurement;
-    if (adIdx == -1)
-    {
-        th_measurement = std::jthread{ measurementWithoutDaq, &settings };
-    }
-    else {
-        th_measurement = std::jthread{ measurement, &settings };
-    }
+    std::jthread th_measurement = (adIdx == -1)
+        ? std::jthread{ measurementWithoutDaq, &settings }
+        : std::jthread{ measurement, &settings };
     // スレッドの優先度を設定
     HANDLE handle = th_measurement.native_handle();
     if (!SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
@@ -94,14 +87,11 @@ int main(int argc, char* argv[])
     if (guiFlag)
     {
 		//// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ
-        while (!glfwWindowShouldClose(Gui::GetWindow()))
-        {
-            if (settings.statusMeasurement == false) break;
-            if (pth_pipe != nullptr && settings.statusPipe == false) break;
+        while (settings.statusMeasurement &&
+            !(pth_pipe && !settings.statusPipe) &&
+            !glfwWindowShouldClose(Gui::GetWindow())) {
             Gui::BeginFrame();
-
-			pGuiSub->show();
-
+            pGuiSub->show();
             Gui::EndFrame();
         }
         glfwGetWindowSize(Gui::GetWindow(), &(settings.window.width), &(settings.window.height));
@@ -118,7 +108,9 @@ int main(int argc, char* argv[])
         }
     }
     th_measurement.request_stop();
-    if (pth_pipe != nullptr) pth_pipe->request_stop();
+    if (pth_pipe) pth_pipe->request_stop();
+    th_measurement.join();
+    if (pth_pipe) pth_pipe->join();
     return 0;
 }
 
@@ -169,13 +161,10 @@ void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
         t = pLiaConfig->timer.sleepUntil(t);
         if (pLiaConfig->flagPause) continue;
         double phase = 2 * std::numbers::pi * t / 60;
-        for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++)
-        {
+        for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++) {
             double wt = 2 * std::numbers::pi * pLiaConfig->awg.ch[0].freq * i * RAW_DT;
-
             pLiaConfig->rawData1[i] = pLiaConfig->awg.ch[0].amp * std::sin(wt - phase);
-            if (pLiaConfig->flagCh2)
-            {
+            if (pLiaConfig->flagCh2) {
                 pLiaConfig->rawData2[i] = pLiaConfig->awg.ch[1].amp * std::sin(wt - pLiaConfig->awg.ch[1].phase);
             }
         }

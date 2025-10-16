@@ -134,7 +134,7 @@ public:
         double frequency[2] = { 1e3, 1e3 };
         double amplitude[2] = { 1.0, 0.0 };
         double phaseDeg[2] = { 0.0, 0.0 };
-        double rgdData[2][5000];
+        double rgdData[2][5000]= { 0 };
         void start()
         {
             int nch = 2;
