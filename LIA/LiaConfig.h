@@ -17,9 +17,9 @@
 #include <vector>
 
 #include "Daq_wf.h"
-#include "inicpp.h"
 #include "Psd.h"
 #include "Timer.h"
+#include "IniWrapper.h"
 
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
@@ -455,72 +455,76 @@ private:
     }
 
     void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {
-        ini::IniFile liaIni;
-        liaIni["Window"]["width"] = window.width;
-        liaIni["Window"]["height"] = window.height;
-        liaIni["Window"]["posX"] = window.posX;
-        liaIni["Window"]["posY"] = window.posY;
+        IniWrapper ini; 
+        
 
-        liaIni["ImGui"]["theme"] = imgui.theme;
-        liaIni["ImGui"]["windowFlag"] = imgui.windowFlag;
+        ini.set("Window", "posX", window.posX);
+        ini.set("Window", "posY", window.posY);
+        ini.set("Window", "width", window.width);
+        ini.set("Window", "height", window.height);
 
-        liaIni["Awg"]["ch[0].freq"] = awg.ch[0].freq;
-        liaIni["Awg"]["ch[0].amp"] = awg.ch[0].amp;
-        liaIni["Awg"]["ch[1].amp"] = awg.ch[1].amp;
-        liaIni["Awg"]["ch[1].phase"] = awg.ch[1].phase;
+		ini.set("ImGui", "theme", imgui.theme);
+		ini.set("ImGui", "windowFlag", imgui.windowFlag);
 
-        liaIni["Scope"]["flagCh2"] = flagCh2;
+		ini.set("Awg", "ch[0].freq", awg.ch[0].freq);
+		ini.set("Awg", "ch[0].amp", awg.ch[0].amp);
+		ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
+		ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
 
-        liaIni["Lia"]["offset1Phase"] = post.offset1Phase;
-        liaIni["Lia"]["offset1X"] = post.offset1X;
-        liaIni["Lia"]["offset1Y"] = post.offset1Y;
-        liaIni["Lia"]["offset2Phase"] = post.offset2Phase;
-        liaIni["Lia"]["offset2X"] = post.offset2X;
-        liaIni["Lia"]["offset2Y"] = post.offset2Y;
-        liaIni["Lia"]["hpFreq"] = post.hpFreq;
+		ini.set("Scope", "flagCh2", flagCh2);
 
-        liaIni["Plot"]["limit"] = plot.limit;
-        liaIni["Plot"]["rawLimit"] = plot.rawLimit;
-        liaIni["Plot"]["historySec"] = plot.historySec;
-        liaIni["Plot"]["surfaceMode"] = plot.surfaceMode;
-        liaIni["Plot"]["beep"] = plot.beep;
-        liaIni["Plot"]["acfm"] = plot.acfm;
+		ini.set("Lia", "offset1Phase", post.offset1Phase);
+		ini.set("Lia", "offset1X", post.offset1X);
+		ini.set("Lia", "offset1Y", post.offset1Y);
+		ini.set("Lia", "offset2Phase", post.offset2Phase);
+		ini.set("Lia", "offset2X", post.offset2X);
+		ini.set("Lia", "offset2Y", post.offset2Y);
+		ini.set("Lia", "hpFreq", post.hpFreq);
 
-        liaIni.save(filename);
+		ini.set("Plot", "limit", plot.limit);
+		ini.set("Plot", "rawLimit", plot.rawLimit);
+		ini.set("Plot", "historySec", plot.historySec);
+		ini.set("Plot", "surfaceMode", plot.surfaceMode);
+		ini.set("Plot", "beep", plot.beep);
+		ini.set("Plot", "acfm", plot.acfm);
+		// Save to file
+        ini.save(SETTINGS_FILE);
     }
 
     void loadSettingsFromFile(const std::string& filename = SETTINGS_FILE) {
-        ini::IniFile liaIni(filename);
 
-        window.width = loadValue(liaIni, "Window", "width", window.width);
-        window.height = loadValue(liaIni, "Window", "height", window.height);
-        window.posX = loadValue(liaIni, "Window", "posX", window.posX);
-        window.posY = loadValue(liaIni, "Window", "posY", window.posY);
+        IniWrapper ini;
+        ini.load(SETTINGS_FILE);
 
-        imgui.theme = loadValue(liaIni, "ImGui", "theme", imgui.theme);
-        imgui.windowFlag = loadValue(liaIni, "ImGui", "windowFlag", imgui.windowFlag);
+        window.posX = ini.get("Window", "posX", window.posX);
+        window.posY = ini.get("Window", "posY", window.posY);
+        window.width = ini.get("Window", "Width", window.width);
+        window.height = ini.get("Window", "Height", window.height);
 
-        awg.ch[0].freq = loadValue(liaIni, "Awg", "ch[0].freq", awg.ch[0].freq);
-        awg.ch[0].amp = loadValue(liaIni, "Awg", "ch[0].amp", awg.ch[0].amp);
-        awg.ch[1].amp = loadValue(liaIni, "Awg", "ch[1].amp", awg.ch[1].amp);
-        awg.ch[1].phase = loadValue(liaIni, "Awg", "ch[1].phase", awg.ch[1].phase);
+        imgui.theme = ini.get("ImGui", "theme", imgui.theme);
+        imgui.windowFlag = ini.get("ImGui", "windowFlag", imgui.windowFlag);
 
-        flagCh2 = loadValue(liaIni, "Scope", "flagCh2", flagCh2);
+        awg.ch[0].freq = ini.get("Awg", "ch[0].freq", awg.ch[0].freq);
+        awg.ch[0].amp = ini.get("Awg", "ch[0].amp", awg.ch[0].amp);
+        awg.ch[1].amp = ini.get("Awg", "ch[1].amp", awg.ch[1].amp);
+        awg.ch[1].phase = ini.get("Awg", "ch[1].phase", awg.ch[1].phase);
 
-        post.offset1Phase = loadValue(liaIni, "Lia", "offset1Phase", post.offset1Phase);
-        post.offset1X = loadValue(liaIni, "Lia", "offset1X", post.offset1X);
-        post.offset1Y = loadValue(liaIni, "Lia", "offset1Y", post.offset1Y);
-        post.offset2Phase = loadValue(liaIni, "Lia", "offset2Phase", post.offset2Phase);
-        post.offset2X = loadValue(liaIni, "Lia", "offset2X", post.offset2X);
-        post.offset2Y = loadValue(liaIni, "Lia", "offset2Y", post.offset2Y);
-        post.hpFreq = loadValue(liaIni, "Lia", "hpFreq", post.hpFreq);
+        flagCh2 = ini.get("Scope", "flagCh2", flagCh2);
 
-        plot.limit = loadValue(liaIni, "Plot", "limit", plot.limit);
-        plot.rawLimit = loadValue(liaIni, "Plot", "rawLimit", plot.rawLimit);
-        plot.historySec = loadValue(liaIni, "Plot", "historySec", plot.historySec);
-        plot.surfaceMode = loadValue(liaIni, "Plot", "surfaceMode", plot.surfaceMode);
-        plot.beep = loadValue(liaIni, "Plot", "beep", plot.beep);
-        plot.acfm = loadValue(liaIni, "Plot", "acfm", plot.acfm);
+        post.offset1Phase = ini.get("Lia", "offset1Phase", post.offset1Phase);
+        post.offset1X = ini.get("Lia", "offset1X", post.offset1X);
+        post.offset1Y = ini.get("Lia", "offset1Y", post.offset1Y);
+        post.offset2Phase = ini.get("Lia", "offset2Phase", post.offset2Phase);
+        post.offset2X = ini.get("Lia", "offset2X", post.offset2X);
+        post.offset2Y = ini.get("Lia", "offset2Y", post.offset2Y);
+        post.hpFreq = ini.get("Lia", "hpFreq", post.hpFreq);
+
+        plot.limit = ini.get("Plot", "limit", plot.limit);
+        plot.rawLimit = ini.get("Plot", "rawLimit", plot.rawLimit);
+        plot.historySec = ini.get("Plot", "historySec", plot.historySec);
+        plot.surfaceMode = ini.get("Plot", "surfaceMode", plot.surfaceMode);
+        plot.beep = ini.get("Plot", "beep", plot.beep);
+        plot.acfm = ini.get("Plot", "acfm", plot.acfm);
 
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);
@@ -534,38 +538,5 @@ private:
         hpfY1.setCutoffFrequency(post.hpFreq);
         hpfX2.setCutoffFrequency(post.hpFreq);
         hpfY2.setCutoffFrequency(post.hpFreq);
-    }
-
-    // --- Template and static helpers for INI parsing ---
-
-    template<typename T>
-    T loadValue(ini::IniFile& ini, const std::string& section, const std::string& key, T defaultValue) {
-        static_assert(std::is_same_v<T, int> || std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, bool>);
-        const std::string& valStr = ini[section][key].as<std::string>();
-        if (valStr.empty()) return defaultValue;
-
-        if constexpr (std::is_same_v<T, bool>) {
-            return convb(valStr, defaultValue);
-        }
-        else {
-            return static_cast<T>(conv(valStr, static_cast<double>(defaultValue)));
-        }
-    }
-
-    static double conv(const std::string& str, double defval) {
-        try {
-            return std::stod(str);
-        }
-        catch (const std::logic_error&) {
-            // Catches both invalid_argument and out_of_range
-            return defval;
-        }
-    }
-
-    static bool convb(std::string str, bool defval) {
-        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-        if (str == "true") return true;
-        if (str == "false") return false;
-        return defval;
     }
 };

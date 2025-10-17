@@ -168,7 +168,6 @@
     <ClInclude Include="Psd.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Wave.hpp" />
-    <ClInclude Include="inicpp.h" />
     <ClInclude Include="pipe.h" />
     <ClInclude Include="LiaConfig.h" />
     <ClInclude Include="ControlWindow.h" />

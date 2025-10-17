@@ -28,24 +28,46 @@ public:
         return true;
     }
 
-    std::string get(const std::string& section, const std::string& key, const std::string& def = "") const {
-        auto it = data.find(section + "." + key);
-        return it != data.end() ? it->second : def;
+    // 型変換付き取得（int, double など）
+    template <typename T>
+    T get(std::string_view section, std::string_view key, T def) const {
+        static_assert(std::is_arithmetic_v<T>, "Only arithmetic types are supported");
+
+        auto it = data.find(std::string(section) + "." + std::string(key));
+        if (it == data.end()) return def;
+
+        std::istringstream iss(it->second);
+        T value;
+        return (iss >> value) ? value : def;
     }
 
-    void set(const std::string& section, const std::string& key, const std::string& value) {
-        data[section + "." + key] = value;
+    template <typename T>
+    void set(std::string_view section, std::string_view key, const T& value) {
+        std::ostringstream oss;
+        if constexpr (std::is_same_v<T, bool>) {
+            oss << (value ? "true" : "false");
+        }
+        else {
+            oss << value;
+        }
+        data[std::string(section) + "." + std::string(key)] = oss.str();
     }
 
-    bool toBool(const std::string& value) {
-        return value == "true" || value == "1";
-    }
     bool save(const std::string& filename) const {
         std::ofstream file(filename);
         if (!file) return false;
 
+        // ソート可能な vector に変換
+        std::vector<std::pair<std::string, std::string>> sorted_data(data.begin(), data.end());
+
+        // キー順にソート
+        std::sort(sorted_data.begin(), sorted_data.end(),
+            [](const auto& a, const auto& b) {
+                return a.first < b.first;
+            });
+
         std::string last_section;
-        for (const auto& [full_key, value] : data) {
+        for (const auto& [full_key, value] : sorted_data) {
             auto dot = full_key.find('.');
             std::string section = full_key.substr(0, dot);
             std::string key = full_key.substr(dot + 1);
@@ -58,31 +80,6 @@ public:
         }
         return true;
     }
-
 private:
     std::unordered_map<std::string, std::string> data;
 };
-
-
-/*
-Ini ini;
-ini.load("config.ini");
-
-int x = std::stoi(ini.get("Window", "PosX", "100"));
-int y = std::stoi(ini.get("Window", "PosY", "100"));
-int w = std::stoi(ini.get("Window", "Width", "800"));
-int h = std::stoi(ini.get("Window", "Height", "600"));
-std::string value = ini.get("Window", "Fullscreen", "false");
-bool isFullscreen = (value == "true"); // 文字列比較
-
-ini.set("Window", "PosX", std::to_string(x));
-ini.set("Window", "PosY", std::to_string(y));
-ini.set("Window", "Width", std::to_string(w));
-ini.set("Window", "Height", std::to_string(h));
-
-bool isFullscreen = true;
-ini.set("Window", "Fullscreen", isFullscreen ? "true" : "false");
-ini.save("config.ini");
-
-
-*/
