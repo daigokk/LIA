@@ -185,7 +185,6 @@
     - [Digilent WaveForms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/start)
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
-    - [inifile-cpp](https://github.com/Rookfighter/inifile-cpp)
 ## References 📚
 <a id="ref1"></a>
   1. [Kosaka, D., Hoshiba, M., Nakamoto, H.  (2023). Quantitative Assessment of Eddy Current Inspection Technician Skills. In: Tareq Ahram and Waldemar Karwowski (eds) Emerging Technologies and Future of Work. AHFE (2023) International Conference. AHFE Open Access, vol 117. AHFE International, USA.](http://doi.org/10.54941/ahfe1004427)
