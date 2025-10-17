@@ -185,8 +185,10 @@ public:
         }
     };
     struct PostCfg {
-        double offset1Phase = 0, offset1X = 0, offset1Y = 0;
-        double offset2Phase = 0, offset2X = 0, offset2Y = 0;
+        struct Offset {
+            double phase = 0, x = 0, y = 0;
+        };
+        Offset offset[2];
         float hpFreq = 0;
     };
 
@@ -323,22 +325,22 @@ public:
 		auto [x2, y2] = flagCh2 ? psd.calculate(rawData2.data()) : std::pair<double, double>{ 0.0, 0.0 };
         
         if (flagAutoOffset) {
-           post.offset1X = x1; post.offset1Y = y1;
+           post.offset[0].x = x1; post.offset[0].y = y1;
             if (flagCh2) {
-                post.offset2X = x2; post.offset2Y = y2;
+                post.offset[1].x = x2; post.offset[1].y = y2;
             }
             flagAutoOffset = false;
         }
 
-        x1 -= post.offset1X;
-        y1 -= post.offset1Y;
+        x1 -= post.offset[0].x;
+        y1 -= post.offset[0].y;
 
-        auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, post.offset1Phase);
+        auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, post.offset[0].phase);
 
         if (flagCh2) {
-            x2 -= post.offset2X;
-            y2 -= post.offset2Y;
-            auto [final_x2, final_y2] = psd.rotate_phase(x2, y2, post.offset2Phase);
+            x2 -= post.offset[1].x;
+            y2 -= post.offset[1].y;
+            auto [final_x2, final_y2] = psd.rotate_phase(x2, y2, post.offset[1].phase);
             AddPoint(t, final_x1, final_y1, final_x2, final_y2);
         }
         else {
@@ -473,13 +475,13 @@ private:
 
 		ini.set("Scope", "flagCh2", flagCh2);
 
-		ini.set("Lia", "offset1Phase", post.offset1Phase);
-		ini.set("Lia", "offset1X", post.offset1X);
-		ini.set("Lia", "offset1Y", post.offset1Y);
-		ini.set("Lia", "offset2Phase", post.offset2Phase);
-		ini.set("Lia", "offset2X", post.offset2X);
-		ini.set("Lia", "offset2Y", post.offset2Y);
-		ini.set("Lia", "hpFreq", post.hpFreq);
+		ini.set("Post", "offset[0].phase", post.offset[0].phase);
+		ini.set("Post", "offset[0].x", post.offset[0].x);
+		ini.set("Post", "offset[0].y", post.offset[0].y);
+		ini.set("Post", "offset[1].phase", post.offset[1].phase);
+		ini.set("Post", "offset[1].x", post.offset[1].x);
+		ini.set("Post", "offset[1].y", post.offset[1].y);
+		ini.set("Post", "hpFreq", post.hpFreq);
 
 		ini.set("Plot", "limit", plot.limit);
 		ini.set("Plot", "rawLimit", plot.rawLimit);
@@ -511,13 +513,13 @@ private:
 
         flagCh2 = ini.get("Scope", "flagCh2", flagCh2);
 
-        post.offset1Phase = ini.get("Lia", "offset1Phase", post.offset1Phase);
-        post.offset1X = ini.get("Lia", "offset1X", post.offset1X);
-        post.offset1Y = ini.get("Lia", "offset1Y", post.offset1Y);
-        post.offset2Phase = ini.get("Lia", "offset2Phase", post.offset2Phase);
-        post.offset2X = ini.get("Lia", "offset2X", post.offset2X);
-        post.offset2Y = ini.get("Lia", "offset2Y", post.offset2Y);
-        post.hpFreq = ini.get("Lia", "hpFreq", post.hpFreq);
+        post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
+        post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);
+        post.offset[0].y = ini.get("Post", "offset[0].y", post.offset[0].y);
+        post.offset[1].phase = ini.get("Post", "offset[1].phase", post.offset[1].phase);
+        post.offset[1].x = ini.get("Post", "offset[1].x", post.offset[1].x);
+        post.offset[1].y = ini.get("Post", "offset[1].y", post.offset[1].y);
+        post.hpFreq = ini.get("Post", "hpFreq", post.hpFreq);
 
         plot.limit = ini.get("Plot", "limit", plot.limit);
         plot.rawLimit = ini.get("Plot", "rawLimit", plot.rawLimit);

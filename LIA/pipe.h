@@ -16,8 +16,8 @@ const std::vector<std::string> helps = {
     "  reset or *rst               : Reset all settings to default values",
     "  *idn?                       : Identify connected DAQ device",
     "  error?                      : Show last error message",
-    "  end, exit, quit, close      : Exit the program",
-    "  pause                       : Pause data acquisition",
+    "  end, exit, quit or close    : Exit the program",
+    "  pause or stop                 : Pause data acquisition",
     "  run                         : Resume data acquisition",
     "  data:raw:save [filename]    : Save raw data to file (optional filename)",
     "  data:raw:size?              : Get size of raw data buffer",
@@ -163,7 +163,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         };
 
     // 一時停止・再開
-    commandMap["pause"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = true; return true; };
+    commandMap["pause"] = commandMap["stop"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = true; return true; };
     commandMap["run"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = false; return true; };
 
     // ヘルプ
@@ -306,8 +306,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 else if (tokens[2] == "state") {
                     if (arg == "on") { pLiaConfig->flagAutoOffset = true; return true; }
                     if (arg == "off") {
-                        pLiaConfig->post.offset1X = pLiaConfig->post.offset1Y = 0;
-                        pLiaConfig->post.offset2X = pLiaConfig->post.offset2Y = 0;
+                        pLiaConfig->post.offset[0].x = pLiaConfig->post.offset[0].y = 0;
+                        pLiaConfig->post.offset[1].x = pLiaConfig->post.offset[1].y = 0;
                         pLiaConfig->flagAutoOffset = false; // state off で自動オフセットもオフにする
                         return true;
                     }
@@ -334,10 +334,10 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         };
 
     // 計算オフセット位相 (フルコマンドで登録)
-    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset1Phase = val; return true; };
-    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset2Phase = val; return true; };
-    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset1Phase << std::endl; return true; };
-    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset2Phase << std::endl; return true; };
+    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset[0].phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset[1].phase = val; return true; };
+    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset[0].phase << std::endl; return true; };
+    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset[1].phase << std::endl; return true; };
 
 
     // --- メインループ ---
@@ -388,7 +388,6 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 commandOk = it->second(tokens, argumentPart, value);
             }
         }
-
 
         if (!commandOk) {
             // エラー処理

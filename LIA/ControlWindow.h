@@ -178,19 +178,19 @@ inline void ControlWindow::plot(const float nextItemWidth)
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             if (liaConfig.flagPause) { ImGui::BeginDisabled(); }
-            ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &(liaConfig.post.offset1Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &(liaConfig.post.offset[0].phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::PostOffset1Phase;
-                value = liaConfig.post.offset1Phase;
+                value = liaConfig.post.offset[0].phase;
             }
             if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &(liaConfig.post.offset2Phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &(liaConfig.post.offset[1].phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::PostOffset2Phase;
-                value = liaConfig.post.offset2Phase;
+                value = liaConfig.post.offset[1].phase;
             }
             if (!liaConfig.flagCh2) { ImGui::EndDisabled(); }
             if (liaConfig.flagPause) { ImGui::EndDisabled(); }
@@ -229,7 +229,7 @@ inline void ControlWindow::post(const float nextItemWidth)
         liaConfig.flagAutoOffset = true;
     }
     bool stateAutoOffset = true;
-    if (liaConfig.post.offset1X == 0 && liaConfig.post.offset1Y == 0)
+    if (liaConfig.post.offset[0].x == 0 && liaConfig.post.offset[0].y == 0)
     {
         stateAutoOffset = false;
         ImGui::BeginDisabled();
@@ -242,8 +242,8 @@ inline void ControlWindow::post(const float nextItemWidth)
     ImGui::SameLine();
     static ImVec2 offSize = ImVec2(100.0f * liaConfig.window.monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
-        liaConfig.post.offset1X = 0.0f; liaConfig.post.offset1Y = 0.0f;
-        liaConfig.post.offset2X = 0.0f; liaConfig.post.offset2Y = 0.0f;
+        liaConfig.post.offset[0].x = 0.0f; liaConfig.post.offset[0].y = 0.0f;
+        liaConfig.post.offset[1].x = 0.0f; liaConfig.post.offset[1].y = 0.0f;
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -270,9 +270,9 @@ inline void ControlWindow::post(const float nextItemWidth)
     if (ImGui::TreeNode("Offset value"))
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset1X, liaConfig.post.offset1Y);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset[0].x, liaConfig.post.offset[0].y);
         if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset2X, liaConfig.post.offset2Y);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset[1].x, liaConfig.post.offset[1].y);
         if (!liaConfig.flagCh2) ImGui::EndDisabled();
         ImGui::TreePop();
         if (!stateAutoOffset) ImGui::EndDisabled();
