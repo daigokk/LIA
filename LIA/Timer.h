@@ -8,10 +8,18 @@
 class Timer
 {
 private:
-	LARGE_INTEGER qpf;
-	LARGE_INTEGER qpc_start, qpc_previous;
+	static inline LARGE_INTEGER qpf = [] {
+		LARGE_INTEGER f;
+		QueryPerformanceFrequency(&f);
+		return f;
+		}();
+
+	LARGE_INTEGER qpc_start{};
+	LARGE_INTEGER qpc_previous{};
+
+	static inline int numTimers = 0;
+
 public:
-	int numTimers = 0;
 	Timer()
 	{
 		this->numTimers++;
@@ -29,12 +37,13 @@ public:
 
 	static void sleepFor(const double sec)
 	{	// sec秒Sleepする
-		std::this_thread::sleep_for(std::chrono::microseconds((int)(sec * 1e6)));
+		if (sec <= 0) return;
+		auto us = static_cast<long long>(sec * 1e6);
+		std::this_thread::sleep_for(std::chrono::microseconds(us));
 	}
 
 	void start()
 	{	// カウンタスタート
-		QueryPerformanceFrequency(&this->qpf);
 		QueryPerformanceCounter(&this->qpc_start);
 		qpc_previous.QuadPart = qpc_start.QuadPart;
 	}
@@ -48,7 +57,7 @@ public:
 	{
 		LARGE_INTEGER qpc_next, qpc_now;
 		qpc_next.QuadPart = (LONGLONG)(theTimeSec * this->qpf.QuadPart + this->qpc_start.QuadPart);
-		while (1)
+		while (true)
 		{
 			QueryPerformanceCounter(&qpc_now);
 			if (qpc_next.QuadPart <= qpc_now.QuadPart)
