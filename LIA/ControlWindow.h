@@ -285,20 +285,20 @@ inline void ControlWindow::monitor()
 	// Monitorê›íËÇÃUIÇÇ±Ç±Ç…é¿ëï
     if (ImGui::TreeNode("Monitor"))
     {
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.x1s[liaConfig.idx], liaConfig.y1s[liaConfig.idx]);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.xyForTimeWindow[0].x[liaConfig.idx], liaConfig.xyForTimeWindow[0].y[liaConfig.idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(liaConfig.x1s[liaConfig.idx], 2) + pow(liaConfig.y1s[liaConfig.idx], 2), 0.5),
+            pow(pow(liaConfig.xyForTimeWindow[0].x[liaConfig.idx], 2) + pow(liaConfig.xyForTimeWindow[0].y[liaConfig.idx], 2), 0.5),
             u8"É∆",
-            atan2(liaConfig.y1s[liaConfig.idx], liaConfig.x1s[liaConfig.idx]) / std::numbers::pi * 180
+            atan2(liaConfig.xyForTimeWindow[0].y[liaConfig.idx], liaConfig.xyForTimeWindow[0].x[liaConfig.idx]) / std::numbers::pi * 180
         );
         if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.x2s[liaConfig.idx], liaConfig.y2s[liaConfig.idx]);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.xyForTimeWindow[1].x[liaConfig.idx], liaConfig.xyForTimeWindow[1].y[liaConfig.idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(liaConfig.x2s[liaConfig.idx], 2) + pow(liaConfig.y2s[liaConfig.idx], 2), 0.5),
+            pow(pow(liaConfig.xyForTimeWindow[1].x[liaConfig.idx], 2) + pow(liaConfig.xyForTimeWindow[1].y[liaConfig.idx], 2), 0.5),
             u8"É∆",
-            atan2(liaConfig.y2s[liaConfig.idx], liaConfig.x2s[liaConfig.idx]) / std::numbers::pi * 180
+            atan2(liaConfig.xyForTimeWindow[1].y[liaConfig.idx], liaConfig.xyForTimeWindow[1].x[liaConfig.idx]) / std::numbers::pi * 180
         );
         if (!liaConfig.flagCh2) { ImGui::EndDisabled(); }
         ImGui::TreePop();

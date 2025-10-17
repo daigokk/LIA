@@ -227,10 +227,10 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             std::cout << size << std::endl;
             for (int i = 0; i < size; ++i) {
                 if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->x1s[idx], pLiaConfig->y1s[idx]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->x1s[idx], pLiaConfig->y1s[idx], pLiaConfig->x2s[idx], pLiaConfig->y2s[idx]);
+                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx], pLiaConfig->xyForTimeWindow[1].x[idx], pLiaConfig->xyForTimeWindow[1].y[idx]);
                 }
                 idx = (idx + 1) % MEASUREMENT_SIZE;
             }
@@ -238,9 +238,9 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         }
         else if (subCmd == "xy?") {
             size_t idx = pLiaConfig->idx;
-            std::cout << std::format("{:e},{:e}", pLiaConfig->x1s[idx], pLiaConfig->y1s[idx]);
+            std::cout << std::format("{:e},{:e}", pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx]);
             if (pLiaConfig->flagCh2) {
-                std::cout << std::format(",{:e},{:e}", pLiaConfig->x2s[idx], pLiaConfig->y2s[idx]);
+                std::cout << std::format(",{:e},{:e}", pLiaConfig->xyForTimeWindow[1].x[idx], pLiaConfig->xyForTimeWindow[1].y[idx]);
             }
             std::cout << std::endl;
             return true;

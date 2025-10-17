@@ -160,10 +160,11 @@ class LiaConfig {
 public:
     // --- Grouped Configuration Structs ---
     struct WindowCfg {
-        int width = 1440;
-        int height = 960;
-        int posX = 0;
-        int posY = 30;
+        struct XYint {
+            int x, y;
+        };
+		XYint size = { 1440, 900 };
+		XYint pos = { 0, 30 };
         float monitorScale = 1.0f; // <<< ここに再度追加します
     };
 
@@ -222,12 +223,13 @@ public:
     // Data Buffers (using std::vector to avoid stack overflow)
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
-    std::vector<double> times, x1s, y1s, x2s, y2s, dts;
-    struct XYSforXYWindow {
+    std::vector<double> times, dts;
+    struct XYs {
         std::vector<double> x;
         std::vector<double> y;
 	};
-    XYSforXYWindow xyForXY[2];
+	XYs xyForTimeWindow[2];
+    XYs xyForXYWindow[2];
 
     // Ring Buffer Indices
     int nofm = 0, idx = 0, tail = 0, size = 0;
@@ -263,15 +265,15 @@ public:
         rawData[0].resize(RAW_SIZE);
         rawData[1].resize(RAW_SIZE);
         times.resize(MEASUREMENT_SIZE);
-        x1s.resize(MEASUREMENT_SIZE);
-        y1s.resize(MEASUREMENT_SIZE);
-        x2s.resize(MEASUREMENT_SIZE);
-        y2s.resize(MEASUREMENT_SIZE);
+        xyForTimeWindow[0].x.resize(MEASUREMENT_SIZE);
+        xyForTimeWindow[0].y.resize(MEASUREMENT_SIZE);
+        xyForTimeWindow[1].x.resize(MEASUREMENT_SIZE);
+        xyForTimeWindow[1].y.resize(MEASUREMENT_SIZE);
         dts.resize(MEASUREMENT_SIZE);
-        xyForXY[0].x.resize(XY_SIZE);
-        xyForXY[0].y.resize(XY_SIZE);
-        xyForXY[1].x.resize(XY_SIZE);
-        xyForXY[1].y.resize(XY_SIZE);
+        xyForXYWindow[0].x.resize(XY_SIZE);
+        xyForXYWindow[0].y.resize(XY_SIZE);
+        xyForXYWindow[1].x.resize(XY_SIZE);
+        xyForXYWindow[1].y.resize(XY_SIZE);
 
         loadSettingsFromFile();
 
@@ -305,23 +307,23 @@ public:
         hpfCh[1].y.setCutoffFrequency(post.hpFreq);
     }
     void AddPoint(double t, double x, double y) {
-        x1s[tail] = hpfCh[0].x.process(x);
-        y1s[tail] = hpfCh[0].y.process(y);
-        xyForXY[0].x[xyTail] = x1s[tail];
-        xyForXY[0].y[xyTail] = y1s[tail];
+        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(x);
+        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(y);
+        xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
+        xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
         updateRingBuffers(t);
     }
 
     void AddPoint(double t, double x1, double y1, double x2, double y2) {
-        x1s[tail] = hpfCh[0].x.process(x1);
-        y1s[tail] = hpfCh[0].y.process(y1);
-        x2s[tail] = hpfCh[1].x.process(x2);
-        y2s[tail] = hpfCh[1].y.process(y2);
+        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(x1);
+        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(y1);
+        xyForTimeWindow[1].x[tail] = hpfCh[1].x.process(x2);
+        xyForTimeWindow[1].y[tail] = hpfCh[1].y.process(y2);
 
-        xyForXY[0].x[xyTail] = x1s[tail];
-        xyForXY[0].y[xyTail] = y1s[tail];
-        xyForXY[1].x[xyTail] = x2s[tail];
-        xyForXY[1].y[xyTail] = y2s[tail];
+        xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
+        xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
+        xyForXYWindow[1].x[xyTail] = xyForTimeWindow[1].x[tail];
+        xyForXYWindow[1].y[xyTail] = xyForTimeWindow[1].y[tail];
         updateRingBuffers(t);
     }
 
@@ -427,10 +429,10 @@ public:
         }
         for (int i = 0; i < _size; ++i) {
             if (!this->flagCh2) {
-                ss << std::format("{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx]);
+                ss << std::format("{:e},{:e},{:e}\n", this->times[idx], this->xyForTimeWindow[0].x[idx], this->xyForTimeWindow[0].y[idx]);
             }
             else {
-                ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->x1s[idx], this->y1s[idx], this->x2s[idx], this->y2s[idx]);
+                ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->xyForTimeWindow[0].x[idx], this->xyForTimeWindow[0].y[idx], this->xyForTimeWindow[1].x[idx], this->xyForTimeWindow[1].y[idx]);
             }
             idx = (idx + 1) % MEASUREMENT_SIZE;
         }
@@ -473,10 +475,10 @@ private:
         IniWrapper ini;
 
 
-        ini.set("Window", "posX", window.posX);
-        ini.set("Window", "posY", window.posY);
-        ini.set("Window", "width", window.width);
-        ini.set("Window", "height", window.height);
+        ini.set("Window", "pos.x", window.pos.x);
+        ini.set("Window", "pos.y", window.pos.y);
+        ini.set("Window", "size.x", window.size.x);
+        ini.set("Window", "size.y", window.size.y);
 
         ini.set("ImGui", "theme", imgui.theme);
         ini.set("ImGui", "windowFlag", imgui.windowFlag);
@@ -511,10 +513,10 @@ private:
         IniWrapper ini;
         ini.load(SETTINGS_FILE);
 
-        window.posX = ini.get("Window", "posX", window.posX);
-        window.posY = ini.get("Window", "posY", window.posY);
-        window.width = ini.get("Window", "Width", window.width);
-        window.height = ini.get("Window", "Height", window.height);
+        window.pos.x = ini.get("Window", "pos.x", window.pos.x);
+        window.pos.y = ini.get("Window", "pos.y", window.pos.y);
+        window.size.x = ini.get("Window", "size.x", window.size.x);
+        window.size.y = ini.get("Window", "size.y", window.size.y);
 
         imgui.theme = ini.get("ImGui", "theme", imgui.theme);
         imgui.windowFlag = ini.get("ImGui", "windowFlag", imgui.windowFlag);

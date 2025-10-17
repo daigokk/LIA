@@ -58,8 +58,8 @@ int main(int argc, char* argv[])
     {
         Gui::Initialize(
             "Lock-in amplifier",
-            settings.window.posX, settings.window.posY,
-            settings.window.width, settings.window.height
+            settings.window.pos.x, settings.window.pos.y,
+            settings.window.size.x, settings.window.size.y
         );
         if (Gui::GetWindow() == nullptr) return -1;
 		settings.window.monitorScale = Gui::monitorScale;
@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
             pGuiSub->show();
             Gui::EndFrame();
         }
-        glfwGetWindowSize(Gui::GetWindow(), &(settings.window.width), &(settings.window.height));
-        glfwGetWindowPos(Gui::GetWindow(), &(settings.window.posX), &(settings.window.posY));
+        glfwGetWindowSize(Gui::GetWindow(), &(settings.window.size.x), &(settings.window.size.y));
+        glfwGetWindowPos(Gui::GetWindow(), &(settings.window.pos.x), &(settings.window.pos.y));
         Gui::EndFrame();
     }
     else
