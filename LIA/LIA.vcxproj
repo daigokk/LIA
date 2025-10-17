@@ -178,6 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LIA.rc" />
+    <ResourceCompile Include="Version.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico" />

@@ -55,12 +55,12 @@ public:
 
 	double sleepUntil(const double theTimeSec)
 	{
-		LARGE_INTEGER qpc_next, qpc_now;
-		qpc_next.QuadPart = (LONGLONG)(theTimeSec * this->qpf.QuadPart + this->qpc_start.QuadPart);
+		LARGE_INTEGER qpc_now;
+		auto qpc_next_QuadPart = (LONGLONG)(theTimeSec * this->qpf.QuadPart + this->qpc_start.QuadPart);
 		while (true)
 		{
 			QueryPerformanceCounter(&qpc_now);
-			if (qpc_next.QuadPart <= qpc_now.QuadPart)
+			if (qpc_next_QuadPart <= qpc_now.QuadPart)
 			{
 				break;
 			}

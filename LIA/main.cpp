@@ -139,10 +139,10 @@ void measurement(std::stop_token st, LiaConfig* pLiaConfig)
         if (pLiaConfig->flagPause) continue;
         if (!pLiaConfig->flagCh2)
         {
-            daq.scope.record(pLiaConfig->rawData1.data());
+            daq.scope.record(pLiaConfig->rawData[0].data());
         }
         else {
-            daq.scope.record(pLiaConfig->rawData1.data(), pLiaConfig->rawData2.data());
+            daq.scope.record(pLiaConfig->rawData[0].data(), pLiaConfig->rawData[1].data());
         }
         pLiaConfig->update(t);
     }
@@ -163,9 +163,9 @@ void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++) {
             double wt = 2 * std::numbers::pi * pLiaConfig->awg.ch[0].freq * i * RAW_DT;
-            pLiaConfig->rawData1[i] = pLiaConfig->awg.ch[0].amp * std::sin(wt - phase);
+            pLiaConfig->rawData[0][i] = pLiaConfig->awg.ch[0].amp * std::sin(wt - phase);
             if (pLiaConfig->flagCh2) {
-                pLiaConfig->rawData2[i] = pLiaConfig->awg.ch[1].amp * std::sin(wt - pLiaConfig->awg.ch[1].phase);
+                pLiaConfig->rawData[1][i] = pLiaConfig->awg.ch[1].amp * std::sin(wt - pLiaConfig->awg.ch[1].phase);
             }
         }
         pLiaConfig->update(t);

@@ -192,18 +192,18 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                     return arg.empty() ? pLiaConfig->saveRawData() : pLiaConfig->saveRawData(arg.c_str());
                 }
                 else if (tokens[2] == "size?") {
-                    std::cout << pLiaConfig->rawData1.size() << std::endl;
+                    std::cout << pLiaConfig->rawData[0].size() << std::endl;
                     return true;
                 }
             }
         }
         else if (subCmd == "raw?") {
-            for (int i = 0; i < pLiaConfig->rawData1.size(); ++i) {
+            for (int i = 0; i < pLiaConfig->rawData[0].size(); ++i) {
                 if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData1[i]);
+                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData[0][i]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData1[i], pLiaConfig->rawData2[i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData[0][i], pLiaConfig->rawData[1][i]);
                 }
             }
             return true;

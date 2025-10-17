@@ -28,7 +28,7 @@ public:
         return true;
     }
 
-    // 型変換付き取得（int, double など）
+    // 型変換付き取得（int, double, bool など）
     template <typename T>
     T get(std::string_view section, std::string_view key, T def) const {
         static_assert(std::is_arithmetic_v<T>, "Only arithmetic types are supported");
@@ -36,9 +36,23 @@ public:
         auto it = data.find(std::string(section) + "." + std::string(key));
         if (it == data.end()) return def;
 
-        std::istringstream iss(it->second);
-        T value;
-        return (iss >> value) ? value : def;
+        const std::string& raw = it->second;
+
+        if constexpr (std::is_same_v<T, bool>) {
+            std::string lower;
+            std::transform(raw.begin(), raw.end(), std::back_inserter(lower), [](unsigned char c) {
+                return std::tolower(c);
+                });
+
+            if (lower == "true" || lower == "1") return true;
+            if (lower == "false" || lower == "0") return false;
+            return def;
+        }
+        else {
+            std::istringstream iss(raw);
+            T value;
+            return (iss >> value) ? value : def;
+        }
     }
 
     template <typename T>

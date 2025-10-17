@@ -99,8 +99,8 @@ std::string cmdToString(ButtonType button)
     case ButtonType::XYClear: return "XYClear";
     case ButtonType::XYAutoOffset: return "XYAutoOffset";
     case ButtonType::XYPause: return "XYPause";
-	case ButtonType::TimeHistory: return "TimeHistory";
-	case ButtonType::TimePause: return "TimePause";
+    case ButtonType::TimeHistory: return "TimeHistory";
+    case ButtonType::TimePause: return "TimePause";
     default: return "Unknown";
     }
 }
@@ -134,7 +134,7 @@ public:
     }
 
     double process(double input) {
-		if (m_cutoffFrequency == 0.0) {
+        if (m_cutoffFrequency == 0.0) {
             m_prevInput = input;
             m_prevOutput = input;
             return input;
@@ -178,7 +178,7 @@ public:
             float freq = 100e3;
             float amp = 1.0;
             float phase = 0.0;
-		};
+        };
         Channel ch[2];
         AwgCfg() : ch{ Channel(), Channel() } {
             ch[1].amp = 0.0f; // Default amp for channel 2 is 0V
@@ -201,7 +201,7 @@ public:
     Timer timer;
     Daq_dwf* pDaq = nullptr;
     std::string device_sn = "SN:XXXXXXXXXX";
-    std::vector<std::array<float,3>> cmds;
+    std::vector<std::array<float, 3>> cmds;
 
     // Configuration Data
     WindowCfg window;
@@ -219,7 +219,7 @@ public:
 
     // Data Buffers (using std::vector to avoid stack overflow)
     std::vector<double> rawTime;
-    std::vector<double> rawData1, rawData2;
+    std::vector<double> rawData[2];
     std::vector<double> times, x1s, y1s, x2s, y2s, dts;
     std::vector<double> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
 
@@ -228,7 +228,7 @@ public:
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize = 0;
 
 private:
-	std::string dirName = ".";
+    std::string dirName = ".";
     // --- Private Helper Members ---
     HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
     Psd psd;
@@ -251,8 +251,8 @@ public:
 
         // Allocate memory for data buffers on the heap
         rawTime.resize(RAW_SIZE);
-        rawData1.resize(RAW_SIZE);
-        rawData2.resize(RAW_SIZE);
+        rawData[0].resize(RAW_SIZE);
+        rawData[1].resize(RAW_SIZE);
         times.resize(MEASUREMENT_SIZE);
         x1s.resize(MEASUREMENT_SIZE);
         y1s.resize(MEASUREMENT_SIZE);
@@ -274,7 +274,7 @@ public:
         saveResultsToFile();
         saveSettingsToFile();
         saveCmdsToFile();
-	}
+    }
     // --- Public Methods for Logic and I/O ---
     void setHPFrequency(double freq) {
         post.hpFreq = freq;
@@ -282,10 +282,10 @@ public:
         hpfY1.setCutoffFrequency(freq);
         hpfX2.setCutoffFrequency(freq);
         hpfY2.setCutoffFrequency(freq);
-	}
+    }
     void reset() {
-		awg = AwgCfg();
-		post = PostCfg();
+        awg = AwgCfg();
+        post = PostCfg();
         plot = PlotCfg();
         flagCh2 = false;
         flagAutoOffset = false;
@@ -293,7 +293,7 @@ public:
         hpfX1.setCutoffFrequency(post.hpFreq);
         hpfY1.setCutoffFrequency(post.hpFreq);
         hpfX2.setCutoffFrequency(post.hpFreq);
-		hpfY2.setCutoffFrequency(post.hpFreq);
+        hpfY2.setCutoffFrequency(post.hpFreq);
     }
     void AddPoint(double t, double x, double y) {
         x1s[tail] = hpfX1.process(x);
@@ -318,14 +318,14 @@ public:
 
     void update(double t) {
         if (psd.currentFreq != awg.ch[0].freq) {
-            psd.initialize(awg.ch[0].freq, RAW_DT, rawData1.size());
+            psd.initialize(awg.ch[0].freq, RAW_DT, rawData[0].size());
         }
 
-        auto [x1, y1] = psd.calculate(rawData1.data());
-		auto [x2, y2] = flagCh2 ? psd.calculate(rawData2.data()) : std::pair<double, double>{ 0.0, 0.0 };
-        
+        auto [x1, y1] = psd.calculate(rawData[0].data());
+        auto [x2, y2] = flagCh2 ? psd.calculate(rawData[1].data()) : std::pair<double, double>{ 0.0, 0.0 };
+
         if (flagAutoOffset) {
-           post.offset[0].x = x1; post.offset[0].y = y1;
+            post.offset[0].x = x1; post.offset[0].y = y1;
             if (flagCh2) {
                 post.offset[1].x = x2; post.offset[1].y = y2;
             }
@@ -346,7 +346,7 @@ public:
         else {
             AddPoint(t, final_x1, final_y1);
         }
-	}
+    }
 
     std::string getCurrentTimestamp() const {
         // 現在時刻を取得
@@ -374,12 +374,12 @@ public:
         std::stringstream ss;
         ss << (flagCh2 ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
 
-        for (size_t i = 0; i < rawData1.size(); ++i) {
+        for (size_t i = 0; i < rawData[0].size(); ++i) {
             if (flagCh2) {
-                ss << std::format("{:e},{:e},{:e}\n", RAW_DT * i, rawData1[i], rawData2[i]);
+                ss << std::format("{:e},{:e},{:e}\n", RAW_DT * i, rawData[0][i], rawData[1][i]);
             }
             else {
-                ss << std::format("{:e},{:e}\n", RAW_DT * i, rawData1[i]);
+                ss << std::format("{:e},{:e}\n", RAW_DT * i, rawData[0][i]);
             }
         }
         file << ss.str(); // メモリからファイルへ一括書き込み
@@ -423,7 +423,7 @@ public:
         }
         file << ss.str(); // メモリからファイルへ一括書き込み
         file.close();
-		return true;
+        return true;
     }
 
     bool saveCmdsToFile(const std::string& filename = CMDS_FILE) const {
@@ -431,14 +431,14 @@ public:
         if (!file) {
             std::cerr << "Error: Could not open file " << filename << std::endl;
             return false;
-		}
+        }
         file << "# Time(s), ButtonNo, ButtonName, Value\n";
         for (const auto& cmd : cmds) {
             file << std::format("{:e},{:.0f},{:s},{:e}\n", cmd[0], cmd[1], cmdToString((ButtonType)cmd[1]), cmd[2]);
         }
         file.close();
         return true;
-	}
+    }
 
 private:
     // --- Private Helper Methods ---
@@ -457,39 +457,39 @@ private:
     }
 
     void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {
-        IniWrapper ini; 
-        
+        IniWrapper ini;
+
 
         ini.set("Window", "posX", window.posX);
         ini.set("Window", "posY", window.posY);
         ini.set("Window", "width", window.width);
         ini.set("Window", "height", window.height);
 
-		ini.set("ImGui", "theme", imgui.theme);
-		ini.set("ImGui", "windowFlag", imgui.windowFlag);
+        ini.set("ImGui", "theme", imgui.theme);
+        ini.set("ImGui", "windowFlag", imgui.windowFlag);
 
-		ini.set("Awg", "ch[0].freq", awg.ch[0].freq);
-		ini.set("Awg", "ch[0].amp", awg.ch[0].amp);
-		ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
-		ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
+        ini.set("Awg", "ch[0].freq", awg.ch[0].freq);
+        ini.set("Awg", "ch[0].amp", awg.ch[0].amp);
+        ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
+        ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
 
-		ini.set("Scope", "flagCh2", flagCh2);
+        ini.set("Scope", "flagCh2", flagCh2);
 
-		ini.set("Post", "offset[0].phase", post.offset[0].phase);
-		ini.set("Post", "offset[0].x", post.offset[0].x);
-		ini.set("Post", "offset[0].y", post.offset[0].y);
-		ini.set("Post", "offset[1].phase", post.offset[1].phase);
-		ini.set("Post", "offset[1].x", post.offset[1].x);
-		ini.set("Post", "offset[1].y", post.offset[1].y);
-		ini.set("Post", "hpFreq", post.hpFreq);
+        ini.set("Post", "offset[0].phase", post.offset[0].phase);
+        ini.set("Post", "offset[0].x", post.offset[0].x);
+        ini.set("Post", "offset[0].y", post.offset[0].y);
+        ini.set("Post", "offset[1].phase", post.offset[1].phase);
+        ini.set("Post", "offset[1].x", post.offset[1].x);
+        ini.set("Post", "offset[1].y", post.offset[1].y);
+        ini.set("Post", "hpFreq", post.hpFreq);
 
-		ini.set("Plot", "limit", plot.limit);
-		ini.set("Plot", "rawLimit", plot.rawLimit);
-		ini.set("Plot", "historySec", plot.historySec);
-		ini.set("Plot", "surfaceMode", plot.surfaceMode);
-		ini.set("Plot", "beep", plot.beep);
-		ini.set("Plot", "acfm", plot.acfm);
-		// Save to file
+        ini.set("Plot", "limit", plot.limit);
+        ini.set("Plot", "rawLimit", plot.rawLimit);
+        ini.set("Plot", "historySec", plot.historySec);
+        ini.set("Plot", "surfaceMode", plot.surfaceMode);
+        ini.set("Plot", "beep", plot.beep);
+        ini.set("Plot", "acfm", plot.acfm);
+        // Save to file
         ini.save(SETTINGS_FILE);
     }
 

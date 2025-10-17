@@ -77,12 +77,12 @@ inline void RawPlotWindow::show()
         
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-        ImPlot::PlotLine(ch1_label, liaConfig.rawTime.data(), liaConfig.rawData1.data(), (int)liaConfig.rawTime.size());
+        ImPlot::PlotLine(ch1_label, liaConfig.rawTime.data(), liaConfig.rawData[0].data(), (int)liaConfig.rawTime.size());
         ImPlot::PopStyleColor();
         if (liaConfig.flagCh2)
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-            ImPlot::PlotLine("Ch2", liaConfig.rawTime.data(), liaConfig.rawData2.data(), (int)liaConfig.rawTime.size());
+            ImPlot::PlotLine("Ch2", liaConfig.rawTime.data(), liaConfig.rawData[1].data(), (int)liaConfig.rawTime.size());
             ImPlot::PopStyleColor();
         }
         ImPlot::EndPlot();

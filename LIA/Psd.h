@@ -12,12 +12,12 @@ private:
     std::valarray<double> sinTable_;
     std::valarray<double> cosTable_;
     double samplingInterval_ = 0.0;
-    int sampleSize_ = 0;
+    size_t sampleSize_ = 0;
 
 public:
     double currentFreq = 0.0;
 	double currentPhase_deg = 0.0;
-    void initialize(double frequency, double samplingInterval, int sampleSize)
+    void initialize(double frequency, double samplingInterval, size_t sampleSize)
     {
         if (currentFreq == frequency &&
             samplingInterval_ == samplingInterval &&
@@ -30,8 +30,8 @@ public:
         samplingInterval_ = samplingInterval;
         sampleSize_ = sampleSize;
 
-        const int halfPeriodSamples = static_cast<int>(0.5 / currentFreq / samplingInterval_);
-        const int usableSize = halfPeriodSamples * (sampleSize_ / halfPeriodSamples);
+        const size_t halfPeriodSamples = static_cast<size_t>(0.5 / currentFreq / samplingInterval_);
+        const size_t usableSize = halfPeriodSamples * (sampleSize_ / halfPeriodSamples);
 
         sinTable_.resize(usableSize);
         cosTable_.resize(usableSize);
