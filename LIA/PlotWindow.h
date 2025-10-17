@@ -374,21 +374,21 @@ inline void XYPlotWindow::show()
         }
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
-        ImPlot::PlotLine(ch1_label, &(liaConfig.xy1Xs[0]), &(liaConfig.xy1Ys[0]),
+        ImPlot::PlotLine(ch1_label, &(liaConfig.xyForXY[0].x[0]), &(liaConfig.xyForXY[0].y[0]),
             liaConfig.xySize, 0, liaConfig.xyTail, sizeof(double)
         );
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
-        ImPlot::PlotScatter("##NOW1", &(liaConfig.xy1Xs[liaConfig.xyIdx]), &(liaConfig.xy1Ys[liaConfig.xyIdx]), 1);
+        ImPlot::PlotScatter("##NOW1", &(liaConfig.xyForXY[0].x[liaConfig.xyIdx]), &(liaConfig.xyForXY[0].y[liaConfig.xyIdx]), 1);
         if (liaConfig.flagCh2)
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-            ImPlot::PlotLine("Ch2", liaConfig.xy2Xs.data(), liaConfig.xy2Ys.data(),
+            ImPlot::PlotLine("Ch2", liaConfig.xyForXY[1].x.data(), liaConfig.xyForXY[1].y.data(),
                 liaConfig.xySize, 0, liaConfig.xyTail, sizeof(double)
             );
             ImPlot::PopStyleColor();
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
-            ImPlot::PlotScatter("##NOW2", &(liaConfig.xy2Xs[liaConfig.xyIdx]), &(liaConfig.xy2Ys[liaConfig.xyIdx]), 1);
+            ImPlot::PlotScatter("##NOW2", &(liaConfig.xyForXY[1].x[liaConfig.xyIdx]), &(liaConfig.xyForXY[1].y[liaConfig.xyIdx]), 1);
         }
         ImPlot::EndPlot();
     }
@@ -451,12 +451,12 @@ inline void ACFMPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-        ImPlot::PlotLine("##ACFM", &(liaConfig.xy1Ys[0]), &(liaConfig.xy2Ys[0]),
+        ImPlot::PlotLine("##ACFM", &(liaConfig.xyForXY[0].y[0]), &(liaConfig.xyForXY[1].y[0]),
             liaConfig.xySize, 0, liaConfig.xyTail, sizeof(double)
         );
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[8], -1.0f, colors[8]);
-        ImPlot::PlotScatter("##NOW", &(liaConfig.xy1Ys[liaConfig.xyIdx]), &(liaConfig.xy2Ys[liaConfig.xyIdx]), 1);
+        ImPlot::PlotScatter("##NOW", &(liaConfig.xyForXY[0].y[liaConfig.xyIdx]), &(liaConfig.xyForXY[1].y[liaConfig.xyIdx]), 1);
         ImPlot::EndPlot();
     }
     ImGui::End();

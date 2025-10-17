@@ -8,12 +8,14 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <map> // cmdToString でstd::map を使用
 #include <iomanip> // std::put_time
 #include <iostream>
 #include <numbers> // For std::numbers::pi
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view> // 文字列定数に string_view を使用
 #include <vector>
 
 #include "Daq_wf.h"
@@ -71,38 +73,38 @@ enum class ButtonType
     TimePause = 4002,
 };
 
-std::string cmdToString(ButtonType button)
+inline std::string_view cmdToString(ButtonType button)
 {
-    switch (button)
-    {
-    case ButtonType::NON: return "NON";
-    case ButtonType::Close: return "Close";
-    case ButtonType::AwgW1Freq: return "AwgW1Freq";
-    case ButtonType::AwgW1Amp: return "AwgW1Amp";
-    case ButtonType::AwgW1Phase: return "AwgW1Phase";
-    case ButtonType::AwgW2Freq: return "AwgW2Freq";
-    case ButtonType::AwgW2Amp: return "AwgW2Amp";
-    case ButtonType::AwgW2Phase: return "AwgW2Phase";
-    case ButtonType::PlotLimit: return "PlotLimit";
-    case ButtonType::PostOffset1Phase: return "PostOffset1Phase";
-    case ButtonType::PostOffset2Phase: return "PostOffset2Phase";
-    case ButtonType::PlotSurfaceMode: return "PlotSurfaceMode";
-    case ButtonType::PlotBeep: return "PlotBeep";
-    case ButtonType::PostAutoOffset: return "PostAutoOffset";
-    case ButtonType::PostOffsetOff: return "PostOffsetOff";
-    case ButtonType::PostPause: return "PostPause";
-    case ButtonType::DispCh2: return "DispCh2";
-    case ButtonType::PlotACFM: return "PlotACFM";
-    case ButtonType::PostHpFreq: return "PostHpFreq";
-    case ButtonType::RawSave: return "RawSave";
-    case ButtonType::RawLimit: return "RawLimit";
-    case ButtonType::XYClear: return "XYClear";
-    case ButtonType::XYAutoOffset: return "XYAutoOffset";
-    case ButtonType::XYPause: return "XYPause";
-    case ButtonType::TimeHistory: return "TimeHistory";
-    case ButtonType::TimePause: return "TimePause";
-    default: return "Unknown";
-    }
+    static const std::map<ButtonType, std::string_view> buttonMap = {
+        {ButtonType::NON, "NON"},
+        {ButtonType::Close, "Close"},
+        {ButtonType::AwgW1Freq, "AwgW1Freq"},
+        {ButtonType::AwgW1Amp, "AwgW1Amp"},
+        {ButtonType::AwgW1Phase, "AwgW1Phase"},
+        {ButtonType::AwgW2Freq, "AwgW2Freq"},
+        {ButtonType::AwgW2Amp, "AwgW2Amp"},
+        {ButtonType::AwgW2Phase, "AwgW2Phase"},
+        {ButtonType::PlotLimit, "PlotLimit"},
+        {ButtonType::PostOffset1Phase, "PostOffset1Phase"},
+        {ButtonType::PostOffset2Phase, "PostOffset2Phase"},
+        {ButtonType::PlotSurfaceMode, "PlotSurfaceMode"},
+        {ButtonType::PlotBeep, "PlotBeep"},
+        {ButtonType::PostAutoOffset, "PostAutoOffset"},
+        {ButtonType::PostOffsetOff, "PostOffsetOff"},
+        {ButtonType::PostPause, "PostPause"},
+        {ButtonType::DispCh2, "DispCh2"},
+        {ButtonType::PlotACFM, "PlotACFM"},
+        {ButtonType::PostHpFreq, "PostHpFreq"},
+        {ButtonType::RawSave, "RawSave"},
+        {ButtonType::RawLimit, "RawLimit"},
+        {ButtonType::XYClear, "XYClear"},
+        {ButtonType::XYAutoOffset, "XYAutoOffset"},
+        {ButtonType::XYPause, "XYPause"},
+        {ButtonType::TimeHistory, "TimeHistory"},
+        {ButtonType::TimePause, "TimePause"}
+    };
+    auto it = buttonMap.find(button);
+    return (it != buttonMap.end()) ? it->second : "Unknown";
 }
 
 //================================================================================
@@ -221,7 +223,11 @@ public:
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
     std::vector<double> times, x1s, y1s, x2s, y2s, dts;
-    std::vector<double> xy1Xs, xy1Ys, xy2Xs, xy2Ys;
+    struct XYSforXYWindow {
+        std::vector<double> x;
+        std::vector<double> y;
+	};
+    XYSforXYWindow xyForXY[2];
 
     // Ring Buffer Indices
     int nofm = 0, idx = 0, tail = 0, size = 0;
@@ -230,7 +236,10 @@ public:
 private:
     std::string dirName = ".";
     // --- Private Helper Members ---
-    HighPassFilter hpfX1, hpfY1, hpfX2, hpfY2;
+    struct Hpf{
+        HighPassFilter x, y;
+    };
+    Hpf hpfCh[2];
     Psd psd;
 
 public:
@@ -259,10 +268,10 @@ public:
         x2s.resize(MEASUREMENT_SIZE);
         y2s.resize(MEASUREMENT_SIZE);
         dts.resize(MEASUREMENT_SIZE);
-        xy1Xs.resize(XY_SIZE);
-        xy1Ys.resize(XY_SIZE);
-        xy2Xs.resize(XY_SIZE);
-        xy2Ys.resize(XY_SIZE);
+        xyForXY[0].x.resize(XY_SIZE);
+        xyForXY[0].y.resize(XY_SIZE);
+        xyForXY[1].x.resize(XY_SIZE);
+        xyForXY[1].y.resize(XY_SIZE);
 
         loadSettingsFromFile();
 
@@ -278,10 +287,10 @@ public:
     // --- Public Methods for Logic and I/O ---
     void setHPFrequency(double freq) {
         post.hpFreq = freq;
-        hpfX1.setCutoffFrequency(freq);
-        hpfY1.setCutoffFrequency(freq);
-        hpfX2.setCutoffFrequency(freq);
-        hpfY2.setCutoffFrequency(freq);
+        hpfCh[0].x.setCutoffFrequency(freq);
+        hpfCh[0].y.setCutoffFrequency(freq);
+        hpfCh[1].x.setCutoffFrequency(freq);
+        hpfCh[1].y.setCutoffFrequency(freq);
     }
     void reset() {
         awg = AwgCfg();
@@ -290,29 +299,29 @@ public:
         flagCh2 = false;
         flagAutoOffset = false;
         flagPause = false;
-        hpfX1.setCutoffFrequency(post.hpFreq);
-        hpfY1.setCutoffFrequency(post.hpFreq);
-        hpfX2.setCutoffFrequency(post.hpFreq);
-        hpfY2.setCutoffFrequency(post.hpFreq);
+        hpfCh[0].x.setCutoffFrequency(post.hpFreq);
+        hpfCh[0].y.setCutoffFrequency(post.hpFreq);
+        hpfCh[1].x.setCutoffFrequency(post.hpFreq);
+        hpfCh[1].y.setCutoffFrequency(post.hpFreq);
     }
     void AddPoint(double t, double x, double y) {
-        x1s[tail] = hpfX1.process(x);
-        y1s[tail] = hpfY1.process(y);
-        xy1Xs[xyTail] = x1s[tail];
-        xy1Ys[xyTail] = y1s[tail];
+        x1s[tail] = hpfCh[0].x.process(x);
+        y1s[tail] = hpfCh[0].y.process(y);
+        xyForXY[0].x[xyTail] = x1s[tail];
+        xyForXY[0].y[xyTail] = y1s[tail];
         updateRingBuffers(t);
     }
 
     void AddPoint(double t, double x1, double y1, double x2, double y2) {
-        x1s[tail] = hpfX1.process(x1);
-        y1s[tail] = hpfY1.process(y1);
-        x2s[tail] = hpfX2.process(x2);
-        y2s[tail] = hpfY2.process(y2);
+        x1s[tail] = hpfCh[0].x.process(x1);
+        y1s[tail] = hpfCh[0].y.process(y1);
+        x2s[tail] = hpfCh[1].x.process(x2);
+        y2s[tail] = hpfCh[1].y.process(y2);
 
-        xy1Xs[xyTail] = x1s[tail];
-        xy1Ys[xyTail] = y1s[tail];
-        xy2Xs[xyTail] = x2s[tail];
-        xy2Ys[xyTail] = y2s[tail];
+        xyForXY[0].x[xyTail] = x1s[tail];
+        xyForXY[0].y[xyTail] = y1s[tail];
+        xyForXY[1].x[xyTail] = x2s[tail];
+        xyForXY[1].y[xyTail] = y2s[tail];
         updateRingBuffers(t);
     }
 
@@ -322,7 +331,12 @@ public:
         }
 
         auto [x1, y1] = psd.calculate(rawData[0].data());
-        auto [x2, y2] = flagCh2 ? psd.calculate(rawData[1].data()) : std::pair<double, double>{ 0.0, 0.0 };
+
+        // flagCh2がfalseの場合に不要なオブジェクト構築を回避
+        double x2 = 0.0, y2 = 0.0;
+        if (flagCh2) {
+            std::tie(x2, y2) = psd.calculate(rawData[1].data());
+        }
 
         if (flagAutoOffset) {
             post.offset[0].x = x1; post.offset[0].y = y1;
@@ -334,7 +348,6 @@ public:
 
         x1 -= post.offset[0].x;
         y1 -= post.offset[0].y;
-
         auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, post.offset[0].phase);
 
         if (flagCh2) {
@@ -536,9 +549,9 @@ private:
         awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
         awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);
         plot.limit = std::clamp(plot.limit, 0.0f, 5.0f);
-        hpfX1.setCutoffFrequency(post.hpFreq);
-        hpfY1.setCutoffFrequency(post.hpFreq);
-        hpfX2.setCutoffFrequency(post.hpFreq);
-        hpfY2.setCutoffFrequency(post.hpFreq);
+        hpfCh[0].x.setCutoffFrequency(post.hpFreq);
+        hpfCh[0].y.setCutoffFrequency(post.hpFreq);
+        hpfCh[1].x.setCutoffFrequency(post.hpFreq);
+        hpfCh[1].y.setCutoffFrequency(post.hpFreq);
     }
 };
