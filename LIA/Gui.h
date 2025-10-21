@@ -72,8 +72,6 @@ void Gui::Initialize(
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_POSITION_X, windowPosX);
-    glfwWindowHint(GLFW_POSITION_Y, windowPosY);
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     int xpos, ypos;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &monitorWidth, &monitorHeight);
@@ -94,6 +92,9 @@ void Gui::Initialize(
             (int)(windowHeight * monitorScale),
             title, NULL, NULL
         );
+        if (window_) {
+            glfwSetWindowPos(window_, windowPosX, windowPosY);
+        }
     }
 
     glfwMakeContextCurrent(window_);
