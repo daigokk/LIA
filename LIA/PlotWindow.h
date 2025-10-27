@@ -25,6 +25,10 @@ void MiliFormatter(double value, char* buff, int size, void*) {
     snprintf(buff, size, "%.0f", value * 1e3); // mili: 1e-3
 }
 
+void MicroFormatter(double value, char* buff, int size, void*) {
+    snprintf(buff, size, "%.0f", value * 1e6); // micro: 1e-6
+}
+
 class RawPlotWindow : public ImGuiWindowBase
 {
 private:
