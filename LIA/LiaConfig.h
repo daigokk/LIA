@@ -163,7 +163,7 @@ public:
         struct XYint {
             int x, y;
         };
-		XYint size = { 1440, 900 };
+		XYint size = { 1440, 960 };
 		XYint pos = { 0, 30 };
         float monitorScale = 1.0f; // <<< ここに再度追加します
     };
