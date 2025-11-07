@@ -37,7 +37,7 @@ public:
 			theme = liaConfig.imgui.theme;
 			Gui::setStyle(theme);
 		}
-		beep.update(liaConfig.plot.beep, liaConfig.post.offset[0].y, liaConfig.post.offset[0].phase);
+		beep.update(liaConfig.plot.beep, liaConfig.xyForTimeWindow[0].x[liaConfig.idx], liaConfig.xyForTimeWindow[0].y[liaConfig.idx]);
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
