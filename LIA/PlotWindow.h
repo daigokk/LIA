@@ -416,7 +416,7 @@ public:
 		: ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig)
     {
         this->windowPos = ImVec2(730 * liaConfig.window.monitorScale, 300 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 600 * liaConfig.window.monitorScale);
+        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 650 * liaConfig.window.monitorScale);
     }
     void show(void);
 };
@@ -443,6 +443,8 @@ inline void ACFMPlotWindow::show()
     else {
         if (ImGui::Button("Pause")) { liaConfig.flagPause = true; }
     }
+    ImGui::SliderFloat("Vbx limit", &(liaConfig.plot.Vbx_limit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Vbz limit", &(liaConfig.plot.Vbz_limit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Vbz (V)", "Vbx (V)", 0, 0);
@@ -452,8 +454,8 @@ inline void ACFMPlotWindow::show()
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.Vbz_limit, liaConfig.plot.Vbz_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.Vbx_limit, liaConfig.plot.Vbx_limit, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyForXYWindow[0].y[0]), &(liaConfig.xyForXYWindow[1].y[0]),
             liaConfig.xySize, 0, liaConfig.xyTail, sizeof(double)

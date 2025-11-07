@@ -198,6 +198,7 @@ public:
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
+        float Vbx_limit = 1.5f, Vbz_limit = 1.5f;
     };
 
     // --- Public Members ---
@@ -212,7 +213,7 @@ public:
     AwgCfg awg;
     PostCfg post;
     PlotCfg plot;
-
+	
     // State Flags
     bool flagCh2 = false;
     bool flagAutoOffset = false;
@@ -504,6 +505,9 @@ private:
         ini.set("Plot", "surfaceMode", plot.surfaceMode);
         ini.set("Plot", "beep", plot.beep);
         ini.set("Plot", "acfm", plot.acfm);
+		ini.set("Plot", "Vbx_limit", plot.Vbx_limit);
+		ini.set("Plot", "Vbz_limit", plot.Vbz_limit);
+
         // Save to file
         ini.save(SETTINGS_FILE);
     }
@@ -542,6 +546,8 @@ private:
         plot.surfaceMode = ini.get("Plot", "surfaceMode", plot.surfaceMode);
         plot.beep = ini.get("Plot", "beep", plot.beep);
         plot.acfm = ini.get("Plot", "acfm", plot.acfm);
+		plot.Vbx_limit = ini.get("Plot", "Vbx_limit", plot.Vbx_limit);
+		plot.Vbz_limit = ini.get("Plot", "Vbz_limit", plot.Vbz_limit);
 
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);
