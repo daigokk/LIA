@@ -41,7 +41,7 @@ public:
         for (int i = 0; i < usableSize; ++i)
         {
             double wt = angularFreq * i * samplingInterval_;
-            sinTable_[i] = 2.0 * std::sin(wt);
+			sinTable_[i] = -2.0 * std::sin(wt);// -2.0 は正規化(ハードウェアの配線の+-の逆転を補正)のため
             cosTable_[i] = 2.0 * std::cos(wt);
         }
     }

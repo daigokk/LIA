@@ -22,17 +22,13 @@ private:
         }
     }
     int getWaveIndexFromPhase(double phase) const {
-        double phase_deg = phase / PI * 180;
-        if (-180 <= phase_deg && phase_deg < -140) return 0;
-        if (-140 <= phase_deg && phase_deg < -100) return 1;
-        if (-100 <= phase_deg && phase_deg < -60) return 2;
-        if (-60 <= phase_deg && phase_deg < -20)   return 3;
-        if (-20 <= phase_deg && phase_deg < 20)  return 4;
-        if (20 <= phase_deg && phase_deg < 60)  return 5;
-        if (60 <= phase_deg && phase_deg < 100) return 6;
-        if (100 <= phase_deg && phase_deg < 140) return 7;
-        if (140 <= phase_deg && phase_deg < 180) return 8;
-        return -1;
+        static double PHASE_SCALE = 180 / (360 / NumWaves) / PI; // 約 1.43239...
+        static double PHASE_OFFSET = 180 / (360 / NumWaves);
+
+        // O(1) でインデックスを計算
+        int index = static_cast<int>(std::floor(phase * PHASE_SCALE + PHASE_OFFSET));
+
+        return index;
     }
 
 public:
@@ -43,7 +39,7 @@ public:
         }
     }
     void update(const bool flag, const double x, const double y) {
-        if (!flag || (x * x + y * y) <= pow(0.1, 2)) {
+        if (!flag || (x * x + y * y) <= pow(0.11, 2)) {
             current_idx = -1;
             stopAll();
             return;
