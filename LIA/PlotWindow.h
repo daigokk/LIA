@@ -295,7 +295,7 @@ inline void TimeChartZoomWindow::show()
             }
             ch1v50s[0] = ch1v50s[1] = (ch1vs[1] + ch1vs[0]) / 2;
             ch2v50s[0] = ch2v50s[1] = (ch2vs[1] + ch2vs[0]) / 2;
-            bool sloop = true;
+            bool sloop = false;
             // Find nearest points to 50% level
             if (sloop) {
                 for (int i = ch1vmaxIdx; i < liaConfig.size; i++)
