@@ -12,8 +12,8 @@ private:
     std::array<std::unique_ptr<Wave>, NumWaves> waves;
     int current_idx = -1;
     static constexpr std::array<double, NumWaves> Frequencies = {
-        100.0, 261.626, 293.665, 329.628, 349.228,
-        391.995, 440.000, 493.883, 523.251
+        261.626, 293.665, 329.628, 349.228, 391.995,
+        440.000, 493.883, 523.251, 554.365
     };
 
     void stopAll() {
