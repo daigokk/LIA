@@ -334,7 +334,8 @@ inline void TimeChartZoomWindow::show()
                 }
             }
         }
-        if (ch1t50s[0] < ch1t50s[1]) {
+		double ch1vpp = abs(ch1vs[1] - ch1vs[0]);
+        if (ch1t50s[0] < ch1t50s[1] && ch1vpp > 10e-3) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
             ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
@@ -348,7 +349,7 @@ inline void TimeChartZoomWindow::show()
                 ch1v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch1: {:.3f}s, {:.3f}mV", ch1t50s[1] - ch1t50s[0], abs(ch1vs[1] - ch1vs[0]) * 1e3).c_str(),
+                std::format("Ch1: {:.3f}s, {:.3f}mV", ch1t50s[1] - ch1t50s[0], ch1vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
             );
