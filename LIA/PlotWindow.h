@@ -233,7 +233,6 @@ public:
 
 inline void TimeChartZoomWindow::show()
 {
-    
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name);
@@ -266,6 +265,7 @@ inline void TimeChartZoomWindow::show()
 		static int ch1vminIdx, ch1vmaxIdx, ch2vminIdx, ch2vmaxIdx;
         if (_xmin != timeChartZoomRect.X.Min || _xmax != timeChartZoomRect.X.Max) {
             _xmin = timeChartZoomRect.X.Min;
+            ch1ts[0] = 0; ch1ts[1] = -1;
             ch1vs[0] = 10; ch1vs[1] = -10;
             ch2vs[0] = 10; ch2vs[1] = -10;
             for (int i = 0; i < liaConfig.size; i++)
@@ -335,6 +335,7 @@ inline void TimeChartZoomWindow::show()
             }
         }
 		double ch1vpp = abs(ch1vs[1] - ch1vs[0]);
+        double ch2vpp = abs(ch2vs[1] - ch2vs[0]);
         if (ch1t50s[0] < ch1t50s[1] && ch1vpp > 10e-3) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
             ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
@@ -349,12 +350,12 @@ inline void TimeChartZoomWindow::show()
                 ch1v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch1: {:.3f}s, {:.3f}mV", ch1t50s[1] - ch1t50s[0], ch1vpp * 1e3).c_str(),
+                std::format("Ch1: {:.3f}s, {:.0f}mV", ch1t50s[1] - ch1t50s[0], ch1vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
             );
         }
-        if (liaConfig.flagCh2) {
+        if (liaConfig.flagCh2 && ch2vpp > 10e-3) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2);
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
@@ -368,11 +369,10 @@ inline void TimeChartZoomWindow::show()
                 ch2v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch2: {:.3f}s, {:.3f}mV", abs(ch2ts[1] - ch2ts[0]), abs(ch2vs[1] - ch2vs[0]) * 1e3).c_str(),
+                std::format("Ch2: {:.3f}s, {:.0f}mV", abs(ch2ts[1] - ch2ts[0]), abs(ch2vs[1] - ch2vs[0]) * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.1
             );
-
         }
         ImPlot::EndPlot();
     }
