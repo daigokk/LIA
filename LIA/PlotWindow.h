@@ -295,7 +295,7 @@ inline void TimeChartZoomWindow::show()
             }
             ch1v50s[0] = ch1v50s[1] = (ch1vs[1] + ch1vs[0]) / 2;
             ch2v50s[0] = ch2v50s[1] = (ch2vs[1] + ch2vs[0]) / 2;
-            bool sloop = false;
+            bool sloop = true;
             // Find nearest points to 50% level
             if (sloop) {
                 for (int i = ch1vmaxIdx; i < liaConfig.size; i++)
@@ -347,10 +347,10 @@ inline void TimeChartZoomWindow::show()
             ImPlot::PlotText(
                 std::format("{:.3f}s", ch1t50s[1] - ch1t50s[0]).c_str(),
                 (ch1t50s[1] + ch1t50s[0]) / 2,
-                ch1v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
+                ch1v50s[0] - (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch1: {:.3f}s, {:.0f}mV", ch1t50s[1] - ch1t50s[0], ch1vpp * 1e3).c_str(),
+                std::format("Ch1 dV: {:.0f}mV", ch1vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
             );
@@ -369,7 +369,7 @@ inline void TimeChartZoomWindow::show()
                 ch2v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch2: {:.3f}s, {:.0f}mV", abs(ch2ts[1] - ch2ts[0]), abs(ch2vs[1] - ch2vs[0]) * 1e3).c_str(),
+                std::format("Ch2 dV: {:.0f}mV", ch2vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.1
             );
