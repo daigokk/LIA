@@ -6,15 +6,17 @@
 constexpr auto MILI_VOLT = 0.2f;
 
 const ImVec4 colors[] = {
-        ImVec4(1,0,0,1),   // Red
-        ImVec4(0,1,0,1),   // Green
-        ImVec4(0,0,1,1),   // Blue
-        ImVec4(1,1,0,1),   // Yellow
-        ImVec4(1,0,1,1),    // Magenta
-        ImVec4(1,0.645f,0,1),    // Orange
-        ImVec4(0xea / 256.0, 0xa2 / 256.0, 0x22 / 256.0, 1),    // Marigold
-        ImVec4(0xfb / 256.0, 0xbd / 256.0, 0x04 / 256.0, 1),    // Amber
-        ImVec4(0xb0 / 256.0, 0xfc / 256.0, 0x38 / 256.0, 1)   // Chartreuse
+    ImVec4(1,0,0,1),   // Red
+    ImVec4(0,1,0,1),   // Green
+    ImVec4(0,0,1,1),   // Blue
+    ImVec4(1,1,0,1),   // Yellow
+    ImVec4(1,0,1,1),    // Magenta
+    ImVec4(1,0.645f,0,1),    // Orange
+    ImVec4(0xea / 256.0, 0xa2 / 256.0, 0x22 / 256.0, 1),    // Marigold
+    ImVec4(0xfb / 256.0, 0xbd / 256.0, 0x04 / 256.0, 1),    // Amber
+    ImVec4(0xb0 / 256.0, 0xfc / 256.0, 0x38 / 256.0, 1),   // Chartreuse
+    ImVec4(1,1,1,1),   // White
+    ImVec4(0,0,0,1)   // Black
 };
 
 void ScientificFormatter(double value, char* buff, int size, void*) {
@@ -259,56 +261,56 @@ inline void TimeChartZoomWindow::show()
             );
         }
         static double _xmin = timeChartZoomRect.X.Min, _xmax = timeChartZoomRect.X.Max;
-        static double ch1vmin = 10, ch1vmax = -10, ch1vmint, ch1vmaxt, ch1v50;
-        static double ch2vmin = 10, ch2vmax = -10, ch2vmint, ch2vmaxt;
+        static double ch1ts[2], ch1vs[2], ch1t50s[2], ch1v50s[2];
+        static double ch2vs[2], ch2ts[2], ch2v50s[2];
 		static int ch1vminIdx, ch1vmaxIdx, ch2vminIdx, ch2vmaxIdx;
         if (_xmin != timeChartZoomRect.X.Min || _xmax != timeChartZoomRect.X.Max) {
             _xmin = timeChartZoomRect.X.Min;
-            ch1vmin = 10; ch1vmax = -10;
-            ch2vmin = 10; ch2vmax = -10;
+            ch1vs[0] = 10; ch1vs[1] = -10;
+            ch2vs[0] = 10; ch2vs[1] = -10;
             for (int i = 0; i < liaConfig.size; i++)
             {
                 if (liaConfig.times[i] < timeChartZoomRect.X.Min) continue;
                 if (timeChartZoomRect.X.Max < liaConfig.times[i]) break;
-                if (ch1vmin > liaConfig.xyForTimeWindow[0].y[i]) {
-                    ch1vmin = liaConfig.xyForTimeWindow[0].y[i];
-                    ch1vmint = liaConfig.times[i];
+                if (ch1vs[0] > liaConfig.xyForTimeWindow[0].y[i]) {
+                    ch1vs[0] = liaConfig.xyForTimeWindow[0].y[i];
+                    ch1ts[0] = liaConfig.times[i];
                     ch1vminIdx = i;
                 }
-                if (ch1vmax < liaConfig.xyForTimeWindow[0].y[i]) {
-                    ch1vmax = liaConfig.xyForTimeWindow[0].y[i];
-                    ch1vmaxt = liaConfig.times[i];
+                if (ch1vs[1] < liaConfig.xyForTimeWindow[0].y[i]) {
+                    ch1vs[1] = liaConfig.xyForTimeWindow[0].y[i];
+                    ch1ts[1] = liaConfig.times[i];
                     ch1vmaxIdx = i;
                 }
-                if (ch2vmin > liaConfig.xyForTimeWindow[1].y[i]) {
-                    ch2vmin = liaConfig.xyForTimeWindow[1].y[i];
-                    ch2vmint = liaConfig.times[i];
+                if (ch2vs[0] > liaConfig.xyForTimeWindow[1].y[i]) {
+                    ch2vs[0] = liaConfig.xyForTimeWindow[1].y[i];
+                    ch2ts[0] = liaConfig.times[i];
                     ch2vminIdx = i;
                 }
-                if (ch2vmax < liaConfig.xyForTimeWindow[1].y[i]) {
-                    ch2vmax = liaConfig.xyForTimeWindow[1].y[i];
-                    ch2vmaxt = liaConfig.times[i];
+                if (ch2vs[1] < liaConfig.xyForTimeWindow[1].y[i]) {
+                    ch2vs[1] = liaConfig.xyForTimeWindow[1].y[i];
+                    ch2ts[1] = liaConfig.times[i];
                     ch2vmaxIdx = i;
                 }
             }
-            ch1v50 = (ch1vmax + ch1vmin) / 2;
+            ch1v50s[0] = ch1v50s[1] = (ch1vs[1] + ch1vs[0]) / 2;
+            ch2v50s[0] = ch2v50s[1] = (ch2vs[1] + ch2vs[0]) / 2;
             bool sloop = false;
             // Find nearest points to 50% level
             if (sloop) {
                 for (int i = ch1vmaxIdx; i < liaConfig.size; i++)
                 {
                     if (timeChartZoomRect.X.Max < liaConfig.times[i]) break;
-
-                    if (ch1v50 >= liaConfig.xyForTimeWindow[0].y[i]) {
-                        ch1vmaxt = liaConfig.times[i];
+                    if (ch1v50s[0] >= liaConfig.xyForTimeWindow[0].y[i]) {
+                        ch1t50s[1] = liaConfig.times[i];
                         break;
                     }
                 }
                 for (int i = ch1vmaxIdx; i >= 0; i--)
                 {
                     if (timeChartZoomRect.X.Min > liaConfig.times[i]) break;
-                    if (ch1v50 >= liaConfig.xyForTimeWindow[0].y[i]) {
-                        ch1vmint = liaConfig.times[i];
+                    if (ch1v50s[0] >= liaConfig.xyForTimeWindow[0].y[i]) {
+                        ch1t50s[0] = liaConfig.times[i];
                         break;
                     }
                 }
@@ -317,41 +319,59 @@ inline void TimeChartZoomWindow::show()
                 for (int i = ch1vminIdx; i < liaConfig.size; i++)
                 {
                     if (timeChartZoomRect.X.Max < liaConfig.times[i]) break;
-
-                    if (ch1v50 <= liaConfig.xyForTimeWindow[0].y[i]) {
-                        ch1vmaxt = liaConfig.times[i];
+                    if (ch1v50s[0] <= liaConfig.xyForTimeWindow[0].y[i]) {
+                        ch1t50s[1] = liaConfig.times[i];
                         break;
                     }
                 }
                 for (int i = ch1vminIdx; i >= 0; i--)
                 {
                     if (timeChartZoomRect.X.Min > liaConfig.times[i]) break;
-                    if (ch1v50 <= liaConfig.xyForTimeWindow[0].y[i]) {
-                        ch1vmint = liaConfig.times[i];
+                    if (ch1v50s[0] <= liaConfig.xyForTimeWindow[0].y[i]) {
+                        ch1t50s[0] = liaConfig.times[i];
                         break;
                     }
                 }
             }
         }
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
-        ImPlot::PlotScatter("##ch1min", &ch1vmint, &ch1v50, 1);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
-        ImPlot::PlotScatter("##ch1max", &ch1vmaxt, &ch1v50, 1);
-        ImPlot::PlotText(
-            std::format("Ch1: {:.3f}s, {:.3f}mV", ch1vmaxt - ch1vmint, abs(ch1vmax - ch1vmin) * 1e3).c_str(),
-            timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
-            timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
-        );
+        if (ch1t50s[0] < ch1t50s[1]) {
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
+            ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
+            ImPlot::PlotScatter("##ch1_50% marker", ch1t50s, ch1v50s, 2);
+            ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
+            ImPlot::PlotLine("##ch1_50% line", ch1t50s, ch1v50s, 2);
+            ImPlot::PopStyleColor();
+            ImPlot::PlotText(
+                std::format("{:.3f}s", ch1t50s[1] - ch1t50s[0]).c_str(),
+                (ch1t50s[1] + ch1t50s[0]) / 2,
+                ch1v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
+            );
+            ImPlot::PlotText(
+                std::format("Ch1: {:.3f}s, {:.3f}mV", ch1t50s[1] - ch1t50s[0], abs(ch1vs[1] - ch1vs[0]) * 1e3).c_str(),
+                timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
+                timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
+            );
+        }
         if (liaConfig.flagCh2) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
-            ImPlot::PlotScatter("##ch2min", &ch2vmint, &ch2vmin, 1);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
-            ImPlot::PlotScatter("##ch2max", &ch2vmaxt, &ch2vmax, 1);
+            ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
+            ImPlot::PlotScatter("##ch2_50% marker", ch2ts, ch2v50s, 2);
+            ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
+            ImPlot::PlotLine("##ch2 line", ch2ts, ch2v50s, 2);
+            ImPlot::PopStyleColor();
             ImPlot::PlotText(
-                std::format("Ch2: {:.3f}s, {:.3f}mV", abs(ch2vmaxt - ch2vmint), abs(ch2vmax - ch2vmin) * 1e3).c_str(),
+                std::format("{:.3f}s", abs(ch2ts[1] - ch2ts[0])).c_str(),
+                (ch2ts[1] + ch2ts[0]) / 2,
+                ch2v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
+            );
+            ImPlot::PlotText(
+                std::format("Ch2: {:.3f}s, {:.3f}mV", abs(ch2ts[1] - ch2ts[0]), abs(ch2vs[1] - ch2vs[0]) * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.1
             );
+
         }
         ImPlot::EndPlot();
     }
