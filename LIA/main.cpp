@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::cout << "No DAQ is connected." << std::endl;
+        std::cout << "DAQ is not connected." << std::endl;
     }
     
     //is_avx2_supported();
