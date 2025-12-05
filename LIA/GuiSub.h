@@ -50,12 +50,12 @@ public:
 		controlWindow.show();
 		if (liaConfig.plot.acfm) {
 			acfmPlotWindow.show();
-			if(liaConfig.flagPause) acfmVhVvPlotWindow.show();
 		}
 		if (liaConfig.flagPause)
 		{
 			col.w = 1.0f;
 			timeChartZoomWindow.show();
+			if (liaConfig.plot.acfm) acfmVhVvPlotWindow.show();
 		}
 	}
 };
