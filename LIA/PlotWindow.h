@@ -334,9 +334,9 @@ inline void TimeChartZoomWindow::show()
                 }
             }
         }
-		double ch1vpp = abs(ch1vs[1] - ch1vs[0]);
-        double ch2vpp = abs(ch2vs[1] - ch2vs[0]);
-        if (ch1t50s[0] < ch1t50s[1] && ch1vpp > 10e-3) {
+        liaConfig.acfmData.ch1vpp = abs(ch1vs[1] - ch1vs[0]);
+        liaConfig.acfmData.ch2vpp = abs(ch2vs[1] - ch2vs[0]);
+        if (ch1t50s[0] < ch1t50s[1] && liaConfig.acfmData.ch1vpp > 2e-3) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
             ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
@@ -350,12 +350,12 @@ inline void TimeChartZoomWindow::show()
                 ch1v50s[0] - (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch1 dV: {:.0f}mV", ch1vpp * 1e3).c_str(),
+                std::format("Ch1 dV: {:.0f}mV", liaConfig.acfmData.ch1vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.2
             );
         }
-        if (liaConfig.flagCh2 && ch2vpp > 10e-3) {
+        if (liaConfig.flagCh2 && liaConfig.acfmData.ch2vpp > 10e-3) {
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2);
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
@@ -369,7 +369,7 @@ inline void TimeChartZoomWindow::show()
                 ch2v50s[0] + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.05
             );
             ImPlot::PlotText(
-                std::format("Ch2 dV: {:.0f}mV", ch2vpp * 1e3).c_str(),
+                std::format("Ch2 dV: {:.0f}mV", liaConfig.acfmData.ch2vpp * 1e3).c_str(),
                 timeChartZoomRect.X.Min + (timeChartZoomRect.X.Max - timeChartZoomRect.X.Min) * 0.5,
                 timeChartZoomRect.Y.Min + (timeChartZoomRect.Y.Max - timeChartZoomRect.Y.Min) * 0.1
             );
@@ -559,19 +559,19 @@ inline void ACFMPlotWindow::show()
     else {
         if (ImGui::Button("Pause")) { liaConfig.flagPause = true; }
     }
-    ImGui::SliderFloat("Vbx limit", &(liaConfig.plot.Vbx_limit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
-    ImGui::SliderFloat("Vbz limit", &(liaConfig.plot.Vbz_limit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Vh limit", &(liaConfig.plot.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
+    ImGui::SliderFloat("Vv limit", &(liaConfig.plot.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        ImPlot::SetupAxes("Vbz (V)", "Vbx (V)", 0, 0);
+        ImPlot::SetupAxes("Vv (V)", "Vh (V)", 0, 0);
         if (liaConfig.plot.limit <= MILI_VOLT)
         {
-            ImPlot::SetupAxes("Vbz (mV)", "Vbx (mV)", 0, 0);
+            ImPlot::SetupAxes("Vv (mV)", "Vh (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.Vbz_limit, liaConfig.plot.Vbz_limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.Vbx_limit, liaConfig.plot.Vbx_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.Vv_limit, liaConfig.plot.Vv_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.Vh_limit, liaConfig.plot.Vh_limit, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyForXYWindow[1].y[0]), &(liaConfig.xyForXYWindow[0].y[0]),
             liaConfig.xySize, 0, liaConfig.xyTail, sizeof(double)
@@ -579,6 +579,62 @@ inline void ACFMPlotWindow::show()
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[8], -1.0f, colors[8]);
         ImPlot::PlotScatter("##NOW", &(liaConfig.xyForXYWindow[1].y[liaConfig.xyIdx]), &(liaConfig.xyForXYWindow[0].y[liaConfig.xyIdx]), 1);
+        double vhreal = liaConfig.xyForXYWindow[0].x[liaConfig.xyIdx];
+        double mm = 3.9001 * vhreal * vhreal + 1.8152 * vhreal + 0.0851;
+        const char* thickness = nullptr;
+        if (mm < 0) {
+            mm = 0;
+        }
+        if (mm <= 5) {
+            thickness = std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm).c_str();
+        }
+        else {
+            thickness = std::format("{:5.2f}V:  out", vhreal).c_str();
+        }
+        ImPlot::PlotText(
+            thickness,
+            0.0,
+            liaConfig.plot.Vh_limit * 0.9
+        );
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
+
+class ACFMVhVvPlotWindow : public ImGuiWindowBase
+{
+private:
+    LiaConfig& liaConfig;
+public:
+    ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
+        : ImGuiWindowBase(window, "ACFM Vh-Vv"), liaConfig(liaConfig)
+    {
+        this->windowPos = ImVec2(730 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
+        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 650 * liaConfig.window.monitorScale);
+    }
+    void show(void);
+};
+
+inline void ACFMVhVvPlotWindow::show()
+{
+    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
+    ImGui::Begin(this->name);
+    // プロット描画
+    if (ImPlot::BeginPlot("##Vh-Vv", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+        ImPlot::SetupAxes("Vvpp (V)", "Vhpp (V)", 0, 0);
+        if (liaConfig.plot.limit <= MILI_VOLT)
+        {
+            ImPlot::SetupAxes("Vvpp (mV)", "Vhpp (mV)", 0, 0);
+            ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
+            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        }
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plot.Vv_limit*2, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plot.Vh_limit, ImGuiCond_Always);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
+        ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
+        ImPlot::PlotScatter("Result", &(liaConfig.acfmData.ch2vpp), &(liaConfig.acfmData.ch1vpp), 1);
         ImPlot::EndPlot();
     }
     ImGui::End();

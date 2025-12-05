@@ -18,6 +18,7 @@ public:
 	XYPlotWindow xyPlotWindow;
 	ImPlotRect timeChartZoomRect;
 	ACFMPlotWindow acfmPlotWindow;
+	ACFMVhVvPlotWindow acfmVhVvPlotWindow;
 	GuiSub (GLFWwindow* window, LiaConfig& liaConfig)
 		: liaConfig(liaConfig), controlWindow(window, liaConfig),
 		  rawPlotWindow(window, liaConfig),
@@ -25,7 +26,8 @@ public:
 		  timeChartZoomWindow(window, liaConfig, timeChartZoomRect),
 		  deltaTimeChartWindow(window, liaConfig),
 		  xyPlotWindow(window, liaConfig),
-		  acfmPlotWindow(window, liaConfig)
+		  acfmPlotWindow(window, liaConfig),
+		  acfmVhVvPlotWindow(window, liaConfig)
 	{
 		timeChartZoomRect = ImPlotRect(0, 1, -1, 1);
 	}
@@ -46,7 +48,10 @@ public:
 		timeChartWindow.show();
 		deltaTimeChartWindow.show();
 		controlWindow.show();
-		if (liaConfig.plot.acfm) acfmPlotWindow.show();
+		if (liaConfig.plot.acfm) {
+			acfmPlotWindow.show();
+			if(liaConfig.flagPause) acfmVhVvPlotWindow.show();
+		}
 		if (liaConfig.flagPause)
 		{
 			col.w = 1.0f;

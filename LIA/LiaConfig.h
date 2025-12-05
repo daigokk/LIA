@@ -26,7 +26,7 @@
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 5000;// 50e-6 / RAW_DT;
+constexpr size_t RAW_SIZE = 2*5000;// 50e-6 / RAW_DT;
 constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -183,7 +183,7 @@ public:
             float phase = 0.0;
         };
         Channel ch[2];
-        AwgCfg() : ch{ Channel(), Channel() } {
+		AwgCfg() : ch{ Channel(), Channel() } {
             ch[1].amp = 0.0f; // Default amp for channel 2 is 0V
         }
     };
@@ -198,7 +198,7 @@ public:
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
-        float Vbx_limit = 1.5f, Vbz_limit = 1.5f;
+        float Vh_limit = 1.5f, Vv_limit = 1.5f;
     };
 
     // --- Public Members ---
@@ -235,6 +235,15 @@ public:
     // Ring Buffer Indices
     int nofm = 0, idx = 0, tail = 0, size = 0;
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize = 0;
+
+    struct ACFMData {
+        std::vector<double> Vhs = { 0.031,0.033,0.034,0.031,0.066, 0.077 };
+        std::vector<double> Vvs = { 0.118,0.129,0.127,0.101,0.236, 0.269 };
+        size_t size = 6;
+        double ch1vpp = 0;
+        double ch2vpp = 0;
+    };
+    ACFMData acfmData;
 
 private:
     std::string dirName = ".";
@@ -505,8 +514,8 @@ private:
         ini.set("Plot", "surfaceMode", plot.surfaceMode);
         ini.set("Plot", "beep", plot.beep);
         ini.set("Plot", "acfm", plot.acfm);
-		ini.set("Plot", "Vbx_limit", plot.Vbx_limit);
-		ini.set("Plot", "Vbz_limit", plot.Vbz_limit);
+		ini.set("Plot", "Vh_limit", plot.Vh_limit);
+		ini.set("Plot", "Vv_limit", plot.Vv_limit);
 
         // Save to file
         ini.save(SETTINGS_FILE);
@@ -546,8 +555,8 @@ private:
         plot.surfaceMode = ini.get("Plot", "surfaceMode", plot.surfaceMode);
         plot.beep = ini.get("Plot", "beep", plot.beep);
         plot.acfm = ini.get("Plot", "acfm", plot.acfm);
-		plot.Vbx_limit = ini.get("Plot", "Vbx_limit", plot.Vbx_limit);
-		plot.Vbz_limit = ini.get("Plot", "Vbz_limit", plot.Vbz_limit);
+		plot.Vh_limit = ini.get("Plot", "Vh_limit", plot.Vh_limit);
+		plot.Vv_limit = ini.get("Plot", "Vv_limit", plot.Vv_limit);
 
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);
