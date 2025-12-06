@@ -26,7 +26,7 @@
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 2*5000;// 50e-6 / RAW_DT;
+constexpr size_t RAW_SIZE = 5000;// 50e-6 / RAW_DT;
 constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -40,6 +40,7 @@ constexpr float AWG_AMP_MAX = 5.0;
 
 // --- Constants for file names ---
 constexpr auto SETTINGS_FILE = "lia.ini";
+constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
 constexpr auto RESULTS_FILE = "ect.csv";
 constexpr auto CMDS_FILE = "commands.csv";
 
@@ -64,6 +65,7 @@ enum class ButtonType
     DispCh2 = 1501,
     PlotACFM = 1502,
     PostHpFreq = 1603,
+    PostLpFreq = 1604,
     RawSave = 2001,
     RawLimit = 2002,
     XYClear = 3001,
@@ -108,7 +110,7 @@ inline std::string_view cmdToString(ButtonType button)
 }
 
 //================================================================================
-// HighPassFilter Class
+// Filter Class
 //================================================================================
 class HighPassFilter {
 private:
@@ -153,6 +155,58 @@ public:
     }
 };
 
+class LowPassFilter {
+private:
+    double m_alpha = 1.0;        // 1.0 means no filtering (output = input) by default
+    double m_prevOutput = 0.0;   // State: Previous output (y[i-1])
+    double m_dt = MEASUREMENT_DT;
+    double m_cutoffFrequency = 0.0;
+    // m_prevInput is removed as it's not needed for LPF
+
+public:
+    void setCutoffFrequency(double newFrequency) {
+        if (m_cutoffFrequency == newFrequency) {
+            return; // No change needed
+        }
+
+        m_cutoffFrequency = newFrequency;
+
+        if (newFrequency <= 0) {
+            // Disable filtering (pass-through) logic often implies alpha = 1.0 for LPF
+            m_alpha = 1.0;
+        }
+        else {
+            double rc = 1.0 / (2.0 * std::numbers::pi * m_cutoffFrequency);
+            // LPF alpha formula: dt / (RC + dt)
+            m_alpha = m_dt / (rc + m_dt);
+        }
+    }
+
+    double process(double input) {
+        // Handle initial state or pass-through case
+        // If alpha is 1.0, it simply returns the input (no filtering)
+        if (m_alpha >= 1.0) {
+            m_prevOutput = input;
+            return input;
+        }
+
+        // Apply the low-pass filter formula (Exponential Moving Average)
+        // Formula: y[i] = y[i-1] + alpha * (x[i] - y[i-1])
+        // Equivalent to: output = alpha * input + (1 - alpha) * prevOutput
+        double output = m_prevOutput + m_alpha * (input - m_prevOutput);
+
+        // Update state for next iteration
+        m_prevOutput = output;
+
+        return output;
+    }
+
+    // Optional: Helper to reset the filter if needed (e.g. on stream start)
+    void reset(double initialValue = 0.0) {
+        m_prevOutput = initialValue;
+    }
+};
+
 //================================================================================
 // Main Settings Class
 //================================================================================
@@ -193,6 +247,7 @@ public:
         };
         Offset offset[2];
         float hpFreq = 0;
+        float lpFreq = 100;
     };
 
     struct PlotCfg {
@@ -239,6 +294,7 @@ public:
     struct ACFMData {
         std::vector<double> Vhs = { 0.031,0.033,0.034,0.031,0.066, 0.077 };
         std::vector<double> Vvs = { 0.118,0.129,0.127,0.101,0.236, 0.269 };
+        double mmk[3] = { 3.9001, 1.8152, 0.0851 };
         size_t size = 6;
         double ch1vpp = 0;
         double ch2vpp = 0;
@@ -251,7 +307,11 @@ private:
     struct Hpf{
         HighPassFilter x, y;
     };
+    struct Lpf {
+        LowPassFilter x, y;
+    };
     Hpf hpfCh[2];
+    Lpf lpfCh[2];
     Psd psd;
 
 public:
@@ -304,6 +364,13 @@ public:
         hpfCh[1].x.setCutoffFrequency(freq);
         hpfCh[1].y.setCutoffFrequency(freq);
     }
+    void setLPFrequency(double freq) {
+        post.lpFreq = freq;
+        lpfCh[0].x.setCutoffFrequency(freq);
+        lpfCh[0].y.setCutoffFrequency(freq);
+        lpfCh[1].x.setCutoffFrequency(freq);
+        lpfCh[1].y.setCutoffFrequency(freq);
+    }
     void reset() {
         awg = AwgCfg();
         post = PostCfg();
@@ -311,24 +378,22 @@ public:
         flagCh2 = false;
         flagAutoOffset = false;
         flagPause = false;
-        hpfCh[0].x.setCutoffFrequency(post.hpFreq);
-        hpfCh[0].y.setCutoffFrequency(post.hpFreq);
-        hpfCh[1].x.setCutoffFrequency(post.hpFreq);
-        hpfCh[1].y.setCutoffFrequency(post.hpFreq);
+        setHPFrequency(post.hpFreq);
+        setLPFrequency(post.lpFreq);
     }
     void AddPoint(double t, double x, double y) {
-        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(x);
-        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(y);
+        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(lpfCh[0].x.process(x));
+        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(lpfCh[0].y.process(y));
         xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
         xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
         updateRingBuffers(t);
     }
 
     void AddPoint(double t, double x1, double y1, double x2, double y2) {
-        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(x1);
-        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(y1);
-        xyForTimeWindow[1].x[tail] = hpfCh[1].x.process(x2);
-        xyForTimeWindow[1].y[tail] = hpfCh[1].y.process(y2);
+        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(lpfCh[0].x.process(x1));
+        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(lpfCh[0].y.process(y1));
+        xyForTimeWindow[1].x[tail] = hpfCh[1].x.process(lpfCh[1].x.process(x2));
+        xyForTimeWindow[1].y[tail] = hpfCh[1].y.process(lpfCh[1].y.process(y2));
 
         xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
         xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
@@ -507,6 +572,7 @@ private:
         ini.set("Post", "offset[1].x", post.offset[1].x);
         ini.set("Post", "offset[1].y", post.offset[1].y);
         ini.set("Post", "hpFreq", post.hpFreq);
+        ini.set("Post", "lpFreq", post.lpFreq);
 
         ini.set("Plot", "limit", plot.limit);
         ini.set("Plot", "rawLimit", plot.rawLimit);
@@ -517,14 +583,18 @@ private:
 		ini.set("Plot", "Vh_limit", plot.Vh_limit);
 		ini.set("Plot", "Vv_limit", plot.Vv_limit);
 
+        ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
+        ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
+        ini.set("ACFM", "mmk[2]", acfmData.mmk[2]);
+
         // Save to file
-        ini.save(SETTINGS_FILE);
+        ini.save(filename);
     }
 
     void loadSettingsFromFile(const std::string& filename = SETTINGS_FILE) {
 
         IniWrapper ini;
-        ini.load(SETTINGS_FILE);
+        ini.load(filename);
 
         window.pos.x = ini.get("Window", "pos.x", window.pos.x);
         window.pos.y = ini.get("Window", "pos.y", window.pos.y);
@@ -548,6 +618,7 @@ private:
         post.offset[1].x = ini.get("Post", "offset[1].x", post.offset[1].x);
         post.offset[1].y = ini.get("Post", "offset[1].y", post.offset[1].y);
         post.hpFreq = ini.get("Post", "hpFreq", post.hpFreq);
+        post.lpFreq = ini.get("Post", "lpFreq", post.lpFreq);
 
         plot.limit = ini.get("Plot", "limit", plot.limit);
         plot.rawLimit = ini.get("Plot", "rawLimit", plot.rawLimit);
@@ -566,9 +637,11 @@ private:
         awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
         awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);
         plot.limit = std::clamp(plot.limit, 0.0f, 5.0f);
-        hpfCh[0].x.setCutoffFrequency(post.hpFreq);
-        hpfCh[0].y.setCutoffFrequency(post.hpFreq);
-        hpfCh[1].x.setCutoffFrequency(post.hpFreq);
-        hpfCh[1].y.setCutoffFrequency(post.hpFreq);
+        setHPFrequency(post.hpFreq);
+        setLPFrequency(post.lpFreq);
+
+        acfmData.mmk[0] = ini.get("ACFM", "mmk[0]", acfmData.mmk[0]);
+        acfmData.mmk[1] = ini.get("ACFM", "mmk[1]", acfmData.mmk[1]);
+        acfmData.mmk[2] = ini.get("ACFM", "mmk[2]", acfmData.mmk[2]);
     }
 };

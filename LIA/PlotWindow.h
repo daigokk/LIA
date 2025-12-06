@@ -580,7 +580,7 @@ inline void ACFMPlotWindow::show()
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[8], -1.0f, colors[8]);
         ImPlot::PlotScatter("##NOW", &(liaConfig.xyForXYWindow[1].y[liaConfig.xyIdx]), &(liaConfig.xyForXYWindow[0].y[liaConfig.xyIdx]), 1);
         double vhreal = liaConfig.xyForXYWindow[0].x[liaConfig.xyIdx];
-        double mm = 3.9001 * vhreal * vhreal + 1.8152 * vhreal + 0.0851;
+        double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[1];
         const char* thickness = nullptr;
         if (mm < 0) {
             mm = 0;

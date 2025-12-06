@@ -165,7 +165,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
             float step = 0.1f;
             if (liaConfig.plot.limit <= 0.1f) step = 0.01f;
             else step = 0.1f;
-            if (ImGui::InputFloat("Limit (V)", &(liaConfig.plot.limit), step, 0.1f, "%4.2f"))
+            if (ImGui::InputFloat("Limit (V)", &(liaConfig.plot.limit), step, 0.1f, "%.2f"))
             {
                 if (liaConfig.plot.limit < 0.01f) liaConfig.plot.limit = 0.01f;
                 if (liaConfig.plot.limit > RAW_RANGE * 1.2f) liaConfig.plot.limit = RAW_RANGE * 1.2f;
@@ -348,11 +348,10 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
         value = liaConfig.plot.acfm;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    //if (liaConfig.flagPause) { ImGui::BeginDisabled(); }
-    if (ImGui::InputFloat("HPF (Hz)", &(liaConfig.post.hpFreq), 0.1f, 1.0f, "%4.1f"))
+    if (ImGui::InputFloat("HPF (Hz)", &(liaConfig.post.hpFreq), 0.1f, 1.0f, "%.1f"))
     {
         if (liaConfig.post.hpFreq < 0.0f) liaConfig.post.hpFreq = 0.0f;
-        if (liaConfig.post.hpFreq > 50.0f) liaConfig.post.hpFreq = 50.0f;
+        if (liaConfig.post.hpFreq > 10.0f) liaConfig.post.hpFreq = 10.0f;
 		liaConfig.setHPFrequency(liaConfig.post.hpFreq);
     }
     if (ImGui::IsItemDeactivated()) {
@@ -360,7 +359,18 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
         button = ButtonType::PostHpFreq;
         value = liaConfig.post.hpFreq;
     }
-    //if (liaConfig.flagPause) { ImGui::EndDisabled(); }
+    ImGui::SetNextItemWidth(nextItemWidth);
+    if (ImGui::InputFloat("LPF (Hz)", &(liaConfig.post.lpFreq), 1.0f, 10.0f, "%.0f"))
+    {
+        if (liaConfig.post.lpFreq < 5.0f) liaConfig.post.lpFreq = 5.0f;
+        if (liaConfig.post.lpFreq > 100.0f) liaConfig.post.lpFreq = 100.0f;
+        liaConfig.setLPFrequency(liaConfig.post.lpFreq);
+    }
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        button = ButtonType::PostLpFreq;
+        value = liaConfig.post.lpFreq;
+    }
     if (button != ButtonType::NON) buttonPressed(button, value);
 }
 
