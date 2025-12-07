@@ -362,7 +362,7 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("LPF (Hz)", &(liaConfig.post.lpFreq), 1.0f, 10.0f, "%.0f"))
     {
-        if (liaConfig.post.lpFreq < 10.0f) liaConfig.post.lpFreq = 10.0f;
+        if (liaConfig.post.lpFreq < 1.0f) liaConfig.post.lpFreq = 1.0f;
         if (liaConfig.post.lpFreq > 100.0f) liaConfig.post.lpFreq = 100.0f;
         liaConfig.setLPFrequency(liaConfig.post.lpFreq);
     }
