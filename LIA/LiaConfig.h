@@ -292,8 +292,8 @@ public:
     int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize = 0;
 
     struct ACFMData {
-        std::vector<double> Vhs = { 0.031,0.033,0.034,0.031,0.066, 0.077 };
-        std::vector<double> Vvs = { 0.118,0.129,0.127,0.101,0.236, 0.269 };
+        std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
+        std::vector<double> Vvs = { 0.102,0.106,0.115,0.121,0.212, 0.239 };
         double mmk[3] = { 2.4827, 3.0433, 0.1393 };
         size_t size = 6;
         double ch1vpp = 0;
