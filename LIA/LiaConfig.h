@@ -26,7 +26,7 @@
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 5000;// 50e-6 / RAW_DT;
+constexpr size_t RAW_SIZE = 2*5000;// 50e-6 / RAW_DT;
 constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
@@ -294,7 +294,7 @@ public:
     struct ACFMData {
         std::vector<double> Vhs = { 0.031,0.033,0.034,0.031,0.066, 0.077 };
         std::vector<double> Vvs = { 0.118,0.129,0.127,0.101,0.236, 0.269 };
-        double mmk[3] = { 3.9001, 1.8152, 0.0851 };
+        double mmk[3] = { 2.4827, 3.0433, 0.1393 };
         size_t size = 6;
         double ch1vpp = 0;
         double ch2vpp = 0;

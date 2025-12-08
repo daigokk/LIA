@@ -579,13 +579,13 @@ inline void ACFMPlotWindow::show()
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[8], -1.0f, colors[8]);
         ImPlot::PlotScatter("##NOW", &(liaConfig.xyForXYWindow[1].y[liaConfig.xyIdx]), &(liaConfig.xyForXYWindow[0].y[liaConfig.xyIdx]), 1);
-        double vhreal = liaConfig.xyForXYWindow[0].x[liaConfig.xyIdx];
-        double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[1];
+        double vhreal = liaConfig.xyForTimeWindow[0].x[liaConfig.idx];
+        double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[2];
         const char* thickness = nullptr;
         if (mm < 0) {
             mm = 0;
         }
-        if (mm <= 5) {
+        if (mm <= 6) {
             thickness = std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm).c_str();
         }
         else {
