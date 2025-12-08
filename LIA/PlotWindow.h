@@ -559,7 +559,9 @@ inline void ACFMPlotWindow::show()
     else {
         if (ImGui::Button("Pause")) { liaConfig.flagPause = true; }
     }
-    ImGui::SliderFloat("Vh limit", &(liaConfig.plot.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
+    if (ImGui::SliderFloat("Vh limit", &(liaConfig.plot.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
+        liaConfig.plot.Vv_limit = liaConfig.plot.Vh_limit * 2;
+    }
     ImGui::SliderFloat("Vv limit", &(liaConfig.plot.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
