@@ -217,8 +217,8 @@ public:
         struct XYint {
             int x, y;
         };
-		XYint size = { 1440, 960 };
-		XYint pos = { 0, 30 };
+        XYint size = { 1440, 960 };
+        XYint pos = { 0, 30 };
         float monitorScale = 1.0f; // <<< ここに再度追加します
     };
 
@@ -237,7 +237,7 @@ public:
             float phase = 0.0;
         };
         Channel ch[2];
-		AwgCfg() : ch{ Channel(), Channel() } {
+        AwgCfg() : ch{ Channel(), Channel() } {
             ch[1].amp = 0.0f; // Default amp for channel 2 is 0V
         }
     };
@@ -254,7 +254,7 @@ public:
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
         float Vh_limit = 1.5f, Vv_limit = 1.5f;
-		int idxXYStart = 0, idxXYEnd = 0;
+        int idxXYStart = 0, idxXYEnd = 0;
     };
 
     // --- Public Members ---
@@ -269,7 +269,7 @@ public:
     AwgCfg awg;
     PostCfg post;
     PlotCfg plot;
-	
+
     // State Flags
     bool flagCh2 = false;
     bool flagAutoOffset = false;
@@ -278,18 +278,19 @@ public:
 
     struct PauseCfg {
         bool flag = false;
+		int idxStart = 0, idxEnd = 0;
         struct SelectArea {
             struct vec2d {
                 double Min = 0.0;
                 double Max = 0.0;
             };
             vec2d X, Y;
-			int idxXMin = 0, idxXMax = 0;
-		} selectArea;
+            int idxXMin = 0, idxXMax = 0;
+        } selectArea;
         void set(double xMin, double xMax, double yMin, double yMax) {
             selectArea.X.Min = xMin; selectArea.X.Max = xMax;
             selectArea.Y.Min = yMin; selectArea.Y.Max = yMax;
-		}
+        }
     };
     PauseCfg pauseCfg;
 
@@ -300,8 +301,8 @@ public:
     struct XYs {
         std::vector<double> x;
         std::vector<double> y;
-        
-	};
+
+    };
     struct RingBuffer {
         std::vector<double> times;
         XYs ch[2];
@@ -314,41 +315,10 @@ public:
             ch[0].x.resize(size);
             ch[0].y.resize(size);
             ch[1].x.resize(size);
-			ch[1].y.resize(size);
+            ch[1].y.resize(size);
         }
-	};
+    };
     RingBuffer ringBuffer, xyRingBuffer;
-
-    class ZoomWindowCfg {
-        static auto getIdxs(RingBuffer ringBuffer, PauseCfg pauseCfg) {
-			int idxStart = -1, idxEnd = -1;
-            for (int i = ringBuffer.idx; i >= 0; i--) {
-                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
-                    idxEnd = i;
-                }
-            }
-            if (idxEnd == -1 && ringBuffer.nofm > ringBuffer.size) {
-                for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
-                    if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
-                        idxEnd = i;
-                    }
-                }
-            }
-            for (int i = ringBuffer.idx; i >= 0; i--) {
-                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
-                    idxStart = i;
-                }
-            }
-            if (idxStart == -1 && ringBuffer.nofm > ringBuffer.size) {
-                for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
-                    if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
-                        idxStart = i;
-                    }
-                }
-            }
-			return std::pair<int, int>{ idxStart, idxEnd };
-        }
-	};
 
     struct ACFMData {
         std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
@@ -363,7 +333,7 @@ public:
 private:
     std::string dirName = ".";
     // --- Private Helper Members ---
-    struct Hpf{
+    struct Hpf {
         HighPassFilter x, y;
     };
     struct Lpf {
@@ -393,10 +363,10 @@ public:
         rawTime.resize(RAW_SIZE);
         rawData[0].resize(RAW_SIZE);
         rawData[1].resize(RAW_SIZE);
-        dts.resize(MEASUREMENT_SIZE); 
+        dts.resize(MEASUREMENT_SIZE);
         ringBuffer.resize(MEASUREMENT_SIZE);
         xyRingBuffer.resize(XY_SIZE);
-        
+
         loadSettingsFromFile();
 
         for (size_t i = 0; i < rawTime.size(); ++i) {
@@ -489,6 +459,35 @@ public:
             AddPoint(t, final_x1, final_y1);
         }
     }
+
+    void setIdxs() {
+        pauseCfg.idxStart = -1, pauseCfg.idxEnd = -1;
+        for (int i = ringBuffer.idx; i >= 0; i--) {
+            if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
+                pauseCfg.idxEnd = i;
+            }
+        }
+        if (pauseCfg.idxEnd == -1 && ringBuffer.nofm > ringBuffer.size) {
+            for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
+                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
+                    pauseCfg.idxEnd = i;
+                }
+            }
+        }
+        for (int i = ringBuffer.idx; i >= 0; i--) {
+            if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
+                pauseCfg.idxStart = i;
+            }
+        }
+        if (pauseCfg.idxStart == -1 && ringBuffer.nofm > ringBuffer.size) {
+            for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
+                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
+                    pauseCfg.idxStart = i;
+                }
+            }
+        }
+    }
+    
 
     std::string getCurrentTimestamp() const {
         // 現在時刻を取得

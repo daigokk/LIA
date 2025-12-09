@@ -197,11 +197,14 @@ inline void TimeChartWindow::show()
             bool clicked = false;
             bool hovered = false;
             bool held = false;
-            ImPlot::DragRect(
+            if (ImPlot::DragRect(
                 0, &liaConfig.pauseCfg.selectArea.X.Min, &liaConfig.pauseCfg.selectArea.Y.Min,
                 &liaConfig.pauseCfg.selectArea.X.Max, &liaConfig.pauseCfg.selectArea.Y.Max,
                 ImVec4(1, 0, 1, 1), flags, &clicked, &hovered, &held
-            );
+            )) {
+				// ドラッグ中
+				liaConfig.setIdxs();
+            }
         }
         else {
             flag=true;
