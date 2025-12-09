@@ -278,14 +278,17 @@ public:
 
     struct PauseCfg {
         bool flag = false;
-        struct vec2d {
-            double Min = 0.0;
-            double Max = 0.0;
-        };
-		vec2d X, Y;
+        struct SelectArea {
+            struct vec2d {
+                double Min = 0.0;
+                double Max = 0.0;
+            };
+            vec2d X, Y;
+			int idxXMin = 0, idxXMax = 0;
+		} selectArea;
         void set(double xMin, double xMax, double yMin, double yMax) {
-            X.Min = xMin; X.Max = xMax;
-            Y.Min = yMin; Y.Max = yMax;
+            selectArea.X.Min = xMin; selectArea.X.Max = xMax;
+            selectArea.Y.Min = yMin; selectArea.Y.Max = yMax;
 		}
     };
     PauseCfg pauseCfg;
@@ -315,6 +318,37 @@ public:
         }
 	};
     RingBuffer ringBuffer, xyRingBuffer;
+
+    class ZoomWindowCfg {
+        static auto getIdxs(RingBuffer ringBuffer, PauseCfg pauseCfg) {
+			int idxStart = -1, idxEnd = -1;
+            for (int i = ringBuffer.idx; i >= 0; i--) {
+                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
+                    idxEnd = i;
+                }
+            }
+            if (idxEnd == -1 && ringBuffer.nofm > ringBuffer.size) {
+                for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
+                    if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
+                        idxEnd = i;
+                    }
+                }
+            }
+            for (int i = ringBuffer.idx; i >= 0; i--) {
+                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
+                    idxStart = i;
+                }
+            }
+            if (idxStart == -1 && ringBuffer.nofm > ringBuffer.size) {
+                for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
+                    if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
+                        idxStart = i;
+                    }
+                }
+            }
+			return std::pair<int, int>{ idxStart, idxEnd };
+        }
+	};
 
     struct ACFMData {
         std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
