@@ -177,7 +177,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 value = liaConfig.plot.limit;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (liaConfig.flagPause) { ImGui::BeginDisabled(); }
+            if (liaConfig.pauseCfg.flag) { ImGui::BeginDisabled(); }
             ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &(liaConfig.post.offset[0].phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
@@ -193,7 +193,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 value = liaConfig.post.offset[1].phase;
             }
             if (!liaConfig.flagCh2) { ImGui::EndDisabled(); }
-            if (liaConfig.flagPause) { ImGui::EndDisabled(); }
+            if (liaConfig.pauseCfg.flag) { ImGui::EndDisabled(); }
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Settings"))
@@ -224,7 +224,7 @@ inline void ControlWindow::post(const float nextItemWidth)
 	ButtonType button = ButtonType::NON;
 	float value = 0;
     static ImVec2 autoOffsetSize = ImVec2(200.0f * liaConfig.window.monitorScale, 100.0f * liaConfig.window.monitorScale);
-    if (liaConfig.flagPause) { ImGui::BeginDisabled(); }
+    if (liaConfig.pauseCfg.flag) { ImGui::BeginDisabled(); }
     if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
         liaConfig.flagAutoOffset = true;
     }
@@ -251,21 +251,21 @@ inline void ControlWindow::post(const float nextItemWidth)
         value = 0;
     }
     if (!stateAutoOffset) ImGui::EndDisabled();
-    if (liaConfig.flagPause) { ImGui::EndDisabled(); }
+    if (liaConfig.pauseCfg.flag) { ImGui::EndDisabled(); }
     ImGui::SameLine();
     ImGui::Dummy(ImVec2(1.0f * liaConfig.window.monitorScale, 0.0f));
     ImGui::SameLine();
-    if (liaConfig.flagPause)
+    if (liaConfig.pauseCfg.flag)
     {
-        if (ImGui::Button("Run", offSize)) { liaConfig.flagPause = false; }
+        if (ImGui::Button("Run", offSize)) { liaConfig.pauseCfg.flag = false; }
     }
     else {
-        if (ImGui::Button("Pause", offSize)) { liaConfig.flagPause = true; }
+        if (ImGui::Button("Pause", offSize)) { liaConfig.pauseCfg.flag = true; }
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PostPause;
-        value = liaConfig.flagPause;
+        value = liaConfig.pauseCfg.flag;
     }
     if (ImGui::TreeNode("Offset value"))
     {
@@ -285,20 +285,20 @@ inline void ControlWindow::monitor()
 	// Monitor設定のUIをここに実装
     if (ImGui::TreeNode("Monitor"))
     {
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.xyForTimeWindow[0].x[liaConfig.idx], liaConfig.xyForTimeWindow[0].y[liaConfig.idx]);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(liaConfig.xyForTimeWindow[0].x[liaConfig.idx], 2) + pow(liaConfig.xyForTimeWindow[0].y[liaConfig.idx], 2), 0.5),
+            pow(pow(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], 2) + pow(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx], 2), 0.5),
             u8"θ",
-            atan2(liaConfig.xyForTimeWindow[0].y[liaConfig.idx], liaConfig.xyForTimeWindow[0].x[liaConfig.idx]) / std::numbers::pi * 180
+            atan2(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]) / std::numbers::pi * 180
         );
         if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.xyForTimeWindow[1].x[liaConfig.idx], liaConfig.xyForTimeWindow[1].y[liaConfig.idx]);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]);
         ImGui::Text(
             "Amp:%4.2fV, %s:%4.0fDeg.",
-            pow(pow(liaConfig.xyForTimeWindow[1].x[liaConfig.idx], 2) + pow(liaConfig.xyForTimeWindow[1].y[liaConfig.idx], 2), 0.5),
+            pow(pow(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx], 2) + pow(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx], 2), 0.5),
             u8"θ",
-            atan2(liaConfig.xyForTimeWindow[1].y[liaConfig.idx], liaConfig.xyForTimeWindow[1].x[liaConfig.idx]) / std::numbers::pi * 180
+            atan2(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]) / std::numbers::pi * 180
         );
         if (!liaConfig.flagCh2) { ImGui::EndDisabled(); }
         ImGui::TreePop();
@@ -399,9 +399,9 @@ inline void ControlWindow::show(void)
     ImGui::Separator();
 	functionButtons(nextItemWidth);
     ImGui::Separator();
-	int hours = (int)liaConfig.times[liaConfig.idx] / (60 * 60);
-    int mins = ((int)liaConfig.times[liaConfig.idx] - hours * 60 * 60) / 60;
-    double secs = liaConfig.times[liaConfig.idx] - hours * 60 * 60 - mins * 60;
+	int hours = (int)liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] / (60 * 60);
+    int mins = ((int)liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - hours * 60 * 60) / 60;
+    double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - hours * 60 * 60 - mins * 60;
     //ImGui::Text("FPS:%4.0f,Time:%02d:%02d:%02.0f", ImGui::GetIO().Framerate, hours, mins, secs);
     ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
     ImGui::End();

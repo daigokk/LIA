@@ -254,6 +254,7 @@ public:
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
         float Vh_limit = 1.5f, Vv_limit = 1.5f;
+		int idxXYStart = 0, idxXYEnd = 0;
     };
 
     // --- Public Members ---
@@ -272,24 +273,48 @@ public:
     // State Flags
     bool flagCh2 = false;
     bool flagAutoOffset = false;
-    bool flagPause = false;
     volatile bool statusMeasurement = false;
     volatile bool statusPipe = false;
+
+    struct PauseCfg {
+        bool flag = false;
+        struct vec2d {
+            double Min = 0.0;
+            double Max = 0.0;
+        };
+		vec2d X, Y;
+        void set(double xMin, double xMax, double yMin, double yMax) {
+            X.Min = xMin; X.Max = xMax;
+            Y.Min = yMin; Y.Max = yMax;
+		}
+    };
+    PauseCfg pauseCfg;
 
     // Data Buffers (using std::vector to avoid stack overflow)
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
-    std::vector<double> times, dts;
+    std::vector<double> dts;
     struct XYs {
         std::vector<double> x;
         std::vector<double> y;
+        
 	};
-	XYs xyForTimeWindow[2];
-    XYs xyForXYWindow[2];
-
-    // Ring Buffer Indices
-    int nofm = 0, idx = 0, tail = 0, size = 0;
-    int xyNorm = 0, xyIdx = 0, xyTail = 0, xySize = 0;
+    struct RingBuffer {
+        std::vector<double> times;
+        XYs ch[2];
+        int nofm = 0; // 測定データ数
+        int idx = 0; // 最新データが存在するindex
+        int tail = 0; // 次にデータを格納するindex
+        int size = 0; // 配列における使用要素数
+        void resize(int size) {
+            times.resize(size);
+            ch[0].x.resize(size);
+            ch[0].y.resize(size);
+            ch[1].x.resize(size);
+			ch[1].y.resize(size);
+        }
+	};
+    RingBuffer ringBuffer, xyRingBuffer;
 
     struct ACFMData {
         std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
@@ -334,17 +359,10 @@ public:
         rawTime.resize(RAW_SIZE);
         rawData[0].resize(RAW_SIZE);
         rawData[1].resize(RAW_SIZE);
-        times.resize(MEASUREMENT_SIZE);
-        xyForTimeWindow[0].x.resize(MEASUREMENT_SIZE);
-        xyForTimeWindow[0].y.resize(MEASUREMENT_SIZE);
-        xyForTimeWindow[1].x.resize(MEASUREMENT_SIZE);
-        xyForTimeWindow[1].y.resize(MEASUREMENT_SIZE);
-        dts.resize(MEASUREMENT_SIZE);
-        xyForXYWindow[0].x.resize(XY_SIZE);
-        xyForXYWindow[0].y.resize(XY_SIZE);
-        xyForXYWindow[1].x.resize(XY_SIZE);
-        xyForXYWindow[1].y.resize(XY_SIZE);
-
+        dts.resize(MEASUREMENT_SIZE); 
+        ringBuffer.resize(MEASUREMENT_SIZE);
+        xyRingBuffer.resize(XY_SIZE);
+        
         loadSettingsFromFile();
 
         for (size_t i = 0; i < rawTime.size(); ++i) {
@@ -377,28 +395,28 @@ public:
         plot = PlotCfg();
         flagCh2 = false;
         flagAutoOffset = false;
-        flagPause = false;
+        pauseCfg.flag = false;
         setHPFrequency(post.hpFreq);
         setLPFrequency(post.lpFreq);
     }
     void AddPoint(double t, double x, double y) {
-        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(lpfCh[0].x.process(x));
-        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(lpfCh[0].y.process(y));
-        xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
-        xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
+        ringBuffer.ch[0].x[ringBuffer.tail] = hpfCh[0].x.process(lpfCh[0].x.process(x));
+        ringBuffer.ch[0].y[ringBuffer.tail] = hpfCh[0].y.process(lpfCh[0].y.process(y));
+        xyRingBuffer.ch[0].x[xyRingBuffer.tail] = ringBuffer.ch[0].x[ringBuffer.tail];
+        xyRingBuffer.ch[0].y[xyRingBuffer.tail] = ringBuffer.ch[0].y[ringBuffer.tail];
         updateRingBuffers(t);
     }
 
     void AddPoint(double t, double x1, double y1, double x2, double y2) {
-        xyForTimeWindow[0].x[tail] = hpfCh[0].x.process(lpfCh[0].x.process(x1));
-        xyForTimeWindow[0].y[tail] = hpfCh[0].y.process(lpfCh[0].y.process(y1));
-        xyForTimeWindow[1].x[tail] = hpfCh[1].x.process(lpfCh[1].x.process(x2));
-        xyForTimeWindow[1].y[tail] = hpfCh[1].y.process(lpfCh[1].y.process(y2));
+        ringBuffer.ch[0].x[ringBuffer.tail] = hpfCh[0].x.process(lpfCh[0].x.process(x1));
+        ringBuffer.ch[0].y[ringBuffer.tail] = hpfCh[0].y.process(lpfCh[0].y.process(y1));
+        ringBuffer.ch[1].x[ringBuffer.tail] = hpfCh[1].x.process(lpfCh[1].x.process(x2));
+        ringBuffer.ch[1].y[ringBuffer.tail] = hpfCh[1].y.process(lpfCh[1].y.process(y2));
 
-        xyForXYWindow[0].x[xyTail] = xyForTimeWindow[0].x[tail];
-        xyForXYWindow[0].y[xyTail] = xyForTimeWindow[0].y[tail];
-        xyForXYWindow[1].x[xyTail] = xyForTimeWindow[1].x[tail];
-        xyForXYWindow[1].y[xyTail] = xyForTimeWindow[1].y[tail];
+        xyRingBuffer.ch[0].x[xyRingBuffer.tail] = ringBuffer.ch[0].x[ringBuffer.tail];
+        xyRingBuffer.ch[0].y[xyRingBuffer.tail] = ringBuffer.ch[0].y[ringBuffer.tail];
+        xyRingBuffer.ch[1].x[xyRingBuffer.tail] = ringBuffer.ch[1].x[ringBuffer.tail];
+        xyRingBuffer.ch[1].y[xyRingBuffer.tail] = ringBuffer.ch[1].y[ringBuffer.tail];
         updateRingBuffers(t);
     }
 
@@ -487,16 +505,16 @@ public:
         std::stringstream ss;
         ss << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
 
-        int _size = this->size;
+        int _size = this->ringBuffer.size;
         if (sec > 0) {
             _size = sec / MEASUREMENT_DT;
-            if (_size > this->size) _size = this->size;
+            if (_size > this->ringBuffer.size) _size = this->ringBuffer.size;
         }
-        int idx = this->tail - _size;
+        int idx = this->ringBuffer.tail - _size;
         if (idx < 0) {
-            if (this->nofm <= MEASUREMENT_SIZE) {
+            if (this->ringBuffer.nofm <= MEASUREMENT_SIZE) {
                 idx = 0;
-                _size = this->tail;
+                _size = this->ringBuffer.tail;
             }
             else {
                 idx += MEASUREMENT_SIZE;
@@ -504,10 +522,10 @@ public:
         }
         for (int i = 0; i < _size; ++i) {
             if (!this->flagCh2) {
-                ss << std::format("{:e},{:e},{:e}\n", this->times[idx], this->xyForTimeWindow[0].x[idx], this->xyForTimeWindow[0].y[idx]);
+                ss << std::format("{:e},{:e},{:e}\n", this->ringBuffer.times[idx], this->ringBuffer.ch[0].x[idx], this->ringBuffer.ch[0].y[idx]);
             }
             else {
-                ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->times[idx], this->xyForTimeWindow[0].x[idx], this->xyForTimeWindow[0].y[idx], this->xyForTimeWindow[1].x[idx], this->xyForTimeWindow[1].y[idx]);
+                ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->ringBuffer.times[idx], this->ringBuffer.ch[0].x[idx], this->ringBuffer.ch[0].y[idx], this->ringBuffer.ch[1].x[idx], this->ringBuffer.ch[1].y[idx]);
             }
             idx = (idx + 1) % MEASUREMENT_SIZE;
         }
@@ -533,17 +551,17 @@ public:
 private:
     // --- Private Helper Methods ---
     void updateRingBuffers(double t) {
-        times[tail] = t;
-        dts[tail] = (nofm > 0) ? (times[tail] - times[idx]) * 1e3 : 0.0;
-        idx = tail;
-        nofm++;
-        if (++tail == MEASUREMENT_SIZE) { tail = 0; }
-        size = std::min(nofm, (int)MEASUREMENT_SIZE);
+        ringBuffer.times[ringBuffer.tail] = t;
+        dts[ringBuffer.tail] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.tail] - ringBuffer.times[ringBuffer.idx]) * 1e3 : 0.0;
+        ringBuffer.idx = ringBuffer.tail;
+        ringBuffer.nofm++;
+        if (++ringBuffer.tail == MEASUREMENT_SIZE) { ringBuffer.tail = 0; }
+        ringBuffer.size = std::min(ringBuffer.nofm, (int)MEASUREMENT_SIZE);
 
-        xyIdx = xyTail;
-        xyNorm++;
-        if (++xyTail == XY_SIZE) { xyTail = 0; }
-        xySize = std::min(xyNorm, (int)XY_SIZE);
+        xyRingBuffer.idx = xyRingBuffer.tail;
+        xyRingBuffer.nofm++;
+        if (++xyRingBuffer.tail == XY_SIZE) { xyRingBuffer.tail = 0; }
+        xyRingBuffer.size = std::min(xyRingBuffer.nofm, (int)XY_SIZE);
     }
 
     void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {

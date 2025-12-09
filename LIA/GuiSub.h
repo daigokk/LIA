@@ -16,20 +16,19 @@ public:
 	TimeChartZoomWindow timeChartZoomWindow;
 	DeltaTimeChartWindow deltaTimeChartWindow;
 	XYPlotWindow xyPlotWindow;
-	ImPlotRect timeChartZoomRect;
 	ACFMPlotWindow acfmPlotWindow;
 	ACFMVhVvPlotWindow acfmVhVvPlotWindow;
-	GuiSub (GLFWwindow* window, LiaConfig& liaConfig)
+	GuiSub(GLFWwindow* window, LiaConfig& liaConfig)
 		: liaConfig(liaConfig), controlWindow(window, liaConfig),
-		  rawPlotWindow(window, liaConfig),
-		  timeChartWindow(window, liaConfig, timeChartZoomRect),
-		  timeChartZoomWindow(window, liaConfig, timeChartZoomRect),
-		  deltaTimeChartWindow(window, liaConfig),
-		  xyPlotWindow(window, liaConfig),
-		  acfmPlotWindow(window, liaConfig),
-		  acfmVhVvPlotWindow(window, liaConfig)
+		rawPlotWindow(window, liaConfig),
+		timeChartWindow(window, liaConfig),
+		timeChartZoomWindow(window, liaConfig),
+		deltaTimeChartWindow(window, liaConfig),
+		xyPlotWindow(window, liaConfig),
+		acfmPlotWindow(window, liaConfig),
+		acfmVhVvPlotWindow(window, liaConfig)
 	{
-		timeChartZoomRect = ImPlotRect(0, 1, -1, 1);
+
 	}
 	void show(void) {
 		const float nextItemWidth = 150 * liaConfig.window.monitorScale;
@@ -39,7 +38,7 @@ public:
 			theme = liaConfig.imgui.theme;
 			Gui::setStyle(theme);
 		}
-		beep.update(liaConfig.plot.beep, liaConfig.xyForTimeWindow[0].x[liaConfig.idx], liaConfig.xyForTimeWindow[0].y[liaConfig.idx]);
+		beep.update(liaConfig.plot.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
@@ -51,7 +50,7 @@ public:
 		if (liaConfig.plot.acfm) {
 			acfmPlotWindow.show();
 		}
-		if (liaConfig.flagPause)
+		if (liaConfig.pauseCfg.flag)
 		{
 			col.w = 1.0f;
 			timeChartZoomWindow.show();

@@ -136,7 +136,7 @@ void measurement(std::stop_token st, LiaConfig* pLiaConfig)
         double t = nloop * MEASUREMENT_DT;
         nloop++;
         t = pLiaConfig->timer.sleepUntil(t);
-        if (pLiaConfig->flagPause) continue;
+        if (pLiaConfig->pauseCfg.flag) continue;
         if (!pLiaConfig->flagCh2)
         {
             daq.scope.record(pLiaConfig->rawData[0].data());
@@ -159,7 +159,7 @@ void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
         double t = nloop * MEASUREMENT_DT;
         nloop++;
         t = pLiaConfig->timer.sleepUntil(t);
-        if (pLiaConfig->flagPause) continue;
+        if (pLiaConfig->pauseCfg.flag) continue;
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++) {
             double wt = 2 * std::numbers::pi * pLiaConfig->awg.ch[0].freq * i * RAW_DT;

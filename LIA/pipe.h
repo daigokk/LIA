@@ -163,8 +163,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         };
 
     // 一時停止・再開
-    commandMap["pause"] = commandMap["stop"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = true; return true; };
-    commandMap["run"] = [&](const auto&, const auto&, auto) { pLiaConfig->flagPause = false; return true; };
+    commandMap["pause"] = commandMap["stop"] = [&](const auto&, const auto&, auto) { pLiaConfig->pauseCfg.flag = true; return true; };
+    commandMap["run"] = [&](const auto&, const auto&, auto) { pLiaConfig->pauseCfg.flag = false; return true; };
 
     // ヘルプ
     commandMap["help?"] = commandMap["?"] = [&](const auto&, const auto&, auto) {
@@ -209,16 +209,16 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             return true;
         }
         else if (subCmd == "txy?") {
-            int size = pLiaConfig->size;
+            int size = pLiaConfig->ringBuffer.size;
             if (val > 0) {
                 size = val / MEASUREMENT_DT;
-                if (size > pLiaConfig->size) size = pLiaConfig->size;
+                if (size > pLiaConfig->ringBuffer.size) size = pLiaConfig->ringBuffer.size;
             }
-            int idx = pLiaConfig->tail - size;
+            int idx = pLiaConfig->ringBuffer.tail - size;
             if (idx < 0) {
-                if (pLiaConfig->nofm <= MEASUREMENT_SIZE) {
+                if (pLiaConfig->ringBuffer.nofm <= MEASUREMENT_SIZE) {
                     idx = 0;
-                    size = pLiaConfig->tail;
+                    size = pLiaConfig->ringBuffer.tail;
                 }
                 else {
                     idx += MEASUREMENT_SIZE;
@@ -227,20 +227,20 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             std::cout << size << std::endl;
             for (int i = 0; i < size; ++i) {
                 if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->ringBuffer.times[idx], pLiaConfig->xyRingBuffer.ch[0].x[idx], pLiaConfig->xyRingBuffer.ch[0].y[idx]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->times[idx], pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx], pLiaConfig->xyForTimeWindow[1].x[idx], pLiaConfig->xyForTimeWindow[1].y[idx]);
+                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->ringBuffer.times[idx], pLiaConfig->xyRingBuffer.ch[0].x[idx], pLiaConfig->xyRingBuffer.ch[0].y[idx], pLiaConfig->xyRingBuffer.ch[1].x[idx], pLiaConfig->xyRingBuffer.ch[1].y[idx]);
                 }
                 idx = (idx + 1) % MEASUREMENT_SIZE;
             }
             return true;
         }
         else if (subCmd == "xy?") {
-            size_t idx = pLiaConfig->idx;
-            std::cout << std::format("{:e},{:e}", pLiaConfig->xyForTimeWindow[0].x[idx], pLiaConfig->xyForTimeWindow[0].y[idx]);
+            size_t idx = pLiaConfig->ringBuffer.idx;
+            std::cout << std::format("{:e},{:e}", pLiaConfig->ringBuffer.ch[0].x[idx], pLiaConfig->ringBuffer.ch[0].y[idx]);
             if (pLiaConfig->flagCh2) {
-                std::cout << std::format(",{:e},{:e}", pLiaConfig->xyForTimeWindow[1].x[idx], pLiaConfig->xyForTimeWindow[1].y[idx]);
+                std::cout << std::format(",{:e},{:e}", pLiaConfig->ringBuffer.ch[1].x[idx], pLiaConfig->ringBuffer.ch[1].y[idx]);
             }
             std::cout << std::endl;
             return true;
