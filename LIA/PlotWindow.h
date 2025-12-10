@@ -39,8 +39,8 @@ public:
     RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "Raw waveform"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(450 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(430 * liaConfig.window.monitorScale, 600 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(430 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
@@ -50,8 +50,8 @@ inline void RawPlotWindow::show()
     ButtonType button = ButtonType::NON;
     static float value = 0;
     
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imgui.windowFlag);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
     
     if (ImGui::Button("Save"))
@@ -64,22 +64,22 @@ inline void RawPlotWindow::show()
         value = 0;
     }
     //ImGui::SameLine();
-    ImGui::SliderFloat("Y limit", &(liaConfig.plot.rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(liaConfig.plotCfg.rawLimit), 0.1f, RAW_RANGE * 1.2f, "%4.1f V");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::RawLimit;
-        value = liaConfig.plot.rawLimit;
+        value = liaConfig.plotCfg.rawLimit;
     }
     // プロット描画
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
         ImPlot::SetupAxes("Time (us)", "v (V)", 0, 0);
-        if (liaConfig.plot.rawLimit <= MILI_VOLT)
+        if (liaConfig.plotCfg.rawLimit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time (us)", "v (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.rawTime.data()[0], liaConfig.rawTime.data()[liaConfig.rawTime.size() - 1], ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.rawLimit, liaConfig.plot.rawLimit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.rawLimit, liaConfig.plotCfg.rawLimit, ImGuiCond_Always);
         
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
@@ -108,8 +108,8 @@ public:
     TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "Time chart"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(450 * liaConfig.window.monitorScale, 600 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(990 * liaConfig.window.monitorScale, 360 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(990 * liaConfig.windowCfg.monitorScale, 360 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
@@ -119,17 +119,17 @@ inline void TimeChartWindow::show()
     ButtonType button = ButtonType::NON;
     static float value = 0;
     
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imgui.windowFlag);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
-    static float historySecMax = (float)(MEASUREMENT_DT) * liaConfig.ringBuffer.times.size();
+    static float historySecMax = (float)(MEASUREMENT_DT) * (liaConfig.ringBuffer.times.size()-1);
     if (liaConfig.pauseCfg.flag) { ImGui::BeginDisabled(); }
-    ImGui::SetNextItemWidth(500.0f * liaConfig.window.monitorScale);
-    ImGui::SliderFloat("History", &liaConfig.plot.historySec, 1, historySecMax, "%5.1f s");
+    ImGui::SetNextItemWidth(500.0f * liaConfig.windowCfg.monitorScale);
+    ImGui::SliderFloat("History", &liaConfig.plotCfg.historySec, 1, historySecMax, "%5.1f s");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::TimeHistory;
-        value = liaConfig.plot.historySec;
+        value = liaConfig.plotCfg.historySec;
     }
     if (liaConfig.pauseCfg.flag) { ImGui::EndDisabled(); }
     ImGui::SameLine();
@@ -137,7 +137,7 @@ inline void TimeChartWindow::show()
     {
         liaConfig.saveResultsToFile(
             std::format("ect_{}.csv", liaConfig.getCurrentTimestamp()),
-            liaConfig.plot.historySec
+            liaConfig.plotCfg.historySec
         );
     }
     ImGui::SameLine();
@@ -160,16 +160,16 @@ inline void TimeChartWindow::show()
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
-        if (liaConfig.plot.limit <= MILI_VOLT)
+        if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time", "v (mV)", ImPlotAxisFlags_NoTickLabels, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         if (!liaConfig.pauseCfg.flag)
         {
-            ImPlot::SetupAxisLimits(ImAxis_X1, t - liaConfig.plot.historySec, t, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, t - liaConfig.plotCfg.historySec, t, ImGuiCond_Always);
         }
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]),
             liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
@@ -187,10 +187,10 @@ inline void TimeChartWindow::show()
 			if (flag) // 初回のみ矩形を右端にセット
             {
                 liaConfig.pauseCfg.set(
-                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - liaConfig.plot.historySec / 10,
+                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - liaConfig.plotCfg.historySec / 10,
                     liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx],
-                    -liaConfig.plot.limit / 2,
-                    liaConfig.plot.limit / 2);
+                    -liaConfig.plotCfg.limit / 2,
+                    liaConfig.plotCfg.limit / 2);
                 flag = false;
             }
             static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None;
@@ -227,8 +227,8 @@ public:
     TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "Time chart zoom"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(0 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(750 * liaConfig.window.monitorScale, 600 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(750 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 
@@ -244,13 +244,14 @@ inline void TimeChartZoomWindow::show()
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
         double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx];
         ImPlot::SetupAxes("Time (s)", "v (V)", 0, 0);
-        if (liaConfig.plot.limit <= MILI_VOLT)
+        if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Time (s)", "v (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.pauseCfg.selectArea.X.Min, liaConfig.pauseCfg.selectArea.X.Max, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, liaConfig.pauseCfg.selectArea.Y.Min, liaConfig.pauseCfg.selectArea.Y.Max, ImGuiCond_Always);
+		
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]),
             liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
@@ -340,9 +341,9 @@ inline void TimeChartZoomWindow::show()
         liaConfig.acfmData.ch1vpp = abs(ch1vs[1] - ch1vs[0]);
         liaConfig.acfmData.ch2vpp = abs(ch2vs[1] - ch2vs[0]);
         if (ch1t50s[0] < ch1t50s[1] && liaConfig.acfmData.ch1vpp > 2e-3) {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
             ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[9], -1.0f, colors[9]);
             ImPlot::PlotScatter("##ch1_50% marker", ch1t50s, ch1v50s, 2);
             ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
             ImPlot::PlotLine("##ch1_50% line", ch1t50s, ch1v50s, 2);
@@ -359,9 +360,9 @@ inline void TimeChartZoomWindow::show()
             );
         }
         if (liaConfig.flagCh2 && liaConfig.acfmData.ch2vpp > 10e-3) {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[9], -1.0f, colors[9]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[9], -1.0f, colors[9]);
             ImPlot::PlotScatter("##ch2_50% marker", ch2ts, ch2v50s, 2);
             ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
             ImPlot::PlotLine("##ch2 line", ch2ts, ch2v50s, 2);
@@ -391,16 +392,16 @@ public:
     DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "DeltTime chart"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(0 * liaConfig.window.monitorScale, 750 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(450 * liaConfig.window.monitorScale, 210 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 750 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(450 * liaConfig.windowCfg.monitorScale, 210 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
 
 inline void DeltaTimeChartWindow::show()
 {
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imgui.windowFlag);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
     static float historySecMax = (float)(MEASUREMENT_DT)*liaConfig.ringBuffer.times.size();
     static float historySec = 10;
@@ -429,8 +430,8 @@ public:
     XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "XY"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(880 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 600 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(880 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
@@ -439,10 +440,10 @@ inline void XYPlotWindow::show()
 {
     ButtonType button = ButtonType::NON;
     static float value = 0;
-    if (liaConfig.plot.surfaceMode)
+    if (liaConfig.plotCfg.surfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imgui.windowFlag); //ImGui::GetIO().DisplaySize
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.1f V");
     if (ImGui::Button("Clear"))
@@ -480,20 +481,20 @@ inline void XYPlotWindow::show()
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("x (V)", "y (V)", 0, 0);
-        if (liaConfig.plot.limit <= MILI_VOLT)
+        if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("x (mV)", "y (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        if (liaConfig.plot.surfaceMode)
+        if (liaConfig.plotCfg.surfaceMode)
         {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.limit * 4, liaConfig.plot.limit * 4, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.limit / 4, liaConfig.plot.limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.limit * 4, liaConfig.plotCfg.limit * 4, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit / 4, liaConfig.plotCfg.limit, ImGuiCond_Always);
         }
         else {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.limit, liaConfig.plot.limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         }
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
@@ -501,7 +502,7 @@ inline void XYPlotWindow::show()
             liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
         );
         ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1);
         if (liaConfig.flagCh2)
         {
@@ -510,14 +511,14 @@ inline void XYPlotWindow::show()
                 liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
             );
             ImPlot::PopStyleColor();
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
+            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1);
         }
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
     ImGui::End();
-    if (liaConfig.plot.surfaceMode)
+    if (liaConfig.plotCfg.surfaceMode)
         ImGui::PopStyleColor();
     if (button != ButtonType::NON)
     {
@@ -534,8 +535,8 @@ public:
     ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(730 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 650 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
@@ -562,27 +563,27 @@ inline void ACFMPlotWindow::show()
     else {
         if (ImGui::Button("Pause")) { liaConfig.pauseCfg.flag = true; }
     }
-    if (ImGui::SliderFloat("Vh limit", &(liaConfig.plot.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
-        liaConfig.plot.Vv_limit = liaConfig.plot.Vh_limit * 2;
+    if (ImGui::SliderFloat("Vh limit", &(liaConfig.plotCfg.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
+        liaConfig.plotCfg.Vv_limit = liaConfig.plotCfg.Vh_limit * 2;
     }
-    ImGui::SliderFloat("Vv limit", &(liaConfig.plot.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
+    ImGui::SliderFloat("Vv limit", &(liaConfig.plotCfg.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Vv (V)", "Vh (V)", 0, 0);
-        if (liaConfig.plot.limit <= MILI_VOLT)
+        if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Vv (mV)", "Vh (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plot.Vv_limit, liaConfig.plot.Vv_limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plot.Vh_limit, liaConfig.plot.Vh_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vv_limit, liaConfig.plotCfg.Vv_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vh_limit, liaConfig.plotCfg.Vh_limit, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyRingBuffer.ch[1].y[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
             liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
         );
         ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[8], -1.0f, colors[8]);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[8], -1.0f, colors[8]);
         ImPlot::PlotScatter("##NOW", &(liaConfig.xyRingBuffer.ch[1].y[liaConfig.xyRingBuffer.idx]), &(liaConfig.xyRingBuffer.ch[0].y[liaConfig.xyRingBuffer.idx]), 1);
         double vhreal = liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx];
         double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[2];
@@ -599,7 +600,7 @@ inline void ACFMPlotWindow::show()
         ImPlot::PlotText(
             thickness,
             0.0,
-            liaConfig.plot.Vh_limit * 0.9
+            liaConfig.plotCfg.Vh_limit * 0.9
         );
         ImPlot::EndPlot();
     }
@@ -614,8 +615,8 @@ public:
     ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
         : ImGuiWindowBase(window, "ACFM Vh-Vv"), liaConfig(liaConfig)
     {
-        this->windowPos = ImVec2(730 * liaConfig.window.monitorScale, 0 * liaConfig.window.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.window.monitorScale, 650 * liaConfig.window.monitorScale);
+        this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
     }
     void show(void);
 };
@@ -628,17 +629,17 @@ inline void ACFMVhVvPlotWindow::show()
     // プロット描画
     if (ImPlot::BeginPlot("##Vh-Vv", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         ImPlot::SetupAxes("Vvpp (V)", "Vhpp (V)", 0, 0);
-        if (liaConfig.plot.limit <= MILI_VOLT)
+        if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
             ImPlot::SetupAxes("Vvpp (mV)", "Vhpp (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plot.Vv_limit*2, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plot.Vh_limit, ImGuiCond_Always);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[2], -1.0f, colors[2]);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.Vv_limit*2, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vh_limit, ImGuiCond_Always);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.window.monitorScale, colors[7], -1.0f, colors[7]);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
         ImPlot::PlotScatter("Result", &(liaConfig.acfmData.ch2vpp), &(liaConfig.acfmData.ch1vpp), 1);
         ImPlot::EndPlot();
     }

@@ -31,14 +31,14 @@ public:
 
 	}
 	void show(void) {
-		const float nextItemWidth = 150 * liaConfig.window.monitorScale;
+		const float nextItemWidth = 150 * liaConfig.windowCfg.monitorScale;
 		static int theme = 0;
-		if (theme != liaConfig.imgui.theme)
+		if (theme != liaConfig.imguiCfg.theme)
 		{
-			theme = liaConfig.imgui.theme;
+			theme = liaConfig.imguiCfg.theme;
 			Gui::setStyle(theme);
 		}
-		beep.update(liaConfig.plot.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
+		beep.update(liaConfig.plotCfg.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
@@ -47,14 +47,14 @@ public:
 		timeChartWindow.show();
 		deltaTimeChartWindow.show();
 		controlWindow.show();
-		if (liaConfig.plot.acfm) {
+		if (liaConfig.plotCfg.acfm) {
 			acfmPlotWindow.show();
 		}
 		if (liaConfig.pauseCfg.flag)
 		{
 			col.w = 1.0f;
 			timeChartZoomWindow.show();
-			if (liaConfig.plot.acfm) acfmVhVvPlotWindow.show();
+			if (liaConfig.plotCfg.acfm) acfmVhVvPlotWindow.show();
 		}
 	}
 };

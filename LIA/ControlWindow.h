@@ -15,7 +15,7 @@ public:
     ControlWindow(GLFWwindow* window, LiaConfig& liaConfig)
 		: ImGuiWindowBase(window, "Control panel"), liaConfig(liaConfig)
     {
-        this->windowSize = ImVec2(450 * liaConfig.window.monitorScale, 920 * liaConfig.window.monitorScale);
+        this->windowSize = ImVec2(450 * liaConfig.windowCfg.monitorScale, 920 * liaConfig.windowCfg.monitorScale);
     }
     void buttonPressed(const ButtonType button, const float value)
     {
@@ -40,51 +40,51 @@ inline void ControlWindow::awg(const float nextItemWidth)
         if (ImGui::BeginTabItem("W1"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = liaConfig.awg.ch[0].freq * 1e-3f;
+            float freqkHz = liaConfig.awgCfg.ch[0].freq * 1e-3f;
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
                 if (freqkHz < LOW_LIMIT_FREQ * 1e-3) freqkHz = LOW_LIMIT_FREQ * 1e-3;
                 if (freqkHz > HIGH_LIMIT_FREQ * 1e-3) freqkHz = HIGH_LIMIT_FREQ * 1e-3;
-                if (liaConfig.awg.ch[0].freq != freqkHz * 1e3f)
+                if (liaConfig.awgCfg.ch[0].freq != freqkHz * 1e3f)
                 {
-                    liaConfig.awg.ch[0].freq = freqkHz * 1e3f;
-                    liaConfig.awg.ch[1].freq = freqkHz * 1e3f;
+                    liaConfig.awgCfg.ch[0].freq = freqkHz * 1e3f;
+                    liaConfig.awgCfg.ch[1].freq = freqkHz * 1e3f;
                     fgFlag = true;
                 }
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW1Freq;
-                value = liaConfig.awg.ch[0].freq;
+                value = liaConfig.awgCfg.ch[0].freq;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldCh0Amp = liaConfig.awg.ch[0].amp;
-            if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
+            static float oldCh0Amp = liaConfig.awgCfg.ch[0].amp;
+            if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awgCfg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
             {
-                if (liaConfig.awg.ch[0].amp < 0.1f) liaConfig.awg.ch[0].amp = 0.1f;
-                if (liaConfig.awg.ch[0].amp > 5.0f) liaConfig.awg.ch[0].amp = AWG_AMP_MAX;
-                if (oldCh0Amp != liaConfig.awg.ch[0].amp)
+                if (liaConfig.awgCfg.ch[0].amp < 0.1f) liaConfig.awgCfg.ch[0].amp = 0.1f;
+                if (liaConfig.awgCfg.ch[0].amp > 5.0f) liaConfig.awgCfg.ch[0].amp = AWG_AMP_MAX;
+                if (oldCh0Amp != liaConfig.awgCfg.ch[0].amp)
                 {
-                    oldCh0Amp = liaConfig.awg.ch[0].amp;
+                    oldCh0Amp = liaConfig.awgCfg.ch[0].amp;
                     fgFlag = true;
                 }
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW1Amp;
-                value = liaConfig.awg.ch[0].amp;
+                value = liaConfig.awgCfg.ch[0].amp;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             //static float oldCh0Phase = liaConfig.awg.ch[0].phase;
             ImGui::BeginDisabled();
-            if (ImGui::InputFloat((char*)u8"θ (Deg.)", &(liaConfig.awg.ch[0].phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"θ (Deg.)", &(liaConfig.awgCfg.ch[0].phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW1Phase;
-                value = liaConfig.awg.ch[0].phase;
+                value = liaConfig.awgCfg.ch[0].phase;
             }
             ImGui::EndTabItem();
             ImGui::EndDisabled();
@@ -92,50 +92,50 @@ inline void ControlWindow::awg(const float nextItemWidth)
         if (ImGui::BeginTabItem("W2"))
         {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = liaConfig.awg.ch[1].freq * 1e-3f;
+            float freqkHz = liaConfig.awgCfg.ch[1].freq * 1e-3f;
             ImGui::BeginDisabled();
             if (ImGui::InputFloat("Freq. (kHz)", &(freqkHz), 1.0f, 1.0f, "%3.0f"))
             {
                 if (freqkHz < LOW_LIMIT_FREQ * 1e-3) freqkHz = LOW_LIMIT_FREQ * 1e-3;
                 if (freqkHz > HIGH_LIMIT_FREQ * 1e-3) freqkHz = HIGH_LIMIT_FREQ * 1e-3;
-                if (liaConfig.awg.ch[1].freq != freqkHz * 1e3f)
+                if (liaConfig.awgCfg.ch[1].freq != freqkHz * 1e3f)
                 {
-                    liaConfig.awg.ch[1].freq = freqkHz * 1e3f;
+                    liaConfig.awgCfg.ch[1].freq = freqkHz * 1e3f;
                     fgFlag = true;
                 }
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW2Freq;
-                value = liaConfig.awg.ch[1].freq;
+                value = liaConfig.awgCfg.ch[1].freq;
             }
             ImGui::EndDisabled();
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldFg2Amp = liaConfig.awg.ch[1].amp;
-            if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
+            static float oldFg2Amp = liaConfig.awgCfg.ch[1].amp;
+            if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awgCfg.ch[1].amp), 0.01f, 0.1f, "%4.2f"))
             {
-                if (liaConfig.awg.ch[1].amp < 0.0f) liaConfig.awg.ch[1].amp = 0.0f;
-                if (liaConfig.awg.ch[1].amp > 5.0f) liaConfig.awg.ch[1].amp = AWG_AMP_MAX;
-                if (oldFg2Amp != liaConfig.awg.ch[1].amp)
+                if (liaConfig.awgCfg.ch[1].amp < 0.0f) liaConfig.awgCfg.ch[1].amp = 0.0f;
+                if (liaConfig.awgCfg.ch[1].amp > 5.0f) liaConfig.awgCfg.ch[1].amp = AWG_AMP_MAX;
+                if (oldFg2Amp != liaConfig.awgCfg.ch[1].amp)
                 {
-                    oldFg2Amp = liaConfig.awg.ch[1].amp;
+                    oldFg2Amp = liaConfig.awgCfg.ch[1].amp;
                     fgFlag = true;
                 }
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW2Amp;
-                value = liaConfig.awg.ch[1].amp;
+                value = liaConfig.awgCfg.ch[1].amp;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat((char*)u8"θ (Deg.)", &(liaConfig.awg.ch[1].phase), 1, 1, "%3.0f"))
+            if (ImGui::InputFloat((char*)u8"θ (Deg.)", &(liaConfig.awgCfg.ch[1].phase), 1, 1, "%3.0f"))
             {
                 fgFlag = true;
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::AwgW2Phase;
-                value = liaConfig.awg.ch[1].phase;
+                value = liaConfig.awgCfg.ch[1].phase;
             }
             ImGui::EndTabItem();
         }
@@ -143,8 +143,8 @@ inline void ControlWindow::awg(const float nextItemWidth)
         if (liaConfig.pDaq != nullptr && fgFlag)
         {
             liaConfig.pDaq->awg.start(
-                liaConfig.awg.ch[0].freq, liaConfig.awg.ch[0].amp, liaConfig.awg.ch[0].phase,
-                liaConfig.awg.ch[1].freq, liaConfig.awg.ch[1].amp, liaConfig.awg.ch[1].phase
+                liaConfig.awgCfg.ch[0].freq, liaConfig.awgCfg.ch[0].amp, liaConfig.awgCfg.ch[0].phase,
+                liaConfig.awgCfg.ch[1].freq, liaConfig.awgCfg.ch[1].amp, liaConfig.awgCfg.ch[1].phase
             );
         }
         if (button != ButtonType::NON) buttonPressed(button, value);
@@ -163,34 +163,34 @@ inline void ControlWindow::plot(const float nextItemWidth)
         {
             ImGui::SetNextItemWidth(nextItemWidth);
             float step = 0.1f;
-            if (liaConfig.plot.limit <= 0.1f) step = 0.01f;
+            if (liaConfig.plotCfg.limit <= 0.1f) step = 0.01f;
             else step = 0.1f;
-            if (ImGui::InputFloat("Limit (V)", &(liaConfig.plot.limit), step, 0.1f, "%.2f"))
+            if (ImGui::InputFloat("Limit (V)", &(liaConfig.plotCfg.limit), step, 0.1f, "%.2f"))
             {
-                if (liaConfig.plot.limit < 0.01f) liaConfig.plot.limit = 0.01f;
-                if (liaConfig.plot.limit > RAW_RANGE * 1.2f) liaConfig.plot.limit = RAW_RANGE * 1.2f;
-                if (0.1f < liaConfig.plot.limit && liaConfig.plot.limit < 0.2f) liaConfig.plot.limit = 0.2f;
+                if (liaConfig.plotCfg.limit < 0.01f) liaConfig.plotCfg.limit = 0.01f;
+                if (liaConfig.plotCfg.limit > RAW_RANGE * 1.2f) liaConfig.plotCfg.limit = RAW_RANGE * 1.2f;
+                if (0.1f < liaConfig.plotCfg.limit && liaConfig.plotCfg.limit < 0.2f) liaConfig.plotCfg.limit = 0.2f;
             }
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::PlotLimit;
-                value = liaConfig.plot.limit;
+                value = liaConfig.plotCfg.limit;
             }
             ImGui::SetNextItemWidth(nextItemWidth);
             if (liaConfig.pauseCfg.flag) { ImGui::BeginDisabled(); }
-            ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &(liaConfig.post.offset[0].phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &(liaConfig.postCfg.offset[0].phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::PostOffset1Phase;
-                value = liaConfig.post.offset[0].phase;
+                value = liaConfig.postCfg.offset[0].phase;
             }
             if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &(liaConfig.post.offset[1].phase), 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &(liaConfig.postCfg.offset[1].phase), 1.0, 10.0, "%3.0f");
             if (ImGui::IsItemDeactivated()) {
                 // ボタンが離された瞬間（フォーカスが外れた）
                 button = ButtonType::PostOffset2Phase;
-                value = liaConfig.post.offset[1].phase;
+                value = liaConfig.postCfg.offset[1].phase;
             }
             if (!liaConfig.flagCh2) { ImGui::EndDisabled(); }
             if (liaConfig.pauseCfg.flag) { ImGui::EndDisabled(); }
@@ -200,15 +200,15 @@ inline void ControlWindow::plot(const float nextItemWidth)
         {
             ImGui::SetNextItemWidth(nextItemWidth);
             const char* items[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue" , "NeonGreen" , "NeonRed", "Eva"};
-            ImGui::ListBox("Thema", &liaConfig.imgui.theme, items, IM_ARRAYSIZE(items), 3);
+            ImGui::ListBox("Thema", &liaConfig.imguiCfg.theme, items, IM_ARRAYSIZE(items), 3);
 
             ImGui::SameLine();
-            if (liaConfig.imgui.windowFlag == ImGuiCond_FirstUseEver)
+            if (liaConfig.imguiCfg.windowFlag == ImGuiCond_FirstUseEver)
             {
-                if (ImGui::Button("Lock")) { liaConfig.imgui.windowFlag = ImGuiCond_Always; }
+                if (ImGui::Button("Lock")) { liaConfig.imguiCfg.windowFlag = ImGuiCond_Always; }
             }
             else {
-                if (ImGui::Button("Unlock")) { liaConfig.imgui.windowFlag = ImGuiCond_FirstUseEver; }
+                if (ImGui::Button("Unlock")) { liaConfig.imguiCfg.windowFlag = ImGuiCond_FirstUseEver; }
             }
 
             ImGui::EndTabItem();
@@ -223,13 +223,13 @@ inline void ControlWindow::post(const float nextItemWidth)
 	// Post設定のUIをここに実装
 	ButtonType button = ButtonType::NON;
 	float value = 0;
-    static ImVec2 autoOffsetSize = ImVec2(200.0f * liaConfig.window.monitorScale, 100.0f * liaConfig.window.monitorScale);
+    static ImVec2 autoOffsetSize = ImVec2(200.0f * liaConfig.windowCfg.monitorScale, 100.0f * liaConfig.windowCfg.monitorScale);
     if (liaConfig.pauseCfg.flag) { ImGui::BeginDisabled(); }
     if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
         liaConfig.flagAutoOffset = true;
     }
     bool stateAutoOffset = true;
-    if (liaConfig.post.offset[0].x == 0 && liaConfig.post.offset[0].y == 0)
+    if (liaConfig.postCfg.offset[0].x == 0 && liaConfig.postCfg.offset[0].y == 0)
     {
         stateAutoOffset = false;
         ImGui::BeginDisabled();
@@ -240,10 +240,10 @@ inline void ControlWindow::post(const float nextItemWidth)
         value = 0;
     }
     ImGui::SameLine();
-    static ImVec2 offSize = ImVec2(100.0f * liaConfig.window.monitorScale, autoOffsetSize.y);
+    static ImVec2 offSize = ImVec2(100.0f * liaConfig.windowCfg.monitorScale, autoOffsetSize.y);
     if (ImGui::Button("Off", offSize)) {
-        liaConfig.post.offset[0].x = 0.0f; liaConfig.post.offset[0].y = 0.0f;
-        liaConfig.post.offset[1].x = 0.0f; liaConfig.post.offset[1].y = 0.0f;
+        liaConfig.postCfg.offset[0].x = 0.0f; liaConfig.postCfg.offset[0].y = 0.0f;
+        liaConfig.postCfg.offset[1].x = 0.0f; liaConfig.postCfg.offset[1].y = 0.0f;
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -253,7 +253,7 @@ inline void ControlWindow::post(const float nextItemWidth)
     if (!stateAutoOffset) ImGui::EndDisabled();
     if (liaConfig.pauseCfg.flag) { ImGui::EndDisabled(); }
     ImGui::SameLine();
-    ImGui::Dummy(ImVec2(1.0f * liaConfig.window.monitorScale, 0.0f));
+    ImGui::Dummy(ImVec2(1.0f * liaConfig.windowCfg.monitorScale, 0.0f));
     ImGui::SameLine();
     if (liaConfig.pauseCfg.flag)
     {
@@ -270,9 +270,9 @@ inline void ControlWindow::post(const float nextItemWidth)
     if (ImGui::TreeNode("Offset value"))
     {
         if (!stateAutoOffset) ImGui::BeginDisabled();
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset[0].x, liaConfig.post.offset[0].y);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.postCfg.offset[0].x, liaConfig.postCfg.offset[0].y);
         if (!liaConfig.flagCh2) { ImGui::BeginDisabled(); }
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.post.offset[1].x, liaConfig.post.offset[1].y);
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.postCfg.offset[1].x, liaConfig.postCfg.offset[1].y);
         if (!liaConfig.flagCh2) ImGui::EndDisabled();
         ImGui::TreePop();
         if (!stateAutoOffset) ImGui::EndDisabled();
@@ -309,25 +309,25 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
 {
 	ButtonType button = ButtonType::NON;
 	float value = 0;
-    ImGui::Checkbox("Surface Mode", &liaConfig.plot.surfaceMode);
+    ImGui::Checkbox("Surface Mode", &liaConfig.plotCfg.surfaceMode);
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PlotSurfaceMode;
-        value = liaConfig.plot.surfaceMode;
+        value = liaConfig.plotCfg.surfaceMode;
     }
     ImGui::SameLine();
-    ImGui::Checkbox("Beep", &liaConfig.plot.beep);
+    ImGui::Checkbox("Beep", &liaConfig.plotCfg.beep);
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PlotBeep;
-        value = liaConfig.plot.surfaceMode;
+        value = liaConfig.plotCfg.surfaceMode;
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PlotBeep;
-        value = liaConfig.plot.beep;
+        value = liaConfig.plotCfg.beep;
     }
-    if (liaConfig.plot.acfm)
+    if (liaConfig.plotCfg.acfm)
     {
         liaConfig.flagCh2 = true;
         ImGui::BeginDisabled();
@@ -338,38 +338,38 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
         button = ButtonType::DispCh2;
         value = liaConfig.flagCh2;
     }
-    if (liaConfig.plot.acfm) ImGui::EndDisabled();
+    if (liaConfig.plotCfg.acfm) ImGui::EndDisabled();
 
     ImGui::SameLine();
-    ImGui::Checkbox("ACFM", &liaConfig.plot.acfm);
+    ImGui::Checkbox("ACFM", &liaConfig.plotCfg.acfm);
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PlotACFM;
-        value = liaConfig.plot.acfm;
+        value = liaConfig.plotCfg.acfm;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("HPF (Hz)", &(liaConfig.post.hpFreq), 0.1f, 1.0f, "%.1f"))
+    if (ImGui::InputFloat("HPF (Hz)", &(liaConfig.postCfg.hpFreq), 0.1f, 1.0f, "%.1f"))
     {
-        if (liaConfig.post.hpFreq < 0.0f) liaConfig.post.hpFreq = 0.0f;
-        if (liaConfig.post.hpFreq > 10.0f) liaConfig.post.hpFreq = 10.0f;
-		liaConfig.setHPFrequency(liaConfig.post.hpFreq);
+        if (liaConfig.postCfg.hpFreq < 0.0f) liaConfig.postCfg.hpFreq = 0.0f;
+        if (liaConfig.postCfg.hpFreq > 10.0f) liaConfig.postCfg.hpFreq = 10.0f;
+		liaConfig.setHPFrequency(liaConfig.postCfg.hpFreq);
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PostHpFreq;
-        value = liaConfig.post.hpFreq;
+        value = liaConfig.postCfg.hpFreq;
     }
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("LPF (Hz)", &(liaConfig.post.lpFreq), 1.0f, 10.0f, "%.0f"))
+    if (ImGui::InputFloat("LPF (Hz)", &(liaConfig.postCfg.lpFreq), 1.0f, 10.0f, "%.0f"))
     {
-        if (liaConfig.post.lpFreq < 1.0f) liaConfig.post.lpFreq = 1.0f;
-        if (liaConfig.post.lpFreq > 100.0f) liaConfig.post.lpFreq = 100.0f;
-        liaConfig.setLPFrequency(liaConfig.post.lpFreq);
+        if (liaConfig.postCfg.lpFreq < 1.0f) liaConfig.postCfg.lpFreq = 1.0f;
+        if (liaConfig.postCfg.lpFreq > 100.0f) liaConfig.postCfg.lpFreq = 100.0f;
+        liaConfig.setLPFrequency(liaConfig.postCfg.lpFreq);
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::PostLpFreq;
-        value = liaConfig.post.lpFreq;
+        value = liaConfig.postCfg.lpFreq;
     }
     if (button != ButtonType::NON) buttonPressed(button, value);
 }
@@ -378,9 +378,9 @@ inline void ControlWindow::show(void)
 {
     ButtonType button = ButtonType::NON;
     float value = 0;
-    static float nextItemWidth = 170.0f * liaConfig.window.monitorScale;
-    ImGui::SetNextWindowPos(ImVec2(0, 0), liaConfig.imgui.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imgui.windowFlag);
+    static float nextItemWidth = 170.0f * liaConfig.windowCfg.monitorScale;
+    ImGui::SetNextWindowPos(ImVec2(0, 0), liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
     ImGui::SetNextItemWidth(nextItemWidth);
     ImGui::Text("%s", liaConfig.device_sn.data());

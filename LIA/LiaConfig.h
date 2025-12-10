@@ -26,10 +26,10 @@
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 2*5000;// 50e-6 / RAW_DT;
-constexpr double MEASUREMENT_DT = 2.0e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 10;
-constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT);
+constexpr size_t RAW_SIZE = 2*5000;
+constexpr double MEASUREMENT_DT = 1;// 2.0e-3;
+constexpr size_t MEASUREMENT_SEC = 10;// 60 * 10;
+constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT+1);
 constexpr float XY_HISTORY_SEC = 10.0f;
 constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
 
@@ -254,7 +254,7 @@ public:
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
         float Vh_limit = 1.5f, Vv_limit = 1.5f;
-        int idxXYStart = 0, idxXYEnd = 0;
+        int idxXYStart = 0, idxXYSize = 0;
     };
 
     // --- Public Members ---
@@ -264,11 +264,11 @@ public:
     std::vector<std::array<float, 3>> cmds;
 
     // Configuration Data
-    WindowCfg window;
-    ImGuiCfg imgui;
-    AwgCfg awg;
-    PostCfg post;
-    PlotCfg plot;
+    WindowCfg windowCfg;
+    ImGuiCfg imguiCfg;
+    AwgCfg awgCfg;
+    PostCfg postCfg;
+    PlotCfg plotCfg;
 
     // State Flags
     bool flagCh2 = false;
@@ -380,28 +380,28 @@ public:
     }
     // --- Public Methods for Logic and I/O ---
     void setHPFrequency(double freq) {
-        post.hpFreq = freq;
+        postCfg.hpFreq = freq;
         hpfCh[0].x.setCutoffFrequency(freq);
         hpfCh[0].y.setCutoffFrequency(freq);
         hpfCh[1].x.setCutoffFrequency(freq);
         hpfCh[1].y.setCutoffFrequency(freq);
     }
     void setLPFrequency(double freq) {
-        post.lpFreq = freq;
+        postCfg.lpFreq = freq;
         lpfCh[0].x.setCutoffFrequency(freq);
         lpfCh[0].y.setCutoffFrequency(freq);
         lpfCh[1].x.setCutoffFrequency(freq);
         lpfCh[1].y.setCutoffFrequency(freq);
     }
     void reset() {
-        awg = AwgCfg();
-        post = PostCfg();
-        plot = PlotCfg();
+        awgCfg = AwgCfg();
+        postCfg = PostCfg();
+        plotCfg = PlotCfg();
         flagCh2 = false;
         flagAutoOffset = false;
         pauseCfg.flag = false;
-        setHPFrequency(post.hpFreq);
-        setLPFrequency(post.lpFreq);
+        setHPFrequency(postCfg.hpFreq);
+        setLPFrequency(postCfg.lpFreq);
     }
     void AddPoint(double t, double x, double y) {
         ringBuffer.ch[0].x[ringBuffer.tail] = hpfCh[0].x.process(lpfCh[0].x.process(x));
@@ -425,8 +425,8 @@ public:
     }
 
     void update(double t) {
-        if (psd.currentFreq != awg.ch[0].freq) {
-            psd.initialize(awg.ch[0].freq, RAW_DT, rawData[0].size());
+        if (psd.currentFreq != awgCfg.ch[0].freq) {
+            psd.initialize(awgCfg.ch[0].freq, RAW_DT, rawData[0].size());
         }
 
         auto [x1, y1] = psd.calculate(rawData[0].data());
@@ -438,25 +438,40 @@ public:
         }
 
         if (flagAutoOffset) {
-            post.offset[0].x = x1; post.offset[0].y = y1;
+            postCfg.offset[0].x = x1; postCfg.offset[0].y = y1;
             if (flagCh2) {
-                post.offset[1].x = x2; post.offset[1].y = y2;
+                postCfg.offset[1].x = x2; postCfg.offset[1].y = y2;
             }
             flagAutoOffset = false;
         }
 
-        x1 -= post.offset[0].x;
-        y1 -= post.offset[0].y;
-        auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, post.offset[0].phase);
+        x1 -= postCfg.offset[0].x;
+        y1 -= postCfg.offset[0].y;
+        auto [final_x1, final_y1] = psd.rotate_phase(x1, y1, postCfg.offset[0].phase);
 
         if (flagCh2) {
-            x2 -= post.offset[1].x;
-            y2 -= post.offset[1].y;
-            auto [final_x2, final_y2] = psd.rotate_phase(x2, y2, post.offset[1].phase);
+            x2 -= postCfg.offset[1].x;
+            y2 -= postCfg.offset[1].y;
+            auto [final_x2, final_y2] = psd.rotate_phase(x2, y2, postCfg.offset[1].phase);
             AddPoint(t, final_x1, final_y1, final_x2, final_y2);
         }
         else {
             AddPoint(t, final_x1, final_y1);
+        }
+        plotCfg.idxXYSize = this->ringBuffer.size;
+        if (plotCfg.historySec > 0) {
+            plotCfg.idxXYSize = plotCfg.historySec / MEASUREMENT_DT;
+            if (plotCfg.idxXYSize > this->ringBuffer.size) plotCfg.idxXYSize = this->ringBuffer.size;
+        }
+        plotCfg.idxXYStart = this->ringBuffer.tail - plotCfg.idxXYSize;
+        if (plotCfg.idxXYStart < 0) {
+            if (this->ringBuffer.nofm <= MEASUREMENT_SIZE) {
+                plotCfg.idxXYStart = 0;
+                plotCfg.idxXYSize = this->ringBuffer.tail;
+            }
+            else {
+                plotCfg.idxXYStart += MEASUREMENT_SIZE;
+            }
         }
     }
 
@@ -601,38 +616,38 @@ private:
         IniWrapper ini;
 
 
-        ini.set("Window", "pos.x", window.pos.x);
-        ini.set("Window", "pos.y", window.pos.y);
-        ini.set("Window", "size.x", window.size.x);
-        ini.set("Window", "size.y", window.size.y);
+        ini.set("Window", "pos.x", windowCfg.pos.x);
+        ini.set("Window", "pos.y", windowCfg.pos.y);
+        ini.set("Window", "size.x", windowCfg.size.x);
+        ini.set("Window", "size.y", windowCfg.size.y);
 
-        ini.set("ImGui", "theme", imgui.theme);
-        ini.set("ImGui", "windowFlag", imgui.windowFlag);
+        ini.set("ImGui", "theme", imguiCfg.theme);
+        ini.set("ImGui", "windowFlag", imguiCfg.windowFlag);
 
-        ini.set("Awg", "ch[0].freq", awg.ch[0].freq);
-        ini.set("Awg", "ch[0].amp", awg.ch[0].amp);
-        ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
-        ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
+        ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
+        ini.set("Awg", "ch[0].amp", awgCfg.ch[0].amp);
+        ini.set("Awg", "ch[1].amp", awgCfg.ch[1].amp);
+        ini.set("Awg", "ch[1].phase", awgCfg.ch[1].phase);
 
         ini.set("Scope", "flagCh2", flagCh2);
 
-        ini.set("Post", "offset[0].phase", post.offset[0].phase);
-        ini.set("Post", "offset[0].x", post.offset[0].x);
-        ini.set("Post", "offset[0].y", post.offset[0].y);
-        ini.set("Post", "offset[1].phase", post.offset[1].phase);
-        ini.set("Post", "offset[1].x", post.offset[1].x);
-        ini.set("Post", "offset[1].y", post.offset[1].y);
-        ini.set("Post", "hpFreq", post.hpFreq);
-        ini.set("Post", "lpFreq", post.lpFreq);
+        ini.set("Post", "offset[0].phase", postCfg.offset[0].phase);
+        ini.set("Post", "offset[0].x", postCfg.offset[0].x);
+        ini.set("Post", "offset[0].y", postCfg.offset[0].y);
+        ini.set("Post", "offset[1].phase", postCfg.offset[1].phase);
+        ini.set("Post", "offset[1].x", postCfg.offset[1].x);
+        ini.set("Post", "offset[1].y", postCfg.offset[1].y);
+        ini.set("Post", "hpFreq", postCfg.hpFreq);
+        ini.set("Post", "lpFreq", postCfg.lpFreq);
 
-        ini.set("Plot", "limit", plot.limit);
-        ini.set("Plot", "rawLimit", plot.rawLimit);
-        ini.set("Plot", "historySec", plot.historySec);
-        ini.set("Plot", "surfaceMode", plot.surfaceMode);
-        ini.set("Plot", "beep", plot.beep);
-        ini.set("Plot", "acfm", plot.acfm);
-		ini.set("Plot", "Vh_limit", plot.Vh_limit);
-		ini.set("Plot", "Vv_limit", plot.Vv_limit);
+        ini.set("Plot", "limit", plotCfg.limit);
+        ini.set("Plot", "rawLimit", plotCfg.rawLimit);
+        ini.set("Plot", "historySec", plotCfg.historySec);
+        ini.set("Plot", "surfaceMode", plotCfg.surfaceMode);
+        ini.set("Plot", "beep", plotCfg.beep);
+        ini.set("Plot", "acfm", plotCfg.acfm);
+		ini.set("Plot", "Vh_limit", plotCfg.Vh_limit);
+		ini.set("Plot", "Vv_limit", plotCfg.Vv_limit);
 
         ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
         ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
@@ -647,49 +662,49 @@ private:
         IniWrapper ini;
         ini.load(filename);
 
-        window.pos.x = ini.get("Window", "pos.x", window.pos.x);
-        window.pos.y = ini.get("Window", "pos.y", window.pos.y);
-        window.size.x = ini.get("Window", "size.x", window.size.x);
-        window.size.y = ini.get("Window", "size.y", window.size.y);
+        windowCfg.pos.x = ini.get("Window", "pos.x", windowCfg.pos.x);
+        windowCfg.pos.y = ini.get("Window", "pos.y", windowCfg.pos.y);
+        windowCfg.size.x = ini.get("Window", "size.x", windowCfg.size.x);
+        windowCfg.size.y = ini.get("Window", "size.y", windowCfg.size.y);
 
-        imgui.theme = ini.get("ImGui", "theme", imgui.theme);
-        imgui.windowFlag = ini.get("ImGui", "windowFlag", imgui.windowFlag);
+        imguiCfg.theme = ini.get("ImGui", "theme", imguiCfg.theme);
+        imguiCfg.windowFlag = ini.get("ImGui", "windowFlag", imguiCfg.windowFlag);
 
-        awg.ch[0].freq = ini.get("Awg", "ch[0].freq", awg.ch[0].freq);
-        awg.ch[0].amp = ini.get("Awg", "ch[0].amp", awg.ch[0].amp);
-        awg.ch[1].amp = ini.get("Awg", "ch[1].amp", awg.ch[1].amp);
-        awg.ch[1].phase = ini.get("Awg", "ch[1].phase", awg.ch[1].phase);
+        awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);
+        awgCfg.ch[0].amp = ini.get("Awg", "ch[0].amp", awgCfg.ch[0].amp);
+        awgCfg.ch[1].amp = ini.get("Awg", "ch[1].amp", awgCfg.ch[1].amp);
+        awgCfg.ch[1].phase = ini.get("Awg", "ch[1].phase", awgCfg.ch[1].phase);
 
         flagCh2 = ini.get("Scope", "flagCh2", flagCh2);
 
-        post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
-        post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);
-        post.offset[0].y = ini.get("Post", "offset[0].y", post.offset[0].y);
-        post.offset[1].phase = ini.get("Post", "offset[1].phase", post.offset[1].phase);
-        post.offset[1].x = ini.get("Post", "offset[1].x", post.offset[1].x);
-        post.offset[1].y = ini.get("Post", "offset[1].y", post.offset[1].y);
-        post.hpFreq = ini.get("Post", "hpFreq", post.hpFreq);
-        post.lpFreq = ini.get("Post", "lpFreq", post.lpFreq);
+        postCfg.offset[0].phase = ini.get("Post", "offset[0].phase", postCfg.offset[0].phase);
+        postCfg.offset[0].x = ini.get("Post", "offset[0].x", postCfg.offset[0].x);
+        postCfg.offset[0].y = ini.get("Post", "offset[0].y", postCfg.offset[0].y);
+        postCfg.offset[1].phase = ini.get("Post", "offset[1].phase", postCfg.offset[1].phase);
+        postCfg.offset[1].x = ini.get("Post", "offset[1].x", postCfg.offset[1].x);
+        postCfg.offset[1].y = ini.get("Post", "offset[1].y", postCfg.offset[1].y);
+        postCfg.hpFreq = ini.get("Post", "hpFreq", postCfg.hpFreq);
+        postCfg.lpFreq = ini.get("Post", "lpFreq", postCfg.lpFreq);
 
-        plot.limit = ini.get("Plot", "limit", plot.limit);
-        plot.rawLimit = ini.get("Plot", "rawLimit", plot.rawLimit);
-        plot.historySec = ini.get("Plot", "historySec", plot.historySec);
-        plot.surfaceMode = ini.get("Plot", "surfaceMode", plot.surfaceMode);
-        plot.beep = ini.get("Plot", "beep", plot.beep);
-        plot.acfm = ini.get("Plot", "acfm", plot.acfm);
-		plot.Vh_limit = ini.get("Plot", "Vh_limit", plot.Vh_limit);
-		plot.Vv_limit = ini.get("Plot", "Vv_limit", plot.Vv_limit);
+        plotCfg.limit = ini.get("Plot", "limit", plotCfg.limit);
+        plotCfg.rawLimit = ini.get("Plot", "rawLimit", plotCfg.rawLimit);
+        plotCfg.historySec = ini.get("Plot", "historySec", plotCfg.historySec);
+        plotCfg.surfaceMode = ini.get("Plot", "surfaceMode", plotCfg.surfaceMode);
+        plotCfg.beep = ini.get("Plot", "beep", plotCfg.beep);
+        plotCfg.acfm = ini.get("Plot", "acfm", plotCfg.acfm);
+		plotCfg.Vh_limit = ini.get("Plot", "Vh_limit", plotCfg.Vh_limit);
+		plotCfg.Vv_limit = ini.get("Plot", "Vv_limit", plotCfg.Vv_limit);
 
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);
         const float highLimitFreq = 1.0f / (1000 * RAW_DT);
-        awg.ch[0].freq = std::clamp(awg.ch[0].freq, lowLimitFreq, highLimitFreq);
-        awg.ch[1].freq = awg.ch[0].freq; // Sync frequencies
-        awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
-        awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);
-        plot.limit = std::clamp(plot.limit, 0.0f, 5.0f);
-        setHPFrequency(post.hpFreq);
-        setLPFrequency(post.lpFreq);
+        awgCfg.ch[0].freq = std::clamp(awgCfg.ch[0].freq, lowLimitFreq, highLimitFreq);
+        awgCfg.ch[1].freq = awgCfg.ch[0].freq; // Sync frequencies
+        awgCfg.ch[0].amp = std::clamp(awgCfg.ch[0].amp, 0.1f, 5.0f);
+        awgCfg.ch[1].amp = std::clamp(awgCfg.ch[1].amp, 0.0f, 5.0f);
+        plotCfg.limit = std::clamp(plotCfg.limit, 0.0f, 5.0f);
+        setHPFrequency(postCfg.hpFreq);
+        setLPFrequency(postCfg.lpFreq);
 
         acfmData.mmk[0] = ini.get("ACFM", "mmk[0]", acfmData.mmk[0]);
         acfmData.mmk[1] = ini.get("ACFM", "mmk[1]", acfmData.mmk[1]);

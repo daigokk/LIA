@@ -88,7 +88,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         if (tokens.size() < 2) return false;
 
         // 参照でチャンネル設定を取得
-        auto& ch = isW1 ? pLiaConfig->awg.ch[0] : pLiaConfig->awg.ch[1];
+        auto& ch = isW1 ? pLiaConfig->awgCfg.ch[0] : pLiaConfig->awgCfg.ch[1];
 
         std::string subCmd = tokens[1];
         bool isQuery = subCmd.back() == '?';
@@ -253,13 +253,13 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         if (tokens.size() < 3) return false;
         if (tokens[1] == "xy" && tokens[2] == "limit") {
             if (val >= 0.01 && val <= RAW_RANGE * 1.2) {
-                pLiaConfig->plot.limit = val;
+                pLiaConfig->plotCfg.limit = val;
                 return true;
             }
         }
         else if (tokens[1] == "raw" && tokens[2] == "limit") {
             if (val >= 0.1 && val <= RAW_RANGE * 1.2) {
-                pLiaConfig->plot.rawLimit = val;
+                pLiaConfig->plotCfg.rawLimit = val;
                 return true;
             }
         }
@@ -279,12 +279,12 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
     // ACFM表示設定 (フルコマンドで登録)
     commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
-        if (arg == "on") { pLiaConfig->plot.acfm = true; return true; }
-        if (arg == "off") { pLiaConfig->plot.acfm = false; return true; }
+        if (arg == "on") { pLiaConfig->plotCfg.acfm = true; return true; }
+        if (arg == "off") { pLiaConfig->plotCfg.acfm = false; return true; }
         return false;
         };
     commandMap[":acfm:disp?"] = commandMap["acfm:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pLiaConfig->plot.acfm ? "on" : "off") << std::endl;
+        std::cout << (pLiaConfig->plotCfg.acfm ? "on" : "off") << std::endl;
         return true;
         };
 
@@ -306,8 +306,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 else if (tokens[2] == "state") {
                     if (arg == "on") { pLiaConfig->flagAutoOffset = true; return true; }
                     if (arg == "off") {
-                        pLiaConfig->post.offset[0].x = pLiaConfig->post.offset[0].y = 0;
-                        pLiaConfig->post.offset[1].x = pLiaConfig->post.offset[1].y = 0;
+                        pLiaConfig->postCfg.offset[0].x = pLiaConfig->postCfg.offset[0].y = 0;
+                        pLiaConfig->postCfg.offset[1].x = pLiaConfig->postCfg.offset[1].y = 0;
                         pLiaConfig->flagAutoOffset = false; // state off で自動オフセットもオフにする
                         return true;
                     }
@@ -324,8 +324,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             if (isQuery) subCmd.pop_back();
 
             if (subCmd == "freq" || subCmd == "frequency") {
-                if (isQuery) { std::cout << pLiaConfig->post.hpFreq << std::endl; }
-                else if (val >= 0.0 && val <= 50.0) { pLiaConfig->post.hpFreq = val; }
+                if (isQuery) { std::cout << pLiaConfig->postCfg.hpFreq << std::endl; }
+                else if (val >= 0.0 && val <= 50.0) { pLiaConfig->postCfg.hpFreq = val; }
                 else { return false; }
                 return true;
             }
@@ -334,10 +334,10 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         };
 
     // 計算オフセット位相 (フルコマンドで登録)
-    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset[0].phase = val; return true; };
-    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->post.offset[1].phase = val; return true; };
-    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset[0].phase << std::endl; return true; };
-    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->post.offset[1].phase << std::endl; return true; };
+    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->postCfg.offset[0].phase = val; return true; };
+    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) { pLiaConfig->postCfg.offset[1].phase = val; return true; };
+    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->postCfg.offset[0].phase << std::endl; return true; };
+    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) { std::cout << pLiaConfig->postCfg.offset[1].phase << std::endl; return true; };
 
 
     // --- メインループ ---
@@ -403,8 +403,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         // AWG（任意波形発生器）の更新が必要な場合
         if (awgUpdateRequired && pLiaConfig->pDaq != nullptr) {
             pLiaConfig->pDaq->awg.start(
-                pLiaConfig->awg.ch[0].freq, pLiaConfig->awg.ch[0].amp, pLiaConfig->awg.ch[0].phase,
-                pLiaConfig->awg.ch[1].freq, pLiaConfig->awg.ch[1].amp, pLiaConfig->awg.ch[1].phase
+                pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
+                pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
             );
             awgUpdateRequired = false;
         }

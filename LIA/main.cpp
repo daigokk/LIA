@@ -58,13 +58,13 @@ int main(int argc, char* argv[])
     {
         Gui::Initialize(
             "Lock-in amplifier",
-            settings.window.pos.x, settings.window.pos.y,
-            settings.window.size.x, settings.window.size.y
+            settings.windowCfg.pos.x, settings.windowCfg.pos.y,
+            settings.windowCfg.size.x, settings.windowCfg.size.y
         );
         if (Gui::GetWindow() == nullptr) return -1;
-		settings.window.monitorScale = Gui::monitorScale;
+		settings.windowCfg.monitorScale = Gui::monitorScale;
         if(Gui::SurfacePro7) {
-            settings.imgui.windowFlag = ImGuiCond_Always;
+            settings.imguiCfg.windowFlag = ImGuiCond_Always;
 		}
         pGuiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
     }
@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
             pGuiSub->show();
             Gui::EndFrame();
         }
-        glfwGetWindowSize(Gui::GetWindow(), &(settings.window.size.x), &(settings.window.size.y));
-        glfwGetWindowPos(Gui::GetWindow(), &(settings.window.pos.x), &(settings.window.pos.y));
+        glfwGetWindowSize(Gui::GetWindow(), &(settings.windowCfg.size.x), &(settings.windowCfg.size.y));
+        glfwGetWindowPos(Gui::GetWindow(), &(settings.windowCfg.pos.x), &(settings.windowCfg.pos.y));
         Gui::EndFrame();
     }
     else
@@ -119,8 +119,8 @@ void measurement(std::stop_token st, LiaConfig* pLiaConfig)
     Daq_dwf daq;
     daq.powerSupply(5.0);
     daq.awg.start(
-        pLiaConfig->awg.ch[0].freq, pLiaConfig->awg.ch[0].amp, pLiaConfig->awg.ch[0].phase,
-        pLiaConfig->awg.ch[1].freq, pLiaConfig->awg.ch[1].amp, pLiaConfig->awg.ch[1].phase
+        pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
+        pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
     );
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
@@ -162,10 +162,10 @@ void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
         if (pLiaConfig->pauseCfg.flag) continue;
         double phase = 2 * std::numbers::pi * t / 60;
         for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++) {
-            double wt = 2 * std::numbers::pi * pLiaConfig->awg.ch[0].freq * i * RAW_DT;
-            pLiaConfig->rawData[0][i] = pLiaConfig->awg.ch[0].amp * std::sin(wt - phase);
+            double wt = 2 * std::numbers::pi * pLiaConfig->awgCfg.ch[0].freq * i * RAW_DT;
+            pLiaConfig->rawData[0][i] = pLiaConfig->awgCfg.ch[0].amp * std::sin(wt - phase);
             if (pLiaConfig->flagCh2) {
-                pLiaConfig->rawData[1][i] = pLiaConfig->awg.ch[1].amp * std::sin(wt - pLiaConfig->awg.ch[1].phase);
+                pLiaConfig->rawData[1][i] = pLiaConfig->awgCfg.ch[1].amp * std::sin(wt - pLiaConfig->awgCfg.ch[1].phase);
             }
         }
         pLiaConfig->update(t);
