@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "LiaConfig.h"
 #include "ImGuiWindowBase.h"
+#include "LiaConfig.h"
 
 constexpr auto MILI_VOLT = 0.2f;
 
@@ -36,14 +36,16 @@ class RawPlotWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "Raw waveform"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(430 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
-    }
+    RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline RawPlotWindow::RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "Raw waveform"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(430 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void RawPlotWindow::show()
 {
@@ -105,14 +107,16 @@ class TimeChartWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "Time chart"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(990 * liaConfig.windowCfg.monitorScale, 360 * liaConfig.windowCfg.monitorScale);
-    }
+    TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline TimeChartWindow::TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "Time chart"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(450 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(990 * liaConfig.windowCfg.monitorScale, 360 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void TimeChartWindow::show()
 {
@@ -171,7 +175,7 @@ inline void TimeChartWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         ImPlot::PlotLine(
-            "Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]),
+            "Ch1y", &(liaConfig.ringBuffer.times[liaConfig.plotCfg.idxStart]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.idxStart]),
             liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
         );
         if (liaConfig.flagCh2)
@@ -203,7 +207,6 @@ inline void TimeChartWindow::show()
                 ImVec4(1, 0, 1, 1), flags, &clicked, &hovered, &held
             )) {
 				// ドラッグ中
-				liaConfig.setIdxs();
             }
         }
         else {
@@ -224,15 +227,17 @@ class TimeChartZoomWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "Time chart zoom"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(750 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
-    }
+    TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 
 };
+
+inline TimeChartZoomWindow::TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "Time chart zoom"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(750 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void TimeChartZoomWindow::show()
 {
@@ -389,14 +394,16 @@ class DeltaTimeChartWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "DeltTime chart"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 750 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(450 * liaConfig.windowCfg.monitorScale, 210 * liaConfig.windowCfg.monitorScale);
-    }
+    DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline DeltaTimeChartWindow::DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "DeltTime chart"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 750 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(450 * liaConfig.windowCfg.monitorScale, 210 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void DeltaTimeChartWindow::show()
 {
@@ -427,14 +434,16 @@ class XYPlotWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "XY"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(880 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
-    }
+    XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline XYPlotWindow::XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "XY"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(880 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 600 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void XYPlotWindow::show()
 {
@@ -532,14 +541,16 @@ class ACFMPlotWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
-		: ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
-    }
+    ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline ACFMPlotWindow::ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void ACFMPlotWindow::show()
 {
@@ -565,6 +576,7 @@ inline void ACFMPlotWindow::show()
     }
     if (ImGui::SliderFloat("Vh limit", &(liaConfig.plotCfg.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
         liaConfig.plotCfg.Vv_limit = liaConfig.plotCfg.Vh_limit * 2;
+		liaConfig.plotCfg.limit = liaConfig.plotCfg.Vv_limit;
     }
     ImGui::SliderFloat("Vv limit", &(liaConfig.plotCfg.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
     // プロット描画
@@ -612,14 +624,16 @@ class ACFMVhVvPlotWindow : public ImGuiWindowBase
 private:
     LiaConfig& liaConfig;
 public:
-    ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
-        : ImGuiWindowBase(window, "ACFM Vh-Vv"), liaConfig(liaConfig)
-    {
-        this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
-    }
+    ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
 };
+
+inline ACFMVhVvPlotWindow::ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
+    : ImGuiWindowBase(window, "ACFM Vh-Vv"), liaConfig(liaConfig)
+{
+    this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
+}
 
 inline void ACFMVhVvPlotWindow::show()
 {

@@ -198,7 +198,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             }
         }
         else if (subCmd == "raw?") {
-            for (int i = 0; i < pLiaConfig->rawData[0].size(); ++i) {
+            for (int i = 0; i < static_cast<int>(pLiaConfig->rawData[0].size()); ++i) {
                 if (!pLiaConfig->flagCh2) {
                     std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData[0][i]);
                 }
@@ -211,17 +211,18 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         else if (subCmd == "txy?") {
             int size = pLiaConfig->ringBuffer.size;
             if (val > 0) {
-                size = val / MEASUREMENT_DT;
+                // C4244/lnt-arithmetic-overflow対策: doubleで割り算しintにキャスト
+                size = static_cast<int>(static_cast<double>(val) / static_cast<double>(MEASUREMENT_DT));
                 if (size > pLiaConfig->ringBuffer.size) size = pLiaConfig->ringBuffer.size;
             }
             int idx = pLiaConfig->ringBuffer.tail - size;
             if (idx < 0) {
-                if (pLiaConfig->ringBuffer.nofm <= MEASUREMENT_SIZE) {
+                if (pLiaConfig->ringBuffer.nofm <= static_cast<int>(MEASUREMENT_SIZE)) {
                     idx = 0;
                     size = pLiaConfig->ringBuffer.tail;
                 }
                 else {
-                    idx += MEASUREMENT_SIZE;
+                    idx += static_cast<int>(MEASUREMENT_SIZE);
                 }
             }
             std::cout << size << std::endl;
@@ -232,7 +233,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 else {
                     std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n", pLiaConfig->ringBuffer.times[idx], pLiaConfig->xyRingBuffer.ch[0].x[idx], pLiaConfig->xyRingBuffer.ch[0].y[idx], pLiaConfig->xyRingBuffer.ch[1].x[idx], pLiaConfig->xyRingBuffer.ch[1].y[idx]);
                 }
-                idx = (idx + 1) % MEASUREMENT_SIZE;
+                idx = (idx + 1) % static_cast<int>(MEASUREMENT_SIZE);
             }
             return true;
         }

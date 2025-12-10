@@ -1,11 +1,11 @@
+#include <array>
+#include <cstring> // for std::memset
 #include <format>
+#include <intrin.h> // for __cpuid
 #include <iostream>
 #include <numbers> // For std::numbers::pi
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
-#include <array>
-#include <cstring> // for std::memset
-#include <intrin.h> // for __cpuid
 
 #define NOMINMAX
 #include <Windows.h>

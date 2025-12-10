@@ -8,9 +8,9 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <map> // cmdToString でstd::map を使用
 #include <iomanip> // std::put_time
 #include <iostream>
+#include <map> // cmdToString でstd::map を使用
 #include <numbers> // For std::numbers::pi
 #include <sstream>
 #include <stdexcept>
@@ -19,24 +19,25 @@
 #include <vector>
 
 #include "Daq_wf.h"
+#include "IniWrapper.h"
 #include "Psd.h"
 #include "Timer.h"
-#include "IniWrapper.h"
 
 // --- Constants remain the same ---
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 2*5000;
-constexpr double MEASUREMENT_DT = 1;// 2.0e-3;
-constexpr size_t MEASUREMENT_SEC = 10;// 60 * 10;
-constexpr size_t MEASUREMENT_SIZE = (size_t)(MEASUREMENT_SEC / MEASUREMENT_DT+1);
+constexpr size_t RAW_SIZE = 2 * 5000;
+constexpr double MEASUREMENT_DT = 2.0e-3;
+constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
 constexpr float XY_HISTORY_SEC = 10.0f;
-constexpr size_t XY_SIZE = (size_t)(XY_HISTORY_SEC / MEASUREMENT_DT);
+constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
 
-constexpr float LOW_LIMIT_FREQ = 0.5 / (RAW_SIZE * RAW_DT);
-constexpr float HIGH_LIMIT_FREQ = 1.0 / (1000 * RAW_DT);
-constexpr float AWG_AMP_MIN = 0.0;
-constexpr float AWG_AMP_MAX = 5.0;
+// オーバーフロー防止と型変換警告対策
+constexpr float LOW_LIMIT_FREQ = static_cast<float>(0.5 / (static_cast<double>(RAW_SIZE) * RAW_DT));
+constexpr float HIGH_LIMIT_FREQ = static_cast<float>(1.0 / (1000.0 * RAW_DT));
+constexpr float AWG_AMP_MIN = 0.0f;
+constexpr float AWG_AMP_MAX = 5.0f;
 
 // --- Constants for file names ---
 constexpr auto SETTINGS_FILE = "lia.ini";
@@ -254,12 +255,11 @@ public:
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
         float Vh_limit = 1.5f, Vv_limit = 1.5f;
-        int idxXYStart = 0, idxXYSize = 0;
+        int idxStart = 0, size = 0;
     };
 
     struct PauseCfg {
         bool flag = false;
-        int idxStart = 0, idxEnd = 0;
         struct SelectArea {
             struct vec2d {
                 double Min = 0.0;
@@ -382,14 +382,14 @@ public:
     }
     // --- Public Methods for Logic and I/O ---
     void setHPFrequency(double freq) {
-        postCfg.hpFreq = freq;
+        postCfg.hpFreq = static_cast<float>(freq); // 型変換警告対策
         hpfCh[0].x.setCutoffFrequency(freq);
         hpfCh[0].y.setCutoffFrequency(freq);
         hpfCh[1].x.setCutoffFrequency(freq);
         hpfCh[1].y.setCutoffFrequency(freq);
     }
     void setLPFrequency(double freq) {
-        postCfg.lpFreq = freq;
+        postCfg.lpFreq = static_cast<float>(freq); // 型変換警告対策
         lpfCh[0].x.setCutoffFrequency(freq);
         lpfCh[0].y.setCutoffFrequency(freq);
         lpfCh[1].x.setCutoffFrequency(freq);
@@ -433,7 +433,6 @@ public:
 
         auto [x1, y1] = psd.calculate(rawData[0].data());
 
-        // flagCh2がfalseの場合に不要なオブジェクト構築を回避
         double x2 = 0.0, y2 = 0.0;
         if (flagCh2) {
             std::tie(x2, y2) = psd.calculate(rawData[1].data());
@@ -460,51 +459,7 @@ public:
         else {
             AddPoint(t, final_x1, final_y1);
         }
-        plotCfg.idxXYSize = ringBuffer.size;
-        if (plotCfg.historySec > 0) {
-            plotCfg.idxXYSize = plotCfg.historySec / MEASUREMENT_DT;
-            if (plotCfg.idxXYSize > ringBuffer.size) plotCfg.idxXYSize = ringBuffer.size;
-        }
-        plotCfg.idxXYStart = ringBuffer.tail - plotCfg.idxXYSize;
-        if (plotCfg.idxXYStart < 0) {
-            if (ringBuffer.nofm <= MEASUREMENT_SIZE) {
-                plotCfg.idxXYStart = 0;
-                plotCfg.idxXYSize = ringBuffer.tail;
-            }
-            else {
-                plotCfg.idxXYStart += MEASUREMENT_SIZE;
-            }
-        }
     }
-
-    void setIdxs() {
-        pauseCfg.idxStart = -1, pauseCfg.idxEnd = -1;
-        for (int i = ringBuffer.idx; i >= 0; i--) {
-            if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
-                pauseCfg.idxEnd = i;
-            }
-        }
-        if (pauseCfg.idxEnd == -1 && ringBuffer.nofm > ringBuffer.size) {
-            for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
-                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Max) {
-                    pauseCfg.idxEnd = i;
-                }
-            }
-        }
-        for (int i = ringBuffer.idx; i >= 0; i--) {
-            if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
-                pauseCfg.idxStart = i;
-            }
-        }
-        if (pauseCfg.idxStart == -1 && ringBuffer.nofm > ringBuffer.size) {
-            for (int i = ringBuffer.times.size() - 1; i >= ringBuffer.idx; i--) {
-                if (ringBuffer.times[i] <= pauseCfg.selectArea.X.Min) {
-                    pauseCfg.idxStart = i;
-                }
-            }
-        }
-    }
-    
 
     std::string getCurrentTimestamp() const {
         // 現在時刻を取得
@@ -555,19 +510,19 @@ public:
         std::stringstream ss;
         ss << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
 
-        int _size = this->ringBuffer.size;
+        int _size = static_cast<int>(this->ringBuffer.size);
         if (sec > 0) {
-            _size = sec / MEASUREMENT_DT;
-            if (_size > this->ringBuffer.size) _size = this->ringBuffer.size;
+            _size = static_cast<int>(sec / MEASUREMENT_DT);
+            if (_size > static_cast<int>(this->ringBuffer.size)) _size = static_cast<int>(this->ringBuffer.size);
         }
-        int idx = this->ringBuffer.tail - _size;
+        int idx = static_cast<int>(this->ringBuffer.tail) - _size;
         if (idx < 0) {
-            if (this->ringBuffer.nofm <= MEASUREMENT_SIZE) {
+            if (this->ringBuffer.nofm <= static_cast<int>(MEASUREMENT_SIZE)) {
                 idx = 0;
-                _size = this->ringBuffer.tail;
+                _size = static_cast<int>(this->ringBuffer.tail);
             }
             else {
-                idx += MEASUREMENT_SIZE;
+                idx += static_cast<int>(MEASUREMENT_SIZE);
             }
         }
         for (int i = 0; i < _size; ++i) {
@@ -577,9 +532,9 @@ public:
             else {
                 ss << std::format("{:e},{:e},{:e},{:e},{:e}\n", this->ringBuffer.times[idx], this->ringBuffer.ch[0].x[idx], this->ringBuffer.ch[0].y[idx], this->ringBuffer.ch[1].x[idx], this->ringBuffer.ch[1].y[idx]);
             }
-            idx = (idx + 1) % MEASUREMENT_SIZE;
+            idx = (idx + 1) % static_cast<int>(MEASUREMENT_SIZE);
         }
-        file << ss.str(); // メモリからファイルへ一括書き込み
+        file << ss.str();
         file.close();
         return true;
     }
