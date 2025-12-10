@@ -257,6 +257,52 @@ public:
         int idxXYStart = 0, idxXYSize = 0;
     };
 
+    struct PauseCfg {
+        bool flag = false;
+        int idxStart = 0, idxEnd = 0;
+        struct SelectArea {
+            struct vec2d {
+                double Min = 0.0;
+                double Max = 0.0;
+            };
+            vec2d X, Y;
+        } selectArea;
+        void set(double xMin, double xMax, double yMin, double yMax) {
+            selectArea.X.Min = xMin; selectArea.X.Max = xMax;
+            selectArea.Y.Min = yMin; selectArea.Y.Max = yMax;
+        }
+    };
+
+    struct RingBuffer {
+        std::vector<double> times;
+        struct XYs {
+            std::vector<double> x;
+            std::vector<double> y;
+
+        };
+        XYs ch[2];
+        int nofm = 0; // 測定データ数
+        int idx = 0; // 最新データが存在するindex
+        int tail = 0; // 次にデータを格納するindex
+        int size = 0; // 配列における使用要素数
+        void resize(int size) {
+            times.resize(size);
+            ch[0].x.resize(size);
+            ch[0].y.resize(size);
+            ch[1].x.resize(size);
+            ch[1].y.resize(size);
+        }
+    };
+
+    struct ACFMData {
+        std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
+        std::vector<double> Vvs = { 0.102,0.106,0.115,0.121,0.212, 0.239 };
+        double mmk[3] = { 2.4827, 3.0433, 0.1393 };
+        size_t size = 6;
+        double ch1vpp = 0;
+        double ch2vpp = 0;
+    };
+
     // --- Public Members ---
     Timer timer;
     Daq_dwf* pDaq = nullptr;
@@ -275,59 +321,15 @@ public:
     bool flagAutoOffset = false;
     volatile bool statusMeasurement = false;
     volatile bool statusPipe = false;
-
-    struct PauseCfg {
-        bool flag = false;
-		int idxStart = 0, idxEnd = 0;
-        struct SelectArea {
-            struct vec2d {
-                double Min = 0.0;
-                double Max = 0.0;
-            };
-            vec2d X, Y;
-            int idxXMin = 0, idxXMax = 0;
-        } selectArea;
-        void set(double xMin, double xMax, double yMin, double yMax) {
-            selectArea.X.Min = xMin; selectArea.X.Max = xMax;
-            selectArea.Y.Min = yMin; selectArea.Y.Max = yMax;
-        }
-    };
+    
     PauseCfg pauseCfg;
 
     // Data Buffers (using std::vector to avoid stack overflow)
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
     std::vector<double> dts;
-    struct XYs {
-        std::vector<double> x;
-        std::vector<double> y;
-
-    };
-    struct RingBuffer {
-        std::vector<double> times;
-        XYs ch[2];
-        int nofm = 0; // 測定データ数
-        int idx = 0; // 最新データが存在するindex
-        int tail = 0; // 次にデータを格納するindex
-        int size = 0; // 配列における使用要素数
-        void resize(int size) {
-            times.resize(size);
-            ch[0].x.resize(size);
-            ch[0].y.resize(size);
-            ch[1].x.resize(size);
-            ch[1].y.resize(size);
-        }
-    };
+    
     RingBuffer ringBuffer, xyRingBuffer;
-
-    struct ACFMData {
-        std::vector<double> Vhs = { 0.022,0.023,0.025,0.027,0.058, 0.067 };
-        std::vector<double> Vvs = { 0.102,0.106,0.115,0.121,0.212, 0.239 };
-        double mmk[3] = { 2.4827, 3.0433, 0.1393 };
-        size_t size = 6;
-        double ch1vpp = 0;
-        double ch2vpp = 0;
-    };
     ACFMData acfmData;
 
 private:
@@ -458,16 +460,16 @@ public:
         else {
             AddPoint(t, final_x1, final_y1);
         }
-        plotCfg.idxXYSize = this->ringBuffer.size;
+        plotCfg.idxXYSize = ringBuffer.size;
         if (plotCfg.historySec > 0) {
             plotCfg.idxXYSize = plotCfg.historySec / MEASUREMENT_DT;
-            if (plotCfg.idxXYSize > this->ringBuffer.size) plotCfg.idxXYSize = this->ringBuffer.size;
+            if (plotCfg.idxXYSize > ringBuffer.size) plotCfg.idxXYSize = ringBuffer.size;
         }
-        plotCfg.idxXYStart = this->ringBuffer.tail - plotCfg.idxXYSize;
+        plotCfg.idxXYStart = ringBuffer.tail - plotCfg.idxXYSize;
         if (plotCfg.idxXYStart < 0) {
-            if (this->ringBuffer.nofm <= MEASUREMENT_SIZE) {
+            if (ringBuffer.nofm <= MEASUREMENT_SIZE) {
                 plotCfg.idxXYStart = 0;
-                plotCfg.idxXYSize = this->ringBuffer.tail;
+                plotCfg.idxXYSize = ringBuffer.tail;
             }
             else {
                 plotCfg.idxXYStart += MEASUREMENT_SIZE;
