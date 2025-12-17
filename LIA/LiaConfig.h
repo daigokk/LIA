@@ -254,7 +254,7 @@ public:
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
-        float Vh_limit = 1.5f, Vv_limit = 1.5f;
+        float Vx_limt = 1.5f, Vz_limt = 1.5f;
         int idxStart = 0, size = 0;
     };
 
@@ -603,8 +603,8 @@ private:
         ini.set("Plot", "surfaceMode", plotCfg.surfaceMode);
         ini.set("Plot", "beep", plotCfg.beep);
         ini.set("Plot", "acfm", plotCfg.acfm);
-		ini.set("Plot", "Vh_limit", plotCfg.Vh_limit);
-		ini.set("Plot", "Vv_limit", plotCfg.Vv_limit);
+		ini.set("Plot", "Vx_limt", plotCfg.Vx_limt);
+		ini.set("Plot", "Vz_limt", plotCfg.Vz_limt);
 
         ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
         ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
@@ -649,8 +649,8 @@ private:
         plotCfg.surfaceMode = ini.get("Plot", "surfaceMode", plotCfg.surfaceMode);
         plotCfg.beep = ini.get("Plot", "beep", plotCfg.beep);
         plotCfg.acfm = ini.get("Plot", "acfm", plotCfg.acfm);
-		plotCfg.Vh_limit = ini.get("Plot", "Vh_limit", plotCfg.Vh_limit);
-		plotCfg.Vv_limit = ini.get("Plot", "Vv_limit", plotCfg.Vv_limit);
+		plotCfg.Vx_limt = ini.get("Plot", "Vx_limt", plotCfg.Vx_limt);
+		plotCfg.Vz_limt = ini.get("Plot", "Vz_limt", plotCfg.Vz_limt);
 
         // --- Validate and Clamp Loaded Values ---
         const float lowLimitFreq = 0.5f / (RAW_SIZE * RAW_DT);

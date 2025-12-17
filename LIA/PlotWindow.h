@@ -574,22 +574,22 @@ inline void ACFMPlotWindow::show()
     else {
         if (ImGui::Button("Pause")) { liaConfig.pauseCfg.flag = true; }
     }
-    if (ImGui::SliderFloat("Vh limit", &(liaConfig.plotCfg.Vh_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
-        liaConfig.plotCfg.Vv_limit = liaConfig.plotCfg.Vh_limit * 2;
-		liaConfig.plotCfg.limit = liaConfig.plotCfg.Vv_limit;
+    if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
+        liaConfig.plotCfg.Vz_limt = liaConfig.plotCfg.Vx_limt * 2;
+		liaConfig.plotCfg.limit = liaConfig.plotCfg.Vz_limt;
     }
-    ImGui::SliderFloat("Vv limit", &(liaConfig.plotCfg.Vv_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
+    ImGui::SliderFloat("Vz limit", &(liaConfig.plotCfg.Vz_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        ImPlot::SetupAxes("Vv (V)", "Vh (V)", 0, 0);
+        ImPlot::SetupAxes("Vz (V)", "Vx (V)", 0, 0);
         if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
-            ImPlot::SetupAxes("Vv (mV)", "Vh (mV)", 0, 0);
+            ImPlot::SetupAxes("Vz (mV)", "Vx (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vv_limit, liaConfig.plotCfg.Vv_limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vh_limit, liaConfig.plotCfg.Vh_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vz_limt, liaConfig.plotCfg.Vz_limt, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vx_limt, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
         ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyRingBuffer.ch[1].y[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
             liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
@@ -612,7 +612,7 @@ inline void ACFMPlotWindow::show()
         ImPlot::PlotText(
             thickness,
             0.0,
-            liaConfig.plotCfg.Vh_limit * 0.9
+            liaConfig.plotCfg.Vx_limt * 0.9
         );
         ImPlot::EndPlot();
     }
@@ -629,7 +629,7 @@ public:
 };
 
 inline ACFMVhVvPlotWindow::ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
-    : ImGuiWindowBase(window, "ACFM Vh-Vv"), liaConfig(liaConfig)
+    : ImGuiWindowBase(window, "ACFM Vx-Vz"), liaConfig(liaConfig)
 {
     this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
     this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
@@ -641,16 +641,16 @@ inline void ACFMVhVvPlotWindow::show()
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
     // プロット描画
-    if (ImPlot::BeginPlot("##Vh-Vv", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        ImPlot::SetupAxes("Vvpp (V)", "Vhpp (V)", 0, 0);
+    if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+        ImPlot::SetupAxes("Vzpp (V)", "Vhpp (V)", 0, 0);
         if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
-            ImPlot::SetupAxes("Vvpp (mV)", "Vhpp (mV)", 0, 0);
+            ImPlot::SetupAxes("Vzpp (mV)", "Vxpp (mV)", 0, 0);
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
-        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.Vv_limit*2, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vh_limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.Vz_limt*2, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
