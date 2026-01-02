@@ -22,11 +22,10 @@ private:
         }
     }
     int getWaveIndexFromPhase(double phase) const {
-        static double PHASE_SCALE = 180 / (360 / NumWaves) / PI; // 約 1.43239...
-        static double PHASE_OFFSET = 180 / (360 / NumWaves);
-
+		phase += PI; // [0, 2π] に変換
+		phase = std::fmod(phase, 2 * PI); // 2πでラップ
         // O(1) でインデックスを計算
-        int index = static_cast<int>(std::floor(phase * PHASE_SCALE + PHASE_OFFSET));
+        int index = static_cast<int>(std::floor(phase / (2 * PI) * NumWaves));
 
         return index;
     }
