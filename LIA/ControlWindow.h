@@ -61,7 +61,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             static float oldCh0Amp = liaConfig.awgCfg.ch[0].amp;
             if (ImGui::InputFloat("Amp. (V)", &(liaConfig.awgCfg.ch[0].amp), 0.1f, 0.1f, "%4.1f"))
             {
-                if (liaConfig.awgCfg.ch[0].amp < 0.1f) liaConfig.awgCfg.ch[0].amp = 0.1f;
+                if (liaConfig.awgCfg.ch[0].amp < AWG_AMP_MIN) liaConfig.awgCfg.ch[0].amp = AWG_AMP_MIN;
                 if (liaConfig.awgCfg.ch[0].amp > 5.0f) liaConfig.awgCfg.ch[0].amp = AWG_AMP_MAX;
                 if (oldCh0Amp != liaConfig.awgCfg.ch[0].amp)
                 {

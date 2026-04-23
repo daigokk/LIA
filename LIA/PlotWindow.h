@@ -433,6 +433,7 @@ class XYPlotWindow : public ImGuiWindowBase
 {
 private:
     LiaConfig& liaConfig;
+	std::vector<double> ch1xs, ch1ys, ch2xs, ch2ys;
 public:
     XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
@@ -458,6 +459,7 @@ inline void XYPlotWindow::show()
     if (ImGui::Button("Clear"))
     {
         liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
+        ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -467,6 +469,8 @@ inline void XYPlotWindow::show()
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) {
         liaConfig.flagAutoOffset = true;
+        liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
+        ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -485,6 +489,27 @@ inline void XYPlotWindow::show()
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::XYPause;
         value = liaConfig.pauseCfg.flag;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Rec."))
+    {
+        ch1xs.push_back(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]);
+        ch1ys.push_back(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
+        ch2xs.push_back(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]);
+        ch2ys.push_back(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]);
+        std::ofstream file(std::format("./{}/{}", liaConfig.dirName, "rec.csv"));
+        if (!file) {
+            std::cerr << "Error: Could not open file " << "rec.csv" << std::endl;
+        }
+        else {
+            std::stringstream ss;
+            ss << (liaConfig.flagCh2 ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
+            for (size_t i = 0; i < ch1xs.size(); ++i) {
+                ss << (liaConfig.flagCh2 ? std::format("{:e},{:e},{:e},{:e}\n", ch1xs[i], ch1ys[i], ch2xs[i], ch2ys[i]) : std::format("{:e},{:e}\n", ch1xs[i], ch1ys[i]));
+            }
+            file << ss.str(); // メモリからファイルへ一括書き込み
+            file.close();
+        }
     }
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
@@ -513,6 +538,7 @@ inline void XYPlotWindow::show()
         ImPlot::PopStyleColor();
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1);
+        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size());
         if (liaConfig.flagCh2)
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
@@ -522,6 +548,7 @@ inline void XYPlotWindow::show()
             ImPlot::PopStyleColor();
             ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1);
+            ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size());
         }
         ImPlot::EndPlot();
     }

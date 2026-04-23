@@ -235,9 +235,8 @@ public:
     
     RingBuffer ringBuffer, xyRingBuffer;
     ACFMData acfmData;
-
-private:
     std::string dirName = ".";
+private:
     // --- Private Helper Members ---
     struct Hpf {
         HighPassFilter x, y;
