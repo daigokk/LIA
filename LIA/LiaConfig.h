@@ -223,6 +223,7 @@ public:
     // State Flags
     bool flagCh2 = false;
     bool flagAutoOffset = false;
+    volatile bool flagAutoSetup = false;
     volatile bool statusMeasurement = false;
     volatile bool statusPipe = false;
     

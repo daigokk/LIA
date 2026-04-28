@@ -5,7 +5,69 @@
 #include <iostream>
 #include <cmath>
 #include <numbers> // For std::numbers::pi
+#include <thread> // std::thread
 
+
+void autosetupw2(LiaConfig* pLiaConfig)
+{
+	const int recordms = 3000; // 3秒間記録して最大値を取得
+	const int length = static_cast<int>(recordms *1e-3 / MEASUREMENT_DT);
+    int idx;
+    double w1_xmax, w1_xmin, w1_ymax, w1_ymin, w2_xmax, w2_xmin, w2_ymax, w2_ymin;
+
+	// w1をオン、w2をオフにして記録
+    double w1amp = pLiaConfig->awgCfg.ch[0].amp;
+    pLiaConfig->awgCfg.ch[0].phase = 0.0;
+    pLiaConfig->awgCfg.ch[1].amp = 0.0;
+    pLiaConfig->awgCfg.ch[1].phase = 0.0;
+	// 記録開始前に安定させるための待機
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	// 記録開始
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordms + 100));
+
+    idx = pLiaConfig->ringBuffer.idx;
+    w1_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w1_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
+    w1_ymax = pLiaConfig->ringBuffer.ch[0].y[idx]; w1_ymin = pLiaConfig->ringBuffer.ch[0].y[idx];
+    for (int i = idx - 1; i > idx - length; i--)
+    {
+        if (w1_xmax < pLiaConfig->ringBuffer.ch[0].x[i]) w1_xmax = pLiaConfig->ringBuffer.ch[0].x[i];
+        if (w1_xmin > pLiaConfig->ringBuffer.ch[0].x[i]) w1_xmin = pLiaConfig->ringBuffer.ch[0].x[i];
+        if (w1_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
+        if (w1_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
+    }
+    printf("w1 dx:%f, dy:%f\n", w1_xmax - w1_xmin, w1_ymax - w1_ymin);
+    
+	// w2をオン、w1をオフにして記録
+    pLiaConfig->awgCfg.ch[0].amp = 0.0;
+    pLiaConfig->awgCfg.ch[0].phase = 0.0;
+    pLiaConfig->awgCfg.ch[1].amp = w1amp;
+    pLiaConfig->awgCfg.ch[1].phase = 0.0;
+    // 記録開始前に安定させるための待機
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // 記録開始
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordms+100));
+
+    idx = pLiaConfig->ringBuffer.idx;
+    w2_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w2_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
+    w2_ymax = pLiaConfig->ringBuffer.ch[0].y[idx]; w2_ymin = pLiaConfig->ringBuffer.ch[0].y[idx];
+    for (int i = idx - 1; i > idx - length; i--)
+    {
+        if (w2_xmax < pLiaConfig->ringBuffer.ch[0].x[i]) w2_xmax = pLiaConfig->ringBuffer.ch[0].x[i];
+        if (w2_xmin > pLiaConfig->ringBuffer.ch[0].x[i]) w2_xmin = pLiaConfig->ringBuffer.ch[0].x[i];
+        if (w2_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
+        if (w2_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
+    }
+    printf("w2 dx:%f, dy:%f\n", w2_xmax - w2_xmin, w2_ymax - w2_ymin);
+
+	// w1の振幅を元に戻す
+    pLiaConfig->awgCfg.ch[0].amp = w1amp;
+	// w2の振幅を設定
+	pLiaConfig->awgCfg.ch[1].amp = w1amp * (w2_ymax - w2_ymin) / (w1_ymax - w1_ymin);
+	// w2の位相を設定
+	double phase_rad = atan2((w2_ymax - w2_ymin) / 2, (w2_xmax - w2_xmin) / 2) - atan2((w1_ymax - w1_ymin) / 2, (w1_xmax - w1_xmin) / 2);
+
+    pLiaConfig->flagAutoSetup = false;
+}
 
 class ControlWindow : public ImGuiWindowBase
 {
@@ -22,6 +84,24 @@ public:
         liaConfig.cmds.push_back(std::array<float, 3>{ (float)liaConfig.timer.elapsedSec(), (float)button, value });
 	}
     void awg(const float nextItemWidth);
+    void autosetup(const float nextItemWidth) {
+        ImGui::SetNextItemWidth(nextItemWidth);
+        if (liaConfig.flagAutoSetup)
+        {
+            ImGui::BeginDisabled();
+            ImGui::Button("Autosetup in progress");
+            ImGui::EndDisabled();
+        }
+        else {
+            if (ImGui::Button("Autosetup"))
+            {
+                liaConfig.flagAutoSetup = true;
+                std::thread th_autosetup = std::thread{ autosetupw2, &liaConfig };
+                th_autosetup.detach();
+            }
+        }
+        
+    }
     void plot(const float nextItemWidth);
 	void post(const float nextItemWidth);
     void monitor();
@@ -392,6 +472,7 @@ inline void ControlWindow::show(void)
         value = 0;
     }
     awg(nextItemWidth);
+    autosetup(nextItemWidth);
     plot(nextItemWidth);
     ImGui::Separator();
     post(nextItemWidth);
