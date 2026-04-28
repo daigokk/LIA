@@ -10,8 +10,8 @@
 
 void autosetupw2(LiaConfig* pLiaConfig)
 {
-	const int recordms = 3000; // 3秒間記録して最大値を取得
-	const int length = static_cast<int>(recordms *1e-3 / MEASUREMENT_DT);
+	const int recordtime_ms = 3000; // 3秒間記録して最大値を取得
+	const int length = static_cast<int>(recordtime_ms *1e-3 / MEASUREMENT_DT);
     int idx;
     double w1_xmax, w1_xmin, w1_ymax, w1_ymin, w2_xmax, w2_xmin, w2_ymax, w2_ymin;
 
@@ -23,7 +23,7 @@ void autosetupw2(LiaConfig* pLiaConfig)
 	// 記録開始前に安定させるための待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	// 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordms + 100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms + 100));
 
     idx = pLiaConfig->ringBuffer.idx;
     w1_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w1_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
@@ -35,7 +35,8 @@ void autosetupw2(LiaConfig* pLiaConfig)
         if (w1_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
         if (w1_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
     }
-    printf("w1 dx:%f, dy:%f\n", w1_xmax - w1_xmin, w1_ymax - w1_ymin);
+	double dx1 = w1_xmax - w1_xmin, dy1 = w1_ymax - w1_ymin;
+    printf("w1 dx:%f, dy:%f\n", dx1, dy1);
     
 	// w2をオン、w1をオフにして記録
     pLiaConfig->awgCfg.ch[0].amp = 0.0;
@@ -45,7 +46,7 @@ void autosetupw2(LiaConfig* pLiaConfig)
     // 記録開始前に安定させるための待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     // 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordms+100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms+100));
 
     idx = pLiaConfig->ringBuffer.idx;
     w2_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w2_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
@@ -57,14 +58,15 @@ void autosetupw2(LiaConfig* pLiaConfig)
         if (w2_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
         if (w2_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
     }
-    printf("w2 dx:%f, dy:%f\n", w2_xmax - w2_xmin, w2_ymax - w2_ymin);
+	double dx2 = w2_xmax - w2_xmin, dy2 = w2_ymax - w2_ymin;
+    printf("w2 dx:%f, dy:%f\n", dx2, dy2);
 
 	// w1の振幅を元に戻す
     pLiaConfig->awgCfg.ch[0].amp = w1amp;
 	// w2の振幅を設定
-	pLiaConfig->awgCfg.ch[1].amp = w1amp * (w2_ymax - w2_ymin) / (w1_ymax - w1_ymin);
+    pLiaConfig->awgCfg.ch[1].amp = w1amp * pow((dx1 * dx1 + dy1 * dy1), 0.5) / pow((dx2 * dx2 + dy2 * dy2), 0.5);
 	// w2の位相を設定
-	double phase_rad = atan2((w2_ymax - w2_ymin) / 2, (w2_xmax - w2_xmin) / 2) - atan2((w1_ymax - w1_ymin) / 2, (w1_xmax - w1_xmin) / 2);
+    pLiaConfig->awgCfg.ch[1].phase = (atan2(dy2, dx2) - atan2(dy1, dx1)) * 180.0 / std::numbers::pi;
 
     pLiaConfig->flagAutoSetup = false;
 }
