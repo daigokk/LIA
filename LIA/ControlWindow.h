@@ -7,68 +7,132 @@
 #include <numbers> // For std::numbers::pi
 #include <thread> // std::thread
 
-
-void autosetupW2(LiaConfig* pLiaConfig)
+void awgStart(LiaConfig* pLiaConfig)
 {
-	const int recordtime_ms = 3000; // 3秒間記録して最大値を取得
-	const int length = static_cast<int>(recordtime_ms *1e-3 / MEASUREMENT_DT);
-    int idx;
-    double w1_xmax, w1_xmin, w1_ymax, w1_ymin, w2_xmax, w2_xmin, w2_ymax, w2_ymin;
+    if (pLiaConfig->pDaq != nullptr)
+    {
+        pLiaConfig->pDaq->awg.start(
+            pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
+            pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
+        );
+    }
+}
+
+// ------------------------------------------------------------
+// 型定義・ユーティリティ
+// ------------------------------------------------------------
+struct Point {
+    double x;
+    double y;
+};
+
+// 2点間の距離の2乗を計算
+double getSquaredDistance(const Point& a, const Point& b) {
+    double dx = a.x - b.x;
+    double dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+// 極座標（振幅と位相）を表す構造体
+struct PolarVector {
+    double amplitude;
+    double phaseDeg;
+};
+
+// 2点間の差分ベクトルから振幅と位相（度数法）を計算
+PolarVector calculatePolarVector(const Point& p1, const Point& p2) {
+    double dx = p2.x - p1.x;
+    double dy = p2.y - p1.y;
+    return {
+        std::hypot(dx, dy),
+        std::atan2(dy, dx) * 180.0 / std::numbers::pi
+    };
+}
+
+// ------------------------------------------------------------
+// データ記録・探索
+// ------------------------------------------------------------
+// 指定した時間だけ記録し、リングバッファから最大距離の2点を返す
+std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, int record_ms) {
+    // msを秒に変換して要素数を計算
+    const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
+
+    // 安定待ち → 記録
+    std::this_thread::sleep_for(std::chrono::milliseconds(500 + record_ms));
+
+    const auto& ringBuffer = cfg->ringBuffer;
+    const int idx_end = ringBuffer.idx;
+    const int bufsize = ringBuffer.size;
+
+    // リングバッファから指定オフセットのPointを取得するヘルパー関数
+    auto getPointAtOffset = [&](int offset) -> Point {
+        int idx = (idx_end - offset + bufsize) % bufsize;
+        return { ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx] };
+        };
+
+    double maxDist2 = -1.0;
+    Point best1{}, best2{};
+
+    for (int i = 0; i < length; i++) {
+        Point p1 = getPointAtOffset(i);
+
+        for (int j = i + 1; j < length; j++) {
+            Point p2 = getPointAtOffset(j);
+            double d2 = getSquaredDistance(p1, p2);
+
+            if (d2 > maxDist2) {
+                maxDist2 = d2;
+                best1 = p1;
+                best2 = p2;
+            }
+        }
+    }
+
+    // --- 追加: x座標が小さい方を常に p1 (first) にするための正規化 ---
+    if (best1.x > best2.x) {
+        std::swap(best1, best2);
+    }
+
+    return { best1, best2 };
+}
+
+// AWGの設定、計測、解析の一連の流れをまとめたヘルパー関数
+PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, int record_ms) {
+    cfg->awgCfg.ch[0].amp = ch0_amp;
+    cfg->awgCfg.ch[0].phase = 0.0;
+    cfg->awgCfg.ch[1].amp = ch1_amp;
+    cfg->awgCfg.ch[1].phase = 0.0;
+    awgStart(cfg);
+
+    auto [p1, p2] = findMaxDistancePoints(cfg, record_ms);
+    return calculatePolarVector(p1, p2);
+}
+
+// ------------------------------------------------------------
+// AWG W2 の自動設定
+// ------------------------------------------------------------
+void autosetupW2(LiaConfig* cfg) {
+    constexpr int RECORD_MS = 3000;
+
     printf("In progress...\n");
-	// w1をオン、w2をオフにして記録
-    double w1amp = pLiaConfig->awgCfg.ch[0].amp;
-    pLiaConfig->awgCfg.ch[0].phase = 0.0;
-    pLiaConfig->awgCfg.ch[1].amp = 0.0;
-    pLiaConfig->awgCfg.ch[1].phase = 0.0;
-	// 記録開始前に安定させるための待機
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	// 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms));
 
-    idx = pLiaConfig->ringBuffer.idx;
-    w1_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w1_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
-    w1_ymax = pLiaConfig->ringBuffer.ch[0].y[idx]; w1_ymin = pLiaConfig->ringBuffer.ch[0].y[idx];
-    for (int i = idx - 1; i > idx - length; i--)
-    {
-        if (w1_xmax < pLiaConfig->ringBuffer.ch[0].x[i]) w1_xmax = pLiaConfig->ringBuffer.ch[0].x[i];
-        if (w1_xmin > pLiaConfig->ringBuffer.ch[0].x[i]) w1_xmin = pLiaConfig->ringBuffer.ch[0].x[i];
-        if (w1_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
-        if (w1_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
-    }
-	double dx1 = w1_xmax - w1_xmin, dy1 = w1_ymax - w1_ymin, theta1 = atan2(dy1, dx1) * 180.0 / std::numbers::pi;
-    printf("  w1 dx:%f, dy:%f, theta:%f\n", dx1, dy1, theta1);
-    
-	// w2をオン、w1をオフにして記録
-    pLiaConfig->awgCfg.ch[0].amp = 0.0;
-    pLiaConfig->awgCfg.ch[0].phase = 0.0;
-    pLiaConfig->awgCfg.ch[1].amp = w1amp;
-    pLiaConfig->awgCfg.ch[1].phase = 0.0;
-    // 記録開始前に安定させるための待機
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    // 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms));
+    const double original_amp = cfg->awgCfg.ch[0].amp;
 
-    idx = pLiaConfig->ringBuffer.idx;
-    w2_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w2_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
-    w2_ymax = pLiaConfig->ringBuffer.ch[0].y[idx]; w2_ymin = pLiaConfig->ringBuffer.ch[0].y[idx];
-    for (int i = idx - 1; i > idx - length; i--)
-    {
-        if (w2_xmax < pLiaConfig->ringBuffer.ch[0].x[i]) w2_xmax = pLiaConfig->ringBuffer.ch[0].x[i];
-        if (w2_xmin > pLiaConfig->ringBuffer.ch[0].x[i]) w2_xmin = pLiaConfig->ringBuffer.ch[0].x[i];
-        if (w2_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
-        if (w2_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
-    }
-	double dx2 = w2_xmax - w2_xmin, dy2 = w2_ymax - w2_ymin, theta2 = atan2(dy2, dx2) * 180.0 / std::numbers::pi;
-    printf("  w2 dx:%f, dy:%f, theta:%f\n", dx2, dy2, theta2);
+    // --- Step 1: w1 ON, w2 OFF ---
+    PolarVector w1 = measureAwgResponse(cfg, original_amp, 0.0, RECORD_MS);
+    printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
 
-	// w1の振幅を元に戻す
-    pLiaConfig->awgCfg.ch[0].amp = w1amp;
-	// w2の振幅を設定
-    pLiaConfig->awgCfg.ch[1].amp = w1amp * pow((dx1 * dx1 + dy1 * dy1), 0.5) / pow((dx2 * dx2 + dy2 * dy2), 0.5);
-	// w2の位相を設定
-    pLiaConfig->awgCfg.ch[1].phase = -(theta1 + theta2);
+    // --- Step 2: w2 ON, w1 OFF ---
+    PolarVector w2 = measureAwgResponse(cfg, 0.0, original_amp, RECORD_MS);
+    printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
 
-    pLiaConfig->flagAutoSetup = false;
+    // --- Step 3: w2 の振幅・位相を調整 ---
+    cfg->awgCfg.ch[0].amp = original_amp;
+    cfg->awgCfg.ch[1].amp = original_amp * (w1.amplitude / w2.amplitude);
+    cfg->awgCfg.ch[1].phase = w1.phaseDeg - w2.phaseDeg;
+    awgStart(cfg);
+
+    cfg->flagAutoSetup = false;
     printf("Done.\n");
 }
 
@@ -223,16 +287,9 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
-        if (liaConfig.pDaq != nullptr && fgFlag)
-        {
-            liaConfig.pDaq->awg.start(
-                liaConfig.awgCfg.ch[0].freq, liaConfig.awgCfg.ch[0].amp, liaConfig.awgCfg.ch[0].phase,
-                liaConfig.awgCfg.ch[1].freq, liaConfig.awgCfg.ch[1].amp, liaConfig.awgCfg.ch[1].phase
-            );
-        }
+        awgStart(&liaConfig);
         if (button != ButtonType::NON) buttonPressed(button, value);
     }
-
 }
 
 inline void ControlWindow::plot(const float nextItemWidth)
