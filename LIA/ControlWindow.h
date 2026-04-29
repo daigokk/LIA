@@ -8,13 +8,13 @@
 #include <thread> // std::thread
 
 
-void autosetupw2(LiaConfig* pLiaConfig)
+void autosetupW2(LiaConfig* pLiaConfig)
 {
 	const int recordtime_ms = 3000; // 3秒間記録して最大値を取得
 	const int length = static_cast<int>(recordtime_ms *1e-3 / MEASUREMENT_DT);
     int idx;
     double w1_xmax, w1_xmin, w1_ymax, w1_ymin, w2_xmax, w2_xmin, w2_ymax, w2_ymin;
-
+    printf("In progress...\n");
 	// w1をオン、w2をオフにして記録
     double w1amp = pLiaConfig->awgCfg.ch[0].amp;
     pLiaConfig->awgCfg.ch[0].phase = 0.0;
@@ -23,7 +23,7 @@ void autosetupw2(LiaConfig* pLiaConfig)
 	// 記録開始前に安定させるための待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	// 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms + 100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms));
 
     idx = pLiaConfig->ringBuffer.idx;
     w1_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w1_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
@@ -35,8 +35,8 @@ void autosetupw2(LiaConfig* pLiaConfig)
         if (w1_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
         if (w1_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w1_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
     }
-	double dx1 = w1_xmax - w1_xmin, dy1 = w1_ymax - w1_ymin;
-    printf("w1 dx:%f, dy:%f\n", dx1, dy1);
+	double dx1 = w1_xmax - w1_xmin, dy1 = w1_ymax - w1_ymin, theta1 = atan2(dy1, dx1) * 180.0 / std::numbers::pi;
+    printf("  w1 dx:%f, dy:%f, theta:%f\n", dx1, dy1, theta1);
     
 	// w2をオン、w1をオフにして記録
     pLiaConfig->awgCfg.ch[0].amp = 0.0;
@@ -46,7 +46,7 @@ void autosetupw2(LiaConfig* pLiaConfig)
     // 記録開始前に安定させるための待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     // 記録開始
-    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms+100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(recordtime_ms));
 
     idx = pLiaConfig->ringBuffer.idx;
     w2_xmax = pLiaConfig->ringBuffer.ch[0].x[idx]; w2_xmin = pLiaConfig->ringBuffer.ch[0].x[idx];
@@ -58,17 +58,18 @@ void autosetupw2(LiaConfig* pLiaConfig)
         if (w2_ymax < pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymax = pLiaConfig->ringBuffer.ch[0].y[i];
         if (w2_ymin > pLiaConfig->ringBuffer.ch[0].y[i]) w2_ymin = pLiaConfig->ringBuffer.ch[0].y[i];
     }
-	double dx2 = w2_xmax - w2_xmin, dy2 = w2_ymax - w2_ymin;
-    printf("w2 dx:%f, dy:%f\n", dx2, dy2);
+	double dx2 = w2_xmax - w2_xmin, dy2 = w2_ymax - w2_ymin, theta2 = atan2(dy2, dx2) * 180.0 / std::numbers::pi;
+    printf("  w2 dx:%f, dy:%f, theta:%f\n", dx2, dy2, theta2);
 
 	// w1の振幅を元に戻す
     pLiaConfig->awgCfg.ch[0].amp = w1amp;
 	// w2の振幅を設定
     pLiaConfig->awgCfg.ch[1].amp = w1amp * pow((dx1 * dx1 + dy1 * dy1), 0.5) / pow((dx2 * dx2 + dy2 * dy2), 0.5);
 	// w2の位相を設定
-    pLiaConfig->awgCfg.ch[1].phase = (atan2(dy2, dx2) - atan2(dy1, dx1)) * 180.0 / std::numbers::pi;
+    pLiaConfig->awgCfg.ch[1].phase = -(theta1 + theta2);
 
     pLiaConfig->flagAutoSetup = false;
+    printf("Done.\n");
 }
 
 class ControlWindow : public ImGuiWindowBase
@@ -91,14 +92,14 @@ public:
         if (liaConfig.flagAutoSetup)
         {
             ImGui::BeginDisabled();
-            ImGui::Button("Autosetup in progress");
+            ImGui::Button("W2 Autosetup in progress");
             ImGui::EndDisabled();
         }
         else {
-            if (ImGui::Button("Autosetup"))
+            if (ImGui::Button("W2 Autosetup"))
             {
                 liaConfig.flagAutoSetup = true;
-                std::thread th_autosetup = std::thread{ autosetupw2, &liaConfig };
+                std::thread th_autosetup = std::thread{ autosetupW2, &liaConfig };
                 th_autosetup.detach();
             }
         }

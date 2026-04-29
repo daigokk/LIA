@@ -7,7 +7,7 @@
 #include <stop_token> // std::jthread
 #include <thread> // std::jthread
 
-#define NOMINMAX
+#define NOMINMAX //std::minを使うために、Windows.hのmin,maxマクロを無効化
 #include <Windows.h>
 #include <Daq_wf.h>
 #include "pipe.h"
