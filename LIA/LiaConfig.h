@@ -285,6 +285,15 @@ public:
         saveCmdsToFile();
     }
     // --- Public Methods for Logic and I/O ---
+    void awgStart() {
+        if (this->pDaq != nullptr)
+        {
+            this->pDaq->awg.start(
+                this->awgCfg.ch[0].freq, this->awgCfg.ch[0].amp, this->awgCfg.ch[0].phase,
+                this->awgCfg.ch[1].freq, this->awgCfg.ch[1].amp, this->awgCfg.ch[1].phase
+            );
+        }
+    }
     void setHPFrequency(double freq) {
         postCfg.hpFreq = static_cast<float>(freq); // 型変換警告対策
         hpfCh[0].x.setCutoffFrequency(freq, MEASUREMENT_DT);
