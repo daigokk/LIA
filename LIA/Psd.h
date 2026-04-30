@@ -3,7 +3,9 @@
 #include <cmath>
 #include <numbers>      // std::numbers::pi
 #include <numeric>      // std::inner_product
+#include <execution>    // std::execution::par
 #include <valarray>
+
 
 
 class Psd
@@ -13,6 +15,10 @@ private:
     std::valarray<double> cosTable_;
     double samplingInterval_ = 0.0;
     size_t sampleSize_ = 0;
+    // キャッシュ: 位相回転用の sin/cos を保持して再計算を避ける
+    mutable double cachedPhaseDeg_ = std::numeric_limits<double>::quiet_NaN();
+    mutable double cachedSin_ = 0.0;
+    mutable double cachedCos_ = 1.0;
 
 public:
     double currentFreq = 0.0;
@@ -38,43 +44,53 @@ public:
 
         const double angularFreq = 2.0 * std::numbers::pi * currentFreq;
 
-        for (int i = 0; i < usableSize; ++i)
+        // Use trig recurrence to avoid calling sin/cos each iteration.
+        // This is faster for large usableSize and friendly to auto-vectorization.
+        const double delta = angularFreq * samplingInterval_;
+        const double sinDelta = std::sin(delta);
+        const double cosDelta = std::cos(delta);
+
+        // start at angle 0
+        double s = 0.0;
+        double c = 1.0;
+        for (size_t i = 0; i < usableSize; ++i)
         {
-            double wt = angularFreq * i * samplingInterval_;
-			sinTable_[i] = 2.0 * std::sin(wt);// -2.0 は正規化(ハードウェアの配線の+-の逆転を補正)のため
-            cosTable_[i] = 2.0 * std::cos(wt);
+            sinTable_[i] = 2.0 * s; // scaled
+            cosTable_[i] = 2.0 * c;
+            // rotate (s,c) by delta
+            const double s_next = s * cosDelta + c * sinDelta;
+            const double c_next = c * cosDelta - s * sinDelta;
+            s = s_next;
+            c = c_next;
         }
     }
 
     auto calculate(const double rawData[]) const -> std::pair<double, double>
     {
-		double sumX = 0.0, sumY = 0.0;
+        const size_t n = cosTable_.size();
+        if (n == 0) return {0.0, 0.0};
+
         const double* pCos = &cosTable_[0];
         const double* pSin = &sinTable_[0];
-//#pragma omp parallel for reduction(+:sumX, sumY)
-        for (int i = 0; i < cosTable_.size(); ++i)
-        {
-            sumX += pCos[i] * rawData[i];
-            sumY += pSin[i] * rawData[i];
-        }
 
-        const double invSize = 1.0 / static_cast<double>(cosTable_.size());
-		return { sumX * invSize, sumY * invSize };
+        // Use std::inner_product which may be optimized; keep types explicit
+        double sumX = std::inner_product(pCos, pCos + n, rawData, 0.0);
+        double sumY = std::inner_product(pSin, pSin + n, rawData, 0.0);
+
+        const double invSize = 1.0 / static_cast<double>(n);
+        return { sumX * invSize, sumY * invSize };
     }
 
     // 位相回転を行うヘルパー関数
     auto rotate_phase(double x, double y, double phase_deg) -> std::pair<double, double>
     {
-        static double currentPhase_deg = phase_deg;
-        static double theta = currentPhase_deg / 180.0 * std::numbers::pi;
-        static double sin_t = std::sin(theta);
-        static double cos_t = std::cos(theta);
-        if (currentPhase_deg != phase_deg) {
-            currentPhase_deg = phase_deg;
-            theta = currentPhase_deg / 180.0 * std::numbers::pi;
-            sin_t = std::sin(theta);
-            cos_t = std::cos(theta);
+        // cachedPhaseDeg_ を用いて sin/cos の再計算を最小化
+        if (cachedPhaseDeg_ != phase_deg) {
+            cachedPhaseDeg_ = phase_deg;
+            const double theta = cachedPhaseDeg_ / 180.0 * std::numbers::pi;
+            cachedSin_ = std::sin(theta);
+            cachedCos_ = std::cos(theta);
         }
-        return { x * cos_t - y * sin_t, x * sin_t + y * cos_t };
+        return { x * cachedCos_ - y * cachedSin_, x * cachedSin_ + y * cachedCos_ };
     }
 };
