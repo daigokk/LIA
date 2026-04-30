@@ -7,17 +7,6 @@
 #include <numbers> // For std::numbers::pi
 #include <thread> // std::thread
 
-void awgStart(LiaConfig* pLiaConfig)
-{
-    if (pLiaConfig->pDaq != nullptr)
-    {
-        pLiaConfig->pDaq->awg.start(
-            pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
-            pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
-        );
-    }
-}
-
 // ------------------------------------------------------------
 // 型定義・ユーティリティ
 // ------------------------------------------------------------
@@ -102,7 +91,7 @@ PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, i
     cfg->awgCfg.ch[0].phase = 0.0;
     cfg->awgCfg.ch[1].amp = ch1_amp;
     cfg->awgCfg.ch[1].phase = 0.0;
-    awgStart(cfg);
+    cfg->awgStart();
 
     auto [p1, p2] = findMaxDistancePoints(cfg, record_ms);
     return calculatePolarVector(p1, p2);
@@ -130,7 +119,7 @@ void autosetupW2(LiaConfig* cfg) {
     cfg->awgCfg.ch[0].amp = original_amp;
     cfg->awgCfg.ch[1].amp = original_amp * (w1.amplitude / w2.amplitude);
     cfg->awgCfg.ch[1].phase = w1.phaseDeg - w2.phaseDeg;
-    awgStart(cfg);
+    cfg->awgStart();
 
     cfg->flagAutoSetup = false;
     printf("Done.\n");
@@ -287,7 +276,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
-        awgStart(&liaConfig);
+        liaConfig.awgStart();
         if (button != ButtonType::NON) buttonPressed(button, value);
     }
 }
