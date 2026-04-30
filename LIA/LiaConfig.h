@@ -28,7 +28,7 @@
 constexpr float RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
 constexpr size_t RAW_SIZE = 5000 * 2;
-constexpr double MEASUREMENT_DT = 4.0e-3;
+constexpr double MEASUREMENT_DT = 2.0e-3;
 constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
 constexpr float XY_HISTORY_SEC = 10.0f;
