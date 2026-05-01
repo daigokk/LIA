@@ -460,6 +460,7 @@ inline void XYPlotWindow::show()
     {
         liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
         ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
+		liaConfig.flagAutoSetupW2History = false;
     }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
@@ -550,6 +551,18 @@ inline void XYPlotWindow::show()
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1);
             ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size());
         }
+        if(liaConfig.flagAutoSetupW2History){
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+            ImPlot::PlotLine("##HISTORY W1", liaConfig.autoSetupHistoryW1.x.data(), liaConfig.autoSetupHistoryW1.y.data(),
+                liaConfig.autoSetupHistoryW1.x.size(), 0, 0, sizeof(double)
+            );
+            ImPlot::PopStyleColor();
+            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(3, ImPlotColormap_Deep));
+            ImPlot::PlotLine("##HISTORY W2", liaConfig.autoSetupHistoryW2.x.data(), liaConfig.autoSetupHistoryW2.y.data(),
+                liaConfig.autoSetupHistoryW2.x.size(), 0, 0, sizeof(double)
+            );
+            ImPlot::PopStyleColor();
+		}
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();

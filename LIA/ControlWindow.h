@@ -77,9 +77,19 @@ inline float clampAmplitude(float amp) {
 // AWG 測定・解析
 // ============================================================
 // 指定した時間だけ記録し、リングバッファから最大距離の2点を返す
-std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, int record_ms) {
+std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_ms, const bool flagW1) {
     // ミリ秒を要素数に変換
     const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
+
+    // ヒストリーバッファのサイズを必要な長さに調整
+    if (flagW1) {
+        cfg->autoSetupHistoryW1.x.resize(length);
+        cfg->autoSetupHistoryW1.y.resize(length);
+    }
+    else {
+        cfg->autoSetupHistoryW2.x.resize(length);
+        cfg->autoSetupHistoryW2.y.resize(length);
+    }
 
     // 安定化の待機と記録実施
     std::this_thread::sleep_for(std::chrono::milliseconds(500 + record_ms));
@@ -92,7 +102,7 @@ std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, int record_ms) {
     auto getPointAtOffset = [&](int offset) -> Point {
         const int idx = (idx_end - offset + bufsize) % bufsize;
         return { ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx] };
-    };
+        };
 
     double maxDist2 = -1.0;
     Point best1{}, best2{};
@@ -126,7 +136,20 @@ std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, int record_ms) {
             std::swap(best1, best2);
         }
     }
-    
+
+    if (flagW1) {
+        for (int i = 0; i < length; i++) {
+            cfg->autoSetupHistoryW1.x[i] = getPointAtOffset(i).x - best1.x;
+            cfg->autoSetupHistoryW1.y[i] = getPointAtOffset(i).y - best1.y;
+        }
+
+    }
+    else {
+        for (int i = 0; i < length; i++) {
+            cfg->autoSetupHistoryW2.x[i] = getPointAtOffset(i).x - best2.x;
+            cfg->autoSetupHistoryW2.y[i] = getPointAtOffset(i).y - best2.y;
+        }
+    }
 
     return { best1, best2 };
 }
@@ -138,8 +161,14 @@ PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, i
     cfg->awgCfg.ch[1].amp = ch1_amp;
     cfg->awgCfg.ch[1].phase = 0.0;
     cfg->awgStart();
-
-    auto [p1, p2] = findMaxDistancePoints(cfg, record_ms);
+    bool flagW1;
+    if(ch0_amp==0){
+        flagW1 = false;
+	}
+    else {
+        flagW1 = true;
+    }
+    auto [p1, p2] = findMaxDistancePoints(cfg, record_ms, flagW1);
     return calculatePolarVector(p1, p2);
 }
 
@@ -149,7 +178,7 @@ PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, i
 void autosetupW2(LiaConfig* cfg) {
     constexpr int RECORD_MS = 3000;
 
-    printf("In progress...\n");
+    printf("Autosetup W2 in progress...\n");
 
     const double original_amp = cfg->awgCfg.ch[0].amp;
 
@@ -172,8 +201,9 @@ void autosetupW2(LiaConfig* cfg) {
 
     // 自動オフセット調整によりプロットを原点に移動
 	cfg->flagAutoOffset = true;
-    cfg->flagAutoSetup = false;
-    printf("  w2 amp.:%f, theta:%f\n", cfg->awgCfg.ch[1].amp, cfg->awgCfg.ch[1].phase);
+    cfg->flagAutoSetupW2 = false;
+    cfg->flagAutoSetupW2History = true;
+    printf("  New w2 amp.:%f, theta:%f\n", cfg->awgCfg.ch[1].amp, cfg->awgCfg.ch[1].phase);
     printf("Done.\n");
 }
 
@@ -203,7 +233,7 @@ public:
 	void autosetup(const float nextItemWidth) {
         ImGui::SetNextItemWidth(nextItemWidth);
 
-        if (liaConfig.flagAutoSetup) {
+        if (liaConfig.flagAutoSetupW2) {
             // 自動設定中は操作不可
             ImGui::BeginDisabled();
             ImGui::Button("W2 Autosetup in progress");
@@ -211,7 +241,7 @@ public:
         } else {
             // 自動設定開始ボタン
             if (ImGui::Button("W2 Autosetup")) {
-                liaConfig.flagAutoSetup = true;
+                liaConfig.flagAutoSetupW2 = true;
                 std::thread th_autosetup = std::thread{ autosetupW2, &liaConfig };
                 th_autosetup.detach();
             }

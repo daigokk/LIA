@@ -223,10 +223,19 @@ public:
     // State Flags
     bool flagCh2 = false;
     bool flagAutoOffset = false;
-    volatile bool flagAutoSetup = false;
+	bool flagAutoSetupW2History = false;
+    volatile bool flagAutoSetupW2 = false;
     volatile bool statusMeasurement = false;
     volatile bool statusPipe = false;
     
+	// flagAutoSetupW2History が true のときに、W1とW2の自動設定の履歴を保存するための構造体
+    struct XYs {
+        std::vector<double> x;
+        std::vector<double> y;
+
+    };
+	XYs autoSetupHistoryW1, autoSetupHistoryW2;
+
     PauseCfg pauseCfg;
 
     // Data Buffers (using std::vector to avoid stack overflow)
