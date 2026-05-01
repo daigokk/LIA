@@ -262,7 +262,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             // 位相設定（読み取り専用）
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::BeginDisabled();
-            ImGui::InputFloat((char*)u8"θ (Deg.)", &liaConfig.awgCfg.ch[0].phase, 1, 1, "%3.0f");
+            ImGui::InputFloat((char*)"θ (Deg.)", &liaConfig.awgCfg.ch[0].phase, 1, 1, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Phase, liaConfig.awgCfg.ch[0].phase);
             ImGui::EndDisabled();
 
@@ -293,7 +293,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
 
             // 位相設定
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat((char*)u8"θ (Deg.)", &liaConfig.awgCfg.ch[1].phase, 1, 1, "%3.0f")) {
+            if (ImGui::InputFloat((char*)"θ (Deg.)", &liaConfig.awgCfg.ch[1].phase, 1, 1, "%3.0f")) {
                 configChanged = true;
             }
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Phase, liaConfig.awgCfg.ch[1].phase);
@@ -343,7 +343,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
             if (liaConfig.pauseCfg.flag) {
                 ImGui::BeginDisabled();
             }
-            ImGui::InputDouble((char*)u8"Ch1 θ (Deg.)", &liaConfig.postCfg.offset[0].phase, 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)"Ch1 θ (Deg.)", &liaConfig.postCfg.offset[0].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, liaConfig.postCfg.offset[0].phase);
 
             // Ch2 位相オフセット（Ch2有効時のみ操作可能）
@@ -351,7 +351,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 ImGui::BeginDisabled();
             }
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble((char*)u8"Ch2 θ (Deg.)", &liaConfig.postCfg.offset[1].phase, 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((char*)"Ch2 θ (Deg.)", &liaConfig.postCfg.offset[1].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, liaConfig.postCfg.offset[1].phase);
             if (!liaConfig.flagCh2) {
                 ImGui::EndDisabled();
@@ -503,7 +503,7 @@ inline void ControlWindow::monitor()
 		ImGui::Text(
 			"Amp:%4.2fV, %s:%4.0fDeg.",
 			computeAmplitude(ch0_x, ch0_y),
-			u8"θ",
+			"θ",
 			computePhaseDeg(ch0_y, ch0_x)
 		);
 
@@ -518,7 +518,7 @@ inline void ControlWindow::monitor()
 		ImGui::Text(
 			"Amp:%4.2fV, %s:%4.0fDeg.",
 			computeAmplitude(ch1_x, ch1_y),
-			u8"θ",
+			"θ",
 			computePhaseDeg(ch1_y, ch1_x)
 		);
 
