@@ -199,7 +199,7 @@ void autosetupW2(LiaConfig* cfg) {
     // 安定化の待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // 自動オフセット調整後、振動信号がプロットを原点に移動
+    // W2の自動設定後、プロットを原点に移動
 	cfg->flagAutoOffset = true;
     cfg->flagAutoSetupW2 = false;
     cfg->flagAutoSetupW2History = true;
