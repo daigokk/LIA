@@ -199,10 +199,25 @@ void autosetupW2(LiaConfig* cfg) {
     // 安定化の待機
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // 自動オフセット調整によりプロットを原点に移動
+    // 自動オフセット調整後、振動信号がプロットを原点に移動
 	cfg->flagAutoOffset = true;
     cfg->flagAutoSetupW2 = false;
     cfg->flagAutoSetupW2History = true;
+
+	// autoSetupHistoryをCSVファイルに保存
+    std::ofstream file(std::format("./{}/{}", cfg->dirName, "autosetupw2history.csv"));
+    if (!file) {
+        std::cerr << "Error: Could not open file " << "autosetupw2history.csv" << std::endl;
+    }
+    else {
+        std::stringstream ss;
+        ss << "# w1x(V),w1y(V),w2x(V),w2y(V)\n";
+        for (size_t i = 0; i < cfg->autoSetupHistoryW1.x.size(); ++i) {
+            ss << std::format("{:e},{:e},{:e},{:e}\n", cfg->autoSetupHistoryW1.x[i], cfg->autoSetupHistoryW1.y[i], cfg->autoSetupHistoryW2.x[i], cfg->autoSetupHistoryW2.y[i]);
+        }
+        file << ss.str(); // メモリからファイルへ一括書き込み
+        file.close();
+    }
     printf("  New w2 amp.:%f, theta:%f\n", cfg->awgCfg.ch[1].amp, cfg->awgCfg.ch[1].phase);
     printf("Done.\n");
 }
