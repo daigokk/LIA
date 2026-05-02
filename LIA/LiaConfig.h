@@ -56,6 +56,7 @@ enum class ButtonType
     AwgW2Freq = 1021,
     AwgW2Amp = 1022,
     AwgW2Phase = 1023,
+	AwgW2AutoSetup = 1024,
     PlotLimit = 1101,
     PostOffset1Phase = 1201,
     PostOffset2Phase = 1202,

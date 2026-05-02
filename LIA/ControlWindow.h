@@ -78,6 +78,9 @@ inline float clampAmplitude(float amp) {
 // ============================================================
 // 指定した時間だけ記録し、リングバッファから最大距離の2点を返す
 std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_ms, const bool flagW1) {
+	// AWGを開始して安定化のために少し待機する時間ms
+    constexpr int WAIT_MS = 500;
+
     // ミリ秒を要素数に変換
     const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
 
@@ -92,7 +95,7 @@ std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_m
     }
 
     // 安定化の待機と記録実施
-    std::this_thread::sleep_for(std::chrono::milliseconds(500 + record_ms));
+    std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_MS + record_ms));
 
     const auto& ringBuffer = cfg->ringBuffer;
     const int idx_end = ringBuffer.idx;
@@ -176,6 +179,7 @@ PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, i
 // W2の自動設定
 // ============================================================
 void autosetupW2(LiaConfig* cfg) {
+	// 記録時間を3秒に設定
     constexpr int RECORD_MS = 3000;
 
     printf("Autosetup W2 in progress...\n");
@@ -245,23 +249,6 @@ public:
 	}
 
 	void awg(const float nextItemWidth);
-	void autosetup(const float nextItemWidth) {
-        ImGui::SetNextItemWidth(nextItemWidth);
-
-        if (liaConfig.flagAutoSetupW2) {
-            // 自動設定中は操作不可
-            ImGui::BeginDisabled();
-            ImGui::Button("W2 Autosetup in progress");
-            ImGui::EndDisabled();
-        } else {
-            // 自動設定開始ボタン
-            if (ImGui::Button("W2 Autosetup")) {
-                liaConfig.flagAutoSetupW2 = true;
-                std::thread th_autosetup = std::thread{ autosetupW2, &liaConfig };
-                th_autosetup.detach();
-            }
-        }
-    }
     void plot(const float nextItemWidth);
 	void post(const float nextItemWidth);
     void monitor();
@@ -342,6 +329,24 @@ inline void ControlWindow::awg(const float nextItemWidth)
                 configChanged = true;
             }
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Phase, liaConfig.awgCfg.ch[1].phase);
+
+			// W2自動設定ボタン
+            ImGui::SetNextItemWidth(nextItemWidth);
+            if (liaConfig.flagAutoSetupW2) {
+                // 自動設定中は操作不可
+                ImGui::BeginDisabled();
+                ImGui::Button("W2 Autosetup in progress");
+                ImGui::EndDisabled();
+            }
+            else {
+                // 自動設定開始ボタン
+                if (ImGui::Button("W2 Autosetup")) {
+                    liaConfig.flagAutoSetupW2 = true;
+                    std::thread th_autosetup = std::thread{ autosetupW2, &liaConfig };
+                    th_autosetup.detach();
+                }
+            }
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2AutoSetup, 0);
 
             ImGui::EndTabItem();
         }
@@ -665,7 +670,6 @@ inline void ControlWindow::show(void)
 
 	// ===== AWG 設定 =====
 	awg(nextItemWidth);
-	autosetup(nextItemWidth);
 
 	// ===== グラフ表示設定 =====
 	plot(nextItemWidth);
