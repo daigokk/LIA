@@ -36,7 +36,7 @@ public:
 		if (theme != liaConfig.imguiCfg.theme)
 		{
 			theme = liaConfig.imguiCfg.theme;
-			Gui::setStyle(theme);
+			Gui::SetTheme(static_cast<GuiTheme>(theme));
 		}
 		beep.update(liaConfig.plotCfg.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
 		ImGuiStyle& style = ImGui::GetStyle();

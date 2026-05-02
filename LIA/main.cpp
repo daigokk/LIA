@@ -56,14 +56,16 @@ int main(int argc, char* argv[])
     }
     if (guiFlag)
     {
-        Gui::Initialize(
-            "Lock-in amplifier",
-            settings.windowCfg.pos.x, settings.windowCfg.pos.y,
-            settings.windowCfg.size.x, settings.windowCfg.size.y
-        );
+        GuiConfig guiCfg;
+        guiCfg.title = "Lock-in amplifier";
+		guiCfg.posX = settings.windowCfg.pos.x;
+		guiCfg.posY = settings.windowCfg.pos.y;
+        guiCfg.width = settings.windowCfg.size.x;
+        guiCfg.height = settings.windowCfg.size.y;
+        Gui::Initialize(guiCfg);
         if (Gui::GetWindow() == nullptr) return -1;
 		settings.windowCfg.monitorScale = Gui::monitorScale;
-        if(Gui::SurfacePro7) {
+        if(Gui::isSurfacePro7) {
             settings.imguiCfg.windowFlag = ImGuiCond_Always;
 		}
         pGuiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);

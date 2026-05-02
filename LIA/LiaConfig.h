@@ -447,7 +447,6 @@ private:
         xyRingBuffer.size = (xyRingBuffer.nofm < XY_SIZE) ? xyRingBuffer.nofm : XY_SIZE;
     }
 
-    // (saveSettingsToFile と loadSettingsFromFile は先程と同様なので省略せずにそのまま配置)
     void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {
         IniWrapper ini;
         ini.set("Window", "pos.x", windowCfg.pos.x);

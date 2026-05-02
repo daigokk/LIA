@@ -1,102 +1,125 @@
 #pragma once
-#pragma comment(lib,"winmm.lib")
+#pragma comment(lib, "winmm.lib")
 
 #include <cmath>
+#include <vector>
+#include <numbers> // C++20: std::numbers::pi
 #include <windows.h>
-#include <numbers> // For std::numbers::pi
 
-
-class Wave
-{
+class Wave {
 private:
-	int bufCount;   //      再生するバイト数
-	int sz;                 //      バッファ長
-	HWAVEOUT hWaveOut;
-	WAVEFORMATEX wfe;
-	WAVEHDR* whdr;
-	short** lpWave; //      バッファ
+    static constexpr int BUFFER_COUNT = 2; // 使用するバッファ数
+
+    HWAVEOUT hWaveOut = nullptr;
+    WAVEFORMATEX waveFormat = {};
+    std::vector<WAVEHDR> waveHeaders;
+    std::vector<std::vector<short>> audioBuffers; // 生ポインタ(short**)の代わりにvectorを使用
+
+    int maxSamples; // バッファに格納できる最大サンプル数
+
+    void init(int sampleRate, int durationSec) {
+        isReset = true;
+
+        // 1. WAVフォーマットの設定 (16bit モノラル PCM)
+        waveFormat.wFormatTag = WAVE_FORMAT_PCM;
+        waveFormat.nChannels = 1;
+        waveFormat.wBitsPerSample = 16;
+        waveFormat.nBlockAlign = (waveFormat.nChannels * waveFormat.wBitsPerSample) / 8;
+        waveFormat.nSamplesPerSec = sampleRate;
+        waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
+
+        // 2. オーディオデバイスのオープン
+        waveOutOpen(&hWaveOut, WAVE_MAPPER, &waveFormat, 0, reinterpret_cast<DWORD_PTR>(this), 0);
+
+        // 3. バッファのメモリ確保
+        maxSamples = sampleRate * durationSec;
+        waveHeaders.resize(BUFFER_COUNT);
+        audioBuffers.resize(BUFFER_COUNT, std::vector<short>(maxSamples));
+
+        for (int i = 0; i < BUFFER_COUNT; i++) {
+            ZeroMemory(&waveHeaders[i], sizeof(WAVEHDR));
+            // vectorの内部配列の先頭ポインタをWinMMに渡す
+            waveHeaders[i].lpData = reinterpret_cast<LPSTR>(audioBuffers[i].data());
+        }
+    }
+
 public:
-	bool reset;
-	void init(const int rate, const int sec)
-	{
-		this->bufCount = 2;   //      使用するバッファ数
-		this->reset = true;
-		this->wfe.wFormatTag = WAVE_FORMAT_PCM;
-		this->wfe.nChannels = 1;      //      モノラル    
-		this->wfe.wBitsPerSample = 16;        //      分解能16bit
-		this->wfe.nBlockAlign = wfe.nChannels * wfe.wBitsPerSample / 8;
-		this->wfe.nSamplesPerSec = rate;      //      サンプルレート
-		this->wfe.nAvgBytesPerSec = wfe.nSamplesPerSec * wfe.nBlockAlign;
-		waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfe, 0, (DWORD_PTR)this, 0);
-		this->sz = wfe.nAvgBytesPerSec * sec;
-		this->whdr = new WAVEHDR[bufCount];
-		this->lpWave = (short**)new void* [bufCount];
-		for (int n = 0; n < bufCount; n++)
-		{
-			this->lpWave[n] = new short[this->wfe.nAvgBytesPerSec * sec];
-			this->whdr[n].lpData = (LPSTR)this->lpWave[n];
-		}
-	}
-	Wave(const int rate, const int sec)
-	{
-		this->init(rate, sec);
-	}
-	Wave(const int rate, const int sec, const int freq)
-	{
-		this->init(rate, sec);
-		this->makeSin(freq);
-	}
-	void close()
-	{
-		this->stop();
-		for (int n = 0; n < this->bufCount; n++) {
-			waveOutUnprepareHeader(this->hWaveOut, &this->whdr[n], sizeof(WAVEHDR));
-			delete[]this->lpWave[n];
-		}
-		delete[]this->whdr;
-		delete[]this->lpWave;
-	}
-	~Wave()
-	{
-		close();
-	}
-	void makeSin(const double freq)
-	{ //      1周期の正弦波データ作成
-		double qstep = 2 * std::numbers::pi * freq / this->wfe.nSamplesPerSec;
-		double rq = 2;
-		double q = 0;
-		int n;
-		for (n = 0; n < this->sz; n++) {
-			int d;
-			d = int(32767 * sin(q));
-			for (int i = 0; i < this->bufCount; i++)
-				this->lpWave[i][n] = d;
-			q += qstep;
-			if (rq < 0 && 0 <= q) {
-				break;
-			}
-			rq = q;
-		}
-		for (int i = 0; i < this->bufCount; i++)
-		{
-			this->whdr[i].dwBufferLength = n * 2; //      バッファバイト数
-			this->whdr[i].dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
-			this->whdr[i].dwLoops = 20000 * freq / this->wfe.nSamplesPerSec;
-			this->whdr[i].dwUser = 0;
-		}
-	}
-	void play(void)
-	{ 
-		this->reset = false;
-		for (int i = 0; i < this->bufCount; i++)
-		{
-			waveOutPrepareHeader(this->hWaveOut, &this->whdr[i], sizeof(WAVEHDR));
-			waveOutWrite(this->hWaveOut, &this->whdr[i], sizeof(WAVEHDR));
-		}
-	}
-	void stop(void)
-	{
-		this->reset = true;
-		waveOutReset(this->hWaveOut);
-	}
+    bool isReset = true;
+
+    Wave(int sampleRate, int durationSec) {
+        init(sampleRate, durationSec);
+    }
+
+    Wave(int sampleRate, int durationSec, double frequency) {
+        init(sampleRate, durationSec);
+        makeSineWave(frequency);
+    }
+
+    ~Wave() {
+        close();
+    }
+
+    void close() {
+        if (!hWaveOut) return;
+
+        stop();
+
+        // ヘッダーの準備解除
+        for (auto& header : waveHeaders) {
+            waveOutUnprepareHeader(hWaveOut, &header, sizeof(WAVEHDR));
+        }
+
+        // デバイスを閉じる (元コードで不足していた処理)
+        waveOutClose(hWaveOut);
+        hWaveOut = nullptr;
+    }
+
+    // 1周期分の正弦波データを作成し、ループ再生の設定を行う
+    void makeSineWave(double frequency) {
+        if (frequency <= 0.0) return;
+
+        double qStep = (2.0 * std::numbers::pi * frequency) / waveFormat.nSamplesPerSec;
+        double q = 0.0;
+        int sampleCount = 0;
+
+        // 1周期分の波形を生成
+        for (sampleCount = 0; sampleCount < maxSamples; sampleCount++) {
+            short amplitude = static_cast<short>(32767.0 * std::sin(q));
+
+            for (int i = 0; i < BUFFER_COUNT; i++) {
+                audioBuffers[i][sampleCount] = amplitude;
+            }
+
+            q += qStep;
+
+            // 位相が2π（1周期）を超えたら波形生成を終了
+            if (q >= 2.0 * std::numbers::pi) {
+                sampleCount++; // 現在のサンプルを含めてインクリメント
+                break;
+            }
+        }
+
+        // WinMMにループ再生を指示するヘッダー設定
+        for (int i = 0; i < BUFFER_COUNT; i++) {
+            waveHeaders[i].dwBufferLength = sampleCount * sizeof(short); // バイト数
+            waveHeaders[i].dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
+            waveHeaders[i].dwLoops = static_cast<DWORD>((20000.0 * frequency) / waveFormat.nSamplesPerSec);
+            waveHeaders[i].dwUser = 0;
+        }
+    }
+
+    void play() {
+        isReset = false;
+        for (auto& header : waveHeaders) {
+            waveOutPrepareHeader(hWaveOut, &header, sizeof(WAVEHDR));
+            waveOutWrite(hWaveOut, &header, sizeof(WAVEHDR));
+        }
+    }
+
+    void stop() {
+        isReset = true;
+        if (hWaveOut) {
+            waveOutReset(hWaveOut);
+        }
+    }
 };

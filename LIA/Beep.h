@@ -34,7 +34,7 @@ public:
     Beep9() {
         for (int i = 0; i < NumWaves; ++i) {
             waves[i] = std::make_unique<Wave>(4800, 1);
-            waves[i]->makeSin(Frequencies[i]);
+            waves[i]->makeSineWave(Frequencies[i]);
         }
     }
     void update(const bool flag, const double x, const double y) {
