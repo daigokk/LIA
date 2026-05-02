@@ -84,14 +84,13 @@ inline void RawPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.rawLimit, liaConfig.plotCfg.rawLimit, ImGuiCond_Always);
         
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
-        ImPlot::PlotLine(ch1_label, liaConfig.rawTime.data(), liaConfig.rawData[0].data(), (int)liaConfig.rawTime.size());
-        ImPlot::PopStyleColor();
+        ImPlotSpec specLine;
+        specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+        ImPlot::PlotLine(ch1_label, liaConfig.rawTime.data(), liaConfig.rawData[0].data(), (int)liaConfig.rawTime.size(), specLine);
         if (liaConfig.flagCh2)
         {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
-            ImPlot::PlotLine("Ch2", liaConfig.rawTime.data(), liaConfig.rawData[1].data(), (int)liaConfig.rawTime.size());
-            ImPlot::PopStyleColor();
+            specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+            ImPlot::PlotLine("Ch2", liaConfig.rawTime.data(), liaConfig.rawData[1].data(), (int)liaConfig.rawTime.size(), specLine);
         }
         ImPlot::EndPlot();
     }
@@ -174,15 +173,17 @@ inline void TimeChartWindow::show()
             ImPlot::SetupAxisLimits(ImAxis_X1, t - liaConfig.plotCfg.historySec, t, ImGuiCond_Always);
         }
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
+        ImPlotSpec specLine;
+		specLine.Offset = liaConfig.ringBuffer.tail;
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[liaConfig.plotCfg.idxStart]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.idxStart]),
-            liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
+            liaConfig.ringBuffer.size, specLine
         );
         if (liaConfig.flagCh2)
         {
             ImPlot::PlotLine(
                 "Ch2y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[1].y[0]),
-                liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
+                liaConfig.ringBuffer.size,specLine
             );
         }
         static bool flag = true;
@@ -256,16 +257,17 @@ inline void TimeChartZoomWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.pauseCfg.selectArea.X.Min, liaConfig.pauseCfg.selectArea.X.Max, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, liaConfig.pauseCfg.selectArea.Y.Min, liaConfig.pauseCfg.selectArea.Y.Max, ImGuiCond_Always);
-		
+        ImPlotSpec specLine;
+        specLine.Offset = liaConfig.ringBuffer.tail;
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]),
-            liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
+            liaConfig.ringBuffer.size, specLine
         );
         if (liaConfig.flagCh2)
         {
             ImPlot::PlotLine(
                 "Ch2y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[1].y[0]),
-                liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
+                liaConfig.ringBuffer.size, specLine
             );
         }
         static double _xmin = liaConfig.pauseCfg.selectArea.X.Min, _xmax = liaConfig.pauseCfg.selectArea.X.Max;
@@ -345,14 +347,20 @@ inline void TimeChartZoomWindow::show()
         }
         liaConfig.acfmData.ch1vpp = abs(ch1vs[1] - ch1vs[0]);
         liaConfig.acfmData.ch2vpp = abs(ch2vs[1] - ch2vs[0]);
+
+        ImPlotSpec specScatter;
+        specScatter.Marker = ImPlotMarker_Circle;
+        specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
+        specScatter.MarkerFillColor = colors[2];
+        specScatter.LineWeight = -1.0f;
+        specScatter.MarkerLineColor = colors[2];
         if (ch1t50s[0] < ch1t50s[1] && liaConfig.acfmData.ch1vpp > 2e-3) {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
-            ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[9], -1.0f, colors[9]);
-            ImPlot::PlotScatter("##ch1_50% marker", ch1t50s, ch1v50s, 2);
-            ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
-            ImPlot::PlotLine("##ch1_50% line", ch1t50s, ch1v50s, 2);
-            ImPlot::PopStyleColor();
+            ImPlot::PlotScatter("##ch1 minmax", ch1ts, ch1vs, 2, specScatter);
+            specScatter.MarkerFillColor = colors[9];
+            specScatter.MarkerLineColor = colors[9];
+            ImPlot::PlotScatter("##ch1_50% marker", ch1t50s, ch1v50s, 2, specScatter);
+            specLine.LineColor = colors[9];
+            ImPlot::PlotLine("##ch1_50% line", ch1t50s, ch1v50s, 2, specLine);
             ImPlot::PlotText(
                 std::format("{:.3f}s", ch1t50s[1] - ch1t50s[0]).c_str(),
                 (ch1t50s[1] + ch1t50s[0]) / 2,
@@ -365,13 +373,14 @@ inline void TimeChartZoomWindow::show()
             );
         }
         if (liaConfig.flagCh2 && liaConfig.acfmData.ch2vpp > 10e-3) {
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
-            ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2);
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[9], -1.0f, colors[9]);
-            ImPlot::PlotScatter("##ch2_50% marker", ch2ts, ch2v50s, 2);
-            ImPlot::PushStyleColor(ImPlotCol_Line, colors[9]);
-            ImPlot::PlotLine("##ch2 line", ch2ts, ch2v50s, 2);
-            ImPlot::PopStyleColor();
+            specScatter.MarkerFillColor = colors[7];
+            specScatter.MarkerLineColor = colors[7];
+            ImPlot::PlotScatter("##ch2 marker", ch2ts, ch2vs, 2, specScatter);
+            specScatter.MarkerFillColor = colors[9];
+            specScatter.MarkerLineColor = colors[9];
+            ImPlot::PlotScatter("##ch2_50% marker", ch2ts, ch2v50s, 2, specScatter);
+			specLine.LineColor = colors[9];
+            ImPlot::PlotLine("##ch2 line", ch2ts, ch2v50s, 2, specLine);
             ImPlot::PlotText(
                 std::format("{:.3f}s", abs(ch2ts[1] - ch2ts[0])).c_str(),
                 (ch2ts[1] + ch2ts[0]) / 2,
@@ -420,9 +429,11 @@ inline void DeltaTimeChartWindow::show()
         ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, (MEASUREMENT_DT - 2e-3) * 1e3, (MEASUREMENT_DT + 2e-3) * 1e3, ImGuiCond_Always);
+        ImPlotSpec specLine;
+        specLine.Offset = liaConfig.ringBuffer.tail;
         ImPlot::PlotLine(
             "##dt", &(liaConfig.ringBuffer.times[0]), &(liaConfig.dts[0]),
-            liaConfig.ringBuffer.size, 0, liaConfig.ringBuffer.tail, sizeof(double)
+            liaConfig.ringBuffer.size, specLine
         );
         ImPlot::EndPlot();
     }
@@ -512,6 +523,7 @@ inline void XYPlotWindow::show()
             file.close();
         }
     }
+
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
@@ -531,37 +543,41 @@ inline void XYPlotWindow::show()
             ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
             ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         }
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(0, ImPlotColormap_Deep));
+		ImPlotSpec specLine;
+		specLine.Offset = liaConfig.xyRingBuffer.tail;
+		specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
         ImPlot::PlotLine(ch1_label, &(liaConfig.xyRingBuffer.ch[0].x[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
-            liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
+            liaConfig.xyRingBuffer.size, specLine
         );
-        ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
-        ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1);
+        ImPlotSpec specScatter;
+        specScatter.Marker = ImPlotMarker_Circle;
+        specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
+        specScatter.MarkerFillColor = colors[2];
+        specScatter.LineWeight = -1.0f;
+        specScatter.MarkerLineColor = colors[2];
+        ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1, specScatter);
         ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size());
         if (liaConfig.flagCh2)
         {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(1, ImPlotColormap_Deep));
+            specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
             ImPlot::PlotLine("Ch2", liaConfig.xyRingBuffer.ch[1].x.data(), liaConfig.xyRingBuffer.ch[1].y.data(),
-                liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
+                liaConfig.xyRingBuffer.size, specLine
             );
-            ImPlot::PopStyleColor();
-            ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
-            ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1);
-            ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size());
+            specScatter.MarkerFillColor = colors[7];
+            specScatter.MarkerLineColor = colors[7];
+            ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1, specScatter);
+            ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size(), specScatter);
         }
         if(liaConfig.flagAutoSetupW2History){
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+            specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
             ImPlot::PlotLine("##HISTORY W1", liaConfig.autoSetupHistoryW1.x.data(), liaConfig.autoSetupHistoryW1.y.data(),
-                liaConfig.autoSetupHistoryW1.x.size(), 0, 0, sizeof(double)
+                liaConfig.autoSetupHistoryW1.x.size(), specLine
             );
-            ImPlot::PopStyleColor();
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(3, ImPlotColormap_Deep));
+            specLine.LineColor = ImPlot::GetColormapColor(3, ImPlotColormap_Deep);
             ImPlot::PlotLine("##HISTORY W2", liaConfig.autoSetupHistoryW2.x.data(), liaConfig.autoSetupHistoryW2.y.data(),
-                liaConfig.autoSetupHistoryW2.x.size(), 0, 0, sizeof(double)
+                liaConfig.autoSetupHistoryW2.x.size(), specLine
             );
-            ImPlot::PopStyleColor();
 		}
         ImPlot::EndPlot();
     }
@@ -630,13 +646,19 @@ inline void ACFMPlotWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vz_limt, liaConfig.plotCfg.Vz_limt, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vx_limt, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
-        ImPlot::PushStyleColor(ImPlotCol_Line, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
+        ImPlotSpec specLine;
+        specLine.Offset = liaConfig.xyRingBuffer.tail;
+        specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyRingBuffer.ch[1].y[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
-            liaConfig.xyRingBuffer.size, 0, liaConfig.xyRingBuffer.tail, sizeof(double)
+            liaConfig.xyRingBuffer.size, specLine
         );
-        ImPlot::PopStyleColor();
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[8], -1.0f, colors[8]);
-        ImPlot::PlotScatter("##NOW", &(liaConfig.xyRingBuffer.ch[1].y[liaConfig.xyRingBuffer.idx]), &(liaConfig.xyRingBuffer.ch[0].y[liaConfig.xyRingBuffer.idx]), 1);
+        ImPlotSpec specScatter;
+        specScatter.Marker = ImPlotMarker_Circle;
+        specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
+        specScatter.MarkerFillColor = colors[8];
+        specScatter.LineWeight = -1.0f;
+        specScatter.MarkerLineColor = colors[8];
+        ImPlot::PlotScatter("##NOW", &(liaConfig.xyRingBuffer.ch[1].y[liaConfig.xyRingBuffer.idx]), &(liaConfig.xyRingBuffer.ch[0].y[liaConfig.xyRingBuffer.idx]), 1, specScatter);
         double vhreal = liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx];
         double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[2];
         const char* thickness = nullptr;
@@ -691,10 +713,16 @@ inline void ACFMVhVvPlotWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.Vz_limt*2, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[2], -1.0f, colors[2]);
-        ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 5 * liaConfig.windowCfg.monitorScale, colors[7], -1.0f, colors[7]);
-        ImPlot::PlotScatter("Result", &(liaConfig.acfmData.ch2vpp), &(liaConfig.acfmData.ch1vpp), 1);
+        ImPlotSpec specScatter;
+        specScatter.Marker = ImPlotMarker_Circle;
+        specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
+        specScatter.MarkerFillColor = colors[2];
+        specScatter.LineWeight = -1.0f;
+        specScatter.MarkerLineColor = colors[2];
+        ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size, specScatter);
+        specScatter.MarkerFillColor = colors[7];
+        specScatter.MarkerLineColor = colors[7];
+        ImPlot::PlotScatter("Result", &(liaConfig.acfmData.ch2vpp), &(liaConfig.acfmData.ch1vpp), 1, specScatter);
         ImPlot::EndPlot();
     }
     ImGui::End();
