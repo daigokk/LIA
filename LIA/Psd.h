@@ -1,80 +1,103 @@
 ﻿#pragma once
-
 #include <cmath>
-#include <numbers>      // std::numbers::pi
-#include <numeric>      // std::inner_product
-#include <valarray>
-
+#include <numbers>
+#include <vector>
+#include <utility>
+#include <cstddef> // size_t
+#include <omp.h>
 
 class Psd
 {
 private:
-    std::valarray<double> sinTable_;
-    std::valarray<double> cosTable_;
+    std::vector<double> sinTable_;
+    std::vector<double> cosTable_;
+
     double samplingInterval_ = 0.0;
+    double currentFreq_ = 0.0; // privateにして外部からの直接変更を防止
     size_t sampleSize_ = 0;
+    size_t usableSize_ = 0;
+    double invSize_ = 0.0;
+
+    double currentPhase_deg_ = 0.0;
+    double sin_t_ = 0.0;
+    double cos_t_ = 1.0;
 
 public:
-    double currentFreq = 0.0;
-	double currentPhase_deg = 0.0;
+    // --- 追加したゲッター ---
+    // [[nodiscard]] は「戻り値を無視してはいけない」というコンパイラへのヒントで、
+    // ゲッターに付けると意図しないバグ（呼び出しただけで値を使わない等）を防げます。
+    [[nodiscard]] double getCurrentFreq() const noexcept
+    {
+        return currentFreq_;
+    }
+
     void initialize(double frequency, double samplingInterval, size_t sampleSize)
     {
-        if (currentFreq == frequency &&
+        if (currentFreq_ == frequency &&
             samplingInterval_ == samplingInterval &&
             sampleSize_ == sampleSize)
         {
-            return; // 再計算不要
+            return;
         }
 
-        currentFreq = frequency;
+        currentFreq_ = frequency;
         samplingInterval_ = samplingInterval;
         sampleSize_ = sampleSize;
 
-        const size_t halfPeriodSamples = static_cast<size_t>(0.5 / currentFreq / samplingInterval_);
-        const size_t usableSize = halfPeriodSamples * (sampleSize_ / halfPeriodSamples);
+        const size_t halfPeriodSamples = static_cast<size_t>(0.5 / (currentFreq_ * samplingInterval_));
+        usableSize_ = halfPeriodSamples * (sampleSize_ / halfPeriodSamples);
 
-        sinTable_.resize(usableSize);
-        cosTable_.resize(usableSize);
+        if (usableSize_ == 0) {
+            invSize_ = 0.0;
+            return;
+        }
 
-        const double angularFreq = 2.0 * std::numbers::pi * currentFreq;
+        invSize_ = 1.0 / static_cast<double>(usableSize_);
 
-        for (int i = 0; i < usableSize; ++i)
+        sinTable_.resize(usableSize_);
+        cosTable_.resize(usableSize_);
+
+        const double angularFreq = 2.0 * std::numbers::pi * currentFreq_;
+
+        double* pSin = sinTable_.data();
+        double* pCos = cosTable_.data();
+
+        for (size_t i = 0; i < usableSize_; ++i)
         {
             double wt = angularFreq * i * samplingInterval_;
-			sinTable_[i] = 2.0 * std::sin(wt);// -2.0 は正規化(ハードウェアの配線の+-の逆転を補正)のため
-            cosTable_[i] = 2.0 * std::cos(wt);
+            pSin[i] = 2.0 * std::sin(wt);
+            pCos[i] = 2.0 * std::cos(wt);
         }
     }
 
-    auto calculate(const double rawData[]) const -> std::pair<double, double>
+    auto calculate(const double* __restrict rawData) const noexcept -> std::pair<double, double>
     {
-		double sumX = 0.0, sumY = 0.0;
-        const double* pCos = &cosTable_[0];
-        const double* pSin = &sinTable_[0];
-//#pragma omp parallel for reduction(+:sumX, sumY)
-        for (int i = 0; i < cosTable_.size(); ++i)
+        if (usableSize_ == 0) return { 0.0, 0.0 };
+
+        double sumX = 0.0;
+        double sumY = 0.0;
+
+        const double* __restrict pCos = cosTable_.data();
+        const double* __restrict pSin = sinTable_.data();
+
+//#pragma omp simd reduction(+:sumX, sumY)
+        for (size_t i = 0; i < usableSize_; ++i)
         {
             sumX += pCos[i] * rawData[i];
             sumY += pSin[i] * rawData[i];
         }
 
-        const double invSize = 1.0 / static_cast<double>(cosTable_.size());
-		return { sumX * invSize, sumY * invSize };
+        return { sumX * invSize_, sumY * invSize_ };
     }
 
-    // 位相回転を行うヘルパー関数
-    auto rotate_phase(double x, double y, double phase_deg) -> std::pair<double, double>
+    auto rotate_phase(double x, double y, double phase_deg) noexcept -> std::pair<double, double>
     {
-        static double currentPhase_deg = phase_deg;
-        static double theta = currentPhase_deg / 180.0 * std::numbers::pi;
-        static double sin_t = std::sin(theta);
-        static double cos_t = std::cos(theta);
-        if (currentPhase_deg != phase_deg) {
-            currentPhase_deg = phase_deg;
-            theta = currentPhase_deg / 180.0 * std::numbers::pi;
-            sin_t = std::sin(theta);
-            cos_t = std::cos(theta);
+        if (currentPhase_deg_ != phase_deg) {
+            currentPhase_deg_ = phase_deg;
+            const double theta = currentPhase_deg_ * (std::numbers::pi / 180.0);
+            sin_t_ = std::sin(theta);
+            cos_t_ = std::cos(theta);
         }
-        return { x * cos_t - y * sin_t, x * sin_t + y * cos_t };
+        return { x * cos_t_ - y * sin_t_, x * sin_t_ + y * cos_t_ };
     }
 };

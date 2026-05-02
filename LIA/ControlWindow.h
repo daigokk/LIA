@@ -188,11 +188,13 @@ void autosetupW2(LiaConfig* cfg) {
 
     // ステップ1: W1をON、W2をOFF で測定
     PolarVector w1 = measureAwgResponse(cfg, original_amp, 0.0, RECORD_MS);
-    printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
+    printf("  w1");
+    printf(" abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
 
     // ステップ2: W1をOFF、W2をON で測定
     PolarVector w2 = measureAwgResponse(cfg, 0.0, original_amp, RECORD_MS);
-    printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
+    printf("  w2");
+    printf(" abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
 
     // ステップ3: W2の振幅と位相をW1に合わせるように調整
     cfg->awgCfg.ch[0].amp = original_amp;
