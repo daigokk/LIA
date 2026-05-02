@@ -557,7 +557,7 @@ inline void XYPlotWindow::show()
         specScatter.LineWeight = -1.0f;
         specScatter.MarkerLineColor = colors[2];
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1, specScatter);
-        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size());
+        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size(), specScatter);
         if (liaConfig.flagCh2)
         {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
