@@ -13,7 +13,7 @@ private:
     std::vector<double> cosTable_;
 
     double samplingInterval_ = 0.0;
-    double currentFreq_ = 0.0; // privateにして外部からの直接変更を防止
+    double currentFreq_ = 0.0;
     size_t sampleSize_ = 0;
     size_t usableSize_ = 0;
     double invSize_ = 0.0;
@@ -23,7 +23,6 @@ private:
     double cos_t_ = 1.0;
 
 public:
-    // --- 追加したゲッター ---
     // [[nodiscard]] は「戻り値を無視してはいけない」というコンパイラへのヒントで、
     // ゲッターに付けると意図しないバグ（呼び出しただけで値を使わない等）を防げます。
     [[nodiscard]] double getCurrentFreq() const noexcept
