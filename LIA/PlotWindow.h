@@ -557,7 +557,9 @@ inline void XYPlotWindow::show()
         specScatter.LineWeight = -1.0f;
         specScatter.MarkerLineColor = colors[2];
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1, specScatter);
-        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size());
+        specScatter.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+        specScatter.MarkerLineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size(), specScatter);
         if (liaConfig.flagCh2)
         {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
@@ -567,6 +569,8 @@ inline void XYPlotWindow::show()
             specScatter.MarkerFillColor = colors[7];
             specScatter.MarkerLineColor = colors[7];
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1, specScatter);
+            specScatter.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+            specScatter.MarkerLineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep); 
             ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size(), specScatter);
         }
         if(liaConfig.flagAutoSetupW2History){
