@@ -79,7 +79,7 @@ inline float clampAmplitude(float amp) {
 // 指定した時間だけ記録し、リングバッファから最大距離の2点を返す
 std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_ms, const bool flagW1) {
 	// AWGを開始して安定化のために少し待機する時間ms
-    constexpr int WAIT_MS = 500;
+    constexpr int WAIT_MS = 2;
 
     // ミリ秒を要素数に変換
     const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
@@ -255,6 +255,7 @@ public:
 	void post(const float nextItemWidth);
     void monitor();
 	void functionButtons(const float nextItemWidth);
+    void show_(void);
     void show(void);
 };
 
@@ -647,55 +648,64 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
 	}
 }
 
+inline void ControlWindow::show_(void)
+{
+    ButtonType button = ButtonType::NON;
+    float value = 0;
+    static float nextItemWidth = 170.0f * liaConfig.windowCfg.monitorScale;
+    // ===== ヘッダ（デバイス情報・クローズボタン） =====
+    ImGui::SetNextItemWidth(nextItemWidth);
+    ImGui::Text("%s", liaConfig.device_sn.data());
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) {
+        liaConfig.statusMeasurement = false;
+    }
+    if (ImGui::IsItemDeactivated()) {
+        button = ButtonType::Close;
+        value = 0;
+    }
+
+    // ===== AWG 設定 =====
+    awg(nextItemWidth);
+
+    // ===== グラフ表示設定 =====
+    plot(nextItemWidth);
+    ImGui::Separator();
+
+    // ===== ポスト処理設定 =====
+    post(nextItemWidth);
+    monitor();
+    ImGui::Separator();
+
+    // ===== 機能ボタン群 =====
+    functionButtons(nextItemWidth);
+    ImGui::Separator();
+
+    // ===== 経過時間表示 =====
+    const int totalSecs = static_cast<int>(liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx]);
+    const int hours = totalSecs / (60 * 60);
+    const int mins = (totalSecs - hours * 60 * 60) / 60;
+    const double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - hours * 60 * 60 - mins * 60;
+    ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
+
+    if (button != ButtonType::NON) {
+        buttonPressed(button, value);
+    }
+}
 inline void ControlWindow::show(void)
 {
-	ButtonType button = ButtonType::NON;
-	float value = 0;
-	static float nextItemWidth = 170.0f * liaConfig.windowCfg.monitorScale;
-
 	// ウィンドウ位置・サイズ設定
 	ImGui::SetNextWindowPos(ImVec2(0, 0), liaConfig.imguiCfg.windowFlag);
 	ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
 	ImGui::Begin(this->name);
-
-	// ===== ヘッダ（デバイス情報・クローズボタン） =====
-	ImGui::SetNextItemWidth(nextItemWidth);
-	ImGui::Text("%s", liaConfig.device_sn.data());
-	ImGui::SameLine();
-	if (ImGui::Button("Close")) {
-		liaConfig.statusMeasurement = false;
-	}
-	if (ImGui::IsItemDeactivated()) {
-		button = ButtonType::Close;
-		value = 0;
-	}
-
-	// ===== AWG 設定 =====
-	awg(nextItemWidth);
-
-	// ===== グラフ表示設定 =====
-	plot(nextItemWidth);
-	ImGui::Separator();
-
-	// ===== ポスト処理設定 =====
-	post(nextItemWidth);
-	monitor();
-	ImGui::Separator();
-
-	// ===== 機能ボタン群 =====
-	functionButtons(nextItemWidth);
-	ImGui::Separator();
-
-	// ===== 経過時間表示 =====
-	const int totalSecs = static_cast<int>(liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx]);
-	const int hours = totalSecs / (60 * 60);
-	const int mins = (totalSecs - hours * 60 * 60) / 60;
-	const double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - hours * 60 * 60 - mins * 60;
-	ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
-
+    if (liaConfig.flagAutoSetupW2) {
+        ImGui::BeginDisabled();
+        show_();
+        ImGui::EndDisabled();
+    }
+    else {
+        show_();
+    }
+	
 	ImGui::End();
-
-	if (button != ButtonType::NON) {
-		buttonPressed(button, value);
-	}
 }
