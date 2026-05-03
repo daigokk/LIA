@@ -164,11 +164,11 @@ void autosetupW2(LiaConfig* cfg) {
 
     const double original_amp = cfg->awgCfg.ch[0].amp;
 
-    // ステップ1: W1をON、W2をOFF で測定
+    // ステップ1: W1をON、W2をOFF で振幅と位相を測定
     PolarVector w1 = measureAwgResponse(cfg, original_amp, 0.0, RECORD_MS);
     printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
 
-    // ステップ2: W1をOFF、W2をON で測定
+    // ステップ2: W1をOFF、W2をON で振幅と位相を測定
     PolarVector w2 = measureAwgResponse(cfg, 0.0, original_amp, RECORD_MS);
     printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
 
@@ -179,7 +179,7 @@ void autosetupW2(LiaConfig* cfg) {
     cfg->awgStart();
 
     // 安定化の待機
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
 
     // W2の自動設定後、ステータスを更新
     cfg->flagAutoOffset = true;
