@@ -175,15 +175,16 @@ inline void TimeChartWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         ImPlotSpec specLine;
 		specLine.Offset = liaConfig.ringBuffer.tail;
+        int count = liaConfig.ringBuffer.size; // 描画中にリングバッファが更新される可能性があるため、描画開始時のサイズを取得
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[liaConfig.plotCfg.idxStart]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.idxStart]),
-            liaConfig.ringBuffer.size, specLine
+            count, specLine
         );
         if (liaConfig.flagCh2)
         {
             ImPlot::PlotLine(
                 "Ch2y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[1].y[0]),
-                liaConfig.ringBuffer.size,specLine
+                count, specLine
             );
         }
         static bool flag = true;
