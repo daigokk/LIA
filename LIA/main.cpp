@@ -1,14 +1,17 @@
 #include <array>
-#include <cstring> // for std::memset
-#include <format>
-#include <intrin.h> // for __cpuid
 #include <iostream>
-#include <numbers> // For std::numbers::pi
-#include <stop_token> // std::jthread
-#include <thread> // std::jthread
+#include <string_view>
+#include <vector>
+#include <memory>
+#include <thread>
+#include <stop_token>
+#include <numbers>
+#include <cmath>
 
-#define NOMINMAX //std::minを使うために、Windows.hのmin,maxマクロを無効化
+#define NOMINMAX
 #include <Windows.h>
+
+// プロジェクト固有のヘッダー
 #include <Daq_wf.h>
 #include "pipe.h"
 #include "Psd.h"
@@ -16,204 +19,187 @@
 #include "LiaConfig.h"
 #include "GuiSub.h"
 
-bool is_avx2_supported();
-void measurement(std::stop_token st, LiaConfig* pLiaConfig);
-void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig);
+// --- 定数・構造体 ---
+struct LaunchOptions {
+    bool useGui = true;
+    bool usePipe = false;
+};
 
-int main(int argc, char* argv[])
-{
-    int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
-    if (adIdx != -1)
-    {
-        std::cout << "Analog Discovery is detected." << std::endl;
-    }
-    else
-    {
-        std::cout << "DAQ is not connected." << std::endl;
-    }
-    
-    //is_avx2_supported();
-    // I/Oの高速化
+// --- 関数プロトタイプ ---
+void runMeasurement(std::stop_token st, LiaConfig* config);
+void runSimulatedMeasurement(std::stop_token st, LiaConfig* config);
+LaunchOptions parseArguments(int argc, char* argv[]);
+void setupHighPrecisionTimer();
+
+// --- ユーティリティ ---
+
+void setupHighPrecisionTimer() {
+    // 標準入出力の高速化
     std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr); // std::cin と std::cout の同期を解除
-	std::cout.tie(nullptr); // std::cout と std::cin の同期を解除
-    static LiaConfig settings;
-    bool guiFlag = true;
-	bool pipeFlag = false;
-    std::jthread* pth_pipe = nullptr;
-    std::unique_ptr<GuiSub> pGuiSub;
+    std::cin.tie(nullptr);
+}
+
+LaunchOptions parseArguments(int argc, char* argv[]) {
+    LaunchOptions options;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
         if (arg == "pipe") {
-            pipeFlag = true;
-            //std::cout << "Pipe mode." << std::endl;
+            options.usePipe = true;
         }
         else if (arg == "nogui" || arg == "headless") {
-            guiFlag = false;
-            pipeFlag = true;
-            //std::cout << "Headless pipe mode." << std::endl;
+            options.useGui = false;
+            options.usePipe = true; // headless時は通常pipeを有効化
         }
     }
-    if (guiFlag)
-    {
-        GuiConfig guiCfg;
-        guiCfg.title = "Lock-in amplifier";
-		guiCfg.posX = settings.windowCfg.pos.x;
-		guiCfg.posY = settings.windowCfg.pos.y;
-        guiCfg.width = settings.windowCfg.size.x;
-        guiCfg.height = settings.windowCfg.size.y;
+    return options;
+}
+
+// --- メインロジック ---
+
+int main(int argc, char* argv[]) {
+    setupHighPrecisionTimer();
+    const auto options = parseArguments(argc, argv);
+
+    static LiaConfig settings;
+    const int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
+    const bool isDeviceConnected = (adIdx != -1);
+
+    std::cout << (isDeviceConnected ? "Analog Discovery detected." : "DAQ not connected.") << std::endl;
+
+    // 1. GUI初期化
+    std::unique_ptr<GuiSub> guiSub;
+    if (options.useGui) {
+        GuiConfig guiCfg{
+            .title = "Lock-in amplifier",
+            .posX = settings.windowCfg.pos.x,
+            .posY = settings.windowCfg.pos.y,
+            .width = settings.windowCfg.size.x,
+            .height = settings.windowCfg.size.y
+        };
+
         Gui::Initialize(guiCfg);
-        if (Gui::GetWindow() == nullptr) return -1;
-		settings.windowCfg.monitorScale = Gui::monitorScale;
-        if(Gui::isSurfacePro7) {
+        if (!Gui::GetWindow()) return -1;
+
+        settings.windowCfg.monitorScale = Gui::monitorScale;
+        if (Gui::isSurfacePro7) {
             settings.imguiCfg.windowFlag = ImGuiCond_Always;
-		}
-        pGuiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
+        }
+        guiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
     }
-    if (pipeFlag)
-    {
-        pth_pipe = new std::jthread(pipe, &settings);
-        while (!settings.statusPipe);
+
+    // 2. パイプスレッド開始
+    std::unique_ptr<std::jthread> pipeThread;
+    if (options.usePipe) {
+        pipeThread = std::make_unique<std::jthread>(pipe, &settings);
+        while (!settings.statusPipe); // 通信準備完了待機
     }
-    
-    std::jthread th_measurement = (adIdx == -1)
-        ? std::jthread{ measurementWithoutDaq, &settings }
-        : std::jthread{ measurement, &settings };
-    // スレッドの優先度を設定
-    HANDLE handle = th_measurement.native_handle();
-    if (!SetThreadPriority(handle, THREAD_PRIORITY_HIGHEST)) {
-        std::cerr << "Failed to set thread priority.\n";
+
+    // 3. 測定スレッド開始
+    auto measurementFunc = isDeviceConnected ? runMeasurement : runSimulatedMeasurement;
+    std::jthread measurementThread(measurementFunc, &settings);
+
+    // スレッド優先度の設定
+    if (!SetThreadPriority(measurementThread.native_handle(), THREAD_PRIORITY_HIGHEST)) {
+        std::cerr << "Warning: Failed to set thread priority.\n";
     }
-    while (!settings.statusMeasurement);
-	std::cout << std::flush; // バッファをフラッシュ
-    if (guiFlag)
-    {
-		//// GUIありモードでは、ウィンドウが閉じられるか測定が終了するまでループ
-        while (settings.statusMeasurement &&
-            !(pth_pipe && !settings.statusPipe) &&
-            !glfwWindowShouldClose(Gui::GetWindow())) {
+
+    while (!settings.statusMeasurement); // 測定開始待機
+    std::cout << std::flush;
+
+    // 4. メインループ
+    if (options.useGui) {
+        auto* window = Gui::GetWindow();
+        while (settings.statusMeasurement && !glfwWindowShouldClose(window)) {
+            // パイプが切断された場合の終了チェック
+            if (pipeThread && !settings.statusPipe) break;
+
             Gui::BeginFrame();
-            pGuiSub->show();
+            guiSub->show();
             Gui::EndFrame();
         }
-        glfwGetWindowSize(Gui::GetWindow(), &(settings.windowCfg.size.x), &(settings.windowCfg.size.y));
-        glfwGetWindowPos(Gui::GetWindow(), &(settings.windowCfg.pos.x), &(settings.windowCfg.pos.y));
+        // ウィンドウ情報の保存
+        glfwGetWindowSize(window, &settings.windowCfg.size.x, &settings.windowCfg.size.y);
+        glfwGetWindowPos(window, &settings.windowCfg.pos.x, &settings.windowCfg.pos.y);
         Gui::EndFrame();
     }
-    else
-    {
-		// GUIなしモードでは、パイプが閉じられるか測定が終了するまで待機
-        while (settings.statusMeasurement)
-        {
-            if (pth_pipe != nullptr && settings.statusPipe == false) break;
-            //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    else {
+        // Headlessモード: 測定終了かパイプ切断まで待機
+        while (settings.statusMeasurement) {
+            if (pipeThread && !settings.statusPipe) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
-    th_measurement.request_stop();
-    if (pth_pipe) pth_pipe->request_stop();
-    th_measurement.join();
-    if (pth_pipe) pth_pipe->join();
+
+    // 5. 終了処理 (jthreadのデストラクタが自動でjoinを呼ぶが、明示的にstopを要求)
+    measurementThread.request_stop();
+    if (pipeThread) pipeThread->request_stop();
+
     return 0;
 }
 
-void measurement(std::stop_token st, LiaConfig* pLiaConfig)
-{
+// --- 測定処理の実装 ---
+
+void runMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
     Daq_dwf daq;
+
+    // DAQ初期設定
     daq.powerSupply(5.0);
-    daq.awg.start(
-        pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
-        pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
-    );
+    const auto& ch0 = pLiaConfig->awgCfg.ch[0];
+    const auto& ch1 = pLiaConfig->awgCfg.ch[1];
+    daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch1.freq, ch1.amp, ch1.phase);
+
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
+
     pLiaConfig->pDaq = &daq;
     pLiaConfig->device_sn = daq.device.sn;
-    pLiaConfig->timer.sleepFor(1.0);
+    pLiaConfig->timer.sleepFor(1.0); // 安定待ち
+
     daq.scope.start();
     pLiaConfig->timer.start();
     pLiaConfig->statusMeasurement = true;
-    size_t nloop = 0;
-    while (!st.stop_requested())
-    {
-        double t = nloop * MEASUREMENT_DT;
-        nloop++;
-        t = pLiaConfig->timer.sleepUntil(t);
+
+    for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
+        double t = pLiaConfig->timer.sleepUntil(nloop * MEASUREMENT_DT);
+
         if (pLiaConfig->pauseCfg.flag) continue;
-        if (!pLiaConfig->flagCh2)
-        {
-            daq.scope.record(pLiaConfig->rawData[0].data());
+
+        if (pLiaConfig->flagCh2) {
+            daq.scope.record(pLiaConfig->rawData[0], pLiaConfig->rawData[1]);
         }
         else {
-            daq.scope.record(pLiaConfig->rawData[0].data(), pLiaConfig->rawData[1].data());
+            daq.scope.record(pLiaConfig->rawData[0]);
         }
+
         pLiaConfig->update(t);
     }
     pLiaConfig->statusMeasurement = false;
 }
 
-void measurementWithoutDaq(std::stop_token st, LiaConfig* pLiaConfig)
-{
+void runSimulatedMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
     pLiaConfig->timer.start();
     pLiaConfig->statusMeasurement = true;
-    size_t nloop = 0;
-    while (!st.stop_requested())
-    {
-        double t = nloop * MEASUREMENT_DT;
-        nloop++;
-        t = pLiaConfig->timer.sleepUntil(t);
+
+    for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
+        double t = pLiaConfig->timer.sleepUntil(nloop * MEASUREMENT_DT);
+
         if (pLiaConfig->pauseCfg.flag) continue;
-        double phase = 2 * std::numbers::pi * t / 60;
-        for (size_t i = 0; i < pLiaConfig->rawTime.size(); i++) {
-            double wt = 2 * std::numbers::pi * pLiaConfig->awgCfg.ch[0].freq * i * RAW_DT;
-            pLiaConfig->rawData[0][i] = pLiaConfig->awgCfg.ch[0].amp * std::sin(wt - phase);
+
+        // シミュレーション波形の生成
+        const double phaseShift = 2.0 * std::numbers::pi * t / 60.0;
+        const auto& ch0 = pLiaConfig->awgCfg.ch[0];
+        const auto& ch1 = pLiaConfig->awgCfg.ch[1];
+
+        for (size_t i = 0; i < pLiaConfig->rawTime.size(); ++i) {
+            double wt = 2.0 * std::numbers::pi * ch0.freq * i * RAW_DT;
+            pLiaConfig->rawData[0][i] = ch0.amp * std::sin(wt - phaseShift);
+
             if (pLiaConfig->flagCh2) {
-                pLiaConfig->rawData[1][i] = pLiaConfig->awgCfg.ch[1].amp * std::sin(wt - pLiaConfig->awgCfg.ch[1].phase);
+                pLiaConfig->rawData[1][i] = ch1.amp * std::sin(wt - ch1.phase);
             }
         }
+
         pLiaConfig->update(t);
     }
     pLiaConfig->statusMeasurement = false;
-}
-
-
-/**
- * CPUID命令を使ってAVX2のサポートをチェックする関数
- * @return AVX2がサポートされていれば true
- */
-bool is_avx2_supported() {
-	bool avx2_supported = false;
-#ifdef __AVX2__
-    // AVX2が有効な状態でコンパイルされています。
-    // ここにAVX2固有のコード（__m256i, _mm256_... 組み込み関数など）を記述できます。
-    std::cout << "AVX2 is enabled at compile time." << std::endl;
-    avx2_supported = true;
-#else
-    // AVX2は有効になっていません。
-    // AVX2固有のコードを直接使用することはできません。
-    std::cout << "AVX2 is NOT enabled at compile time." << std::endl;
-#endif
-    std::array<int, 4> cpu_info;
-    std::memset(cpu_info.data(), 0, sizeof(cpu_info));
-
-    // EAX=7 (Extended Features) のサブリーフ 0 を呼び出す
-    // EAX=7, ECX=0
-    // MSVC (Windows)
-    __cpuidex(cpu_info.data(), 7, 0);
-
-
-    // EAX=7, サブリーフ 0 の結果は EBX レジスタ (cpu_info[1]) に格納される
-    // AVX2 の機能フラグは EBX のビット 5 (0x20)
-    constexpr int AVX2_FLAG = 1 << 5; // Bit 5
-
-    // EBX & AVX2_FLAG の結果が非ゼロならAVX2をサポート
-
-    if ((cpu_info[1] & AVX2_FLAG) != 0) {
-        std::cout << "Runtime check: AVX2 is supported by the CPU." << std::endl;
-        avx2_supported = true;
-    }
-    else {
-        std::cout << "Runtime check: AVX2 is NOT supported by the CPU." << std::endl;
-    }
-
-    return avx2_supported;
 }
