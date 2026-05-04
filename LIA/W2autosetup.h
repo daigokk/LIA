@@ -36,23 +36,11 @@ inline PolarVector calculatePolarVector(const Point& p1, const Point& p2) {
     };
 }
 
-// 2点の座標から振幅を計算
-inline double computeAmplitude(double x, double y) {
-    return std::hypot(x, y);
-}
-
-// 2点の座標から位相（度数法）を計算
-inline double computePhaseDeg(double y, double x) {
-    return std::atan2(y, x) * 180.0 / std::numbers::pi;
-}
-
 // ============================================================
 // AWG 測定・解析
 // ============================================================
 // 指定した時間だけ記録し、リングバッファから最大距離の2点を返す
 std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_ms, const bool flagW1) {
-    // AWGを開始して安定化のために少し待機する時間ms
-    constexpr int WAIT_MS = 2;
 
     // ミリ秒を要素数に変換
     const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
@@ -61,9 +49,6 @@ std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_m
     auto& targetHistory = flagW1 ? cfg->autoSetupHistoryW1 : cfg->autoSetupHistoryW2;
     targetHistory.x.resize(length);
     targetHistory.y.resize(length);
-
-    // 安定化の待機と記録実施
-    std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_MS + record_ms));
 
     const auto& ringBuffer = cfg->ringBuffer;
     const int idx_end = ringBuffer.idx;
@@ -117,6 +102,12 @@ PolarVector measureAwgResponse(LiaConfig* cfg, double ch0_amp, double ch1_amp, i
     cfg->awgCfg.ch[1].amp = ch1_amp;
     cfg->awgCfg.ch[1].phase = 0.0;
     cfg->awgStart();
+
+    // AWGを開始して安定化のために少し待機する時間ms
+    constexpr int WAIT_MS = 2;
+
+    // 安定化の待機と記録実施
+    std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_MS + record_ms));
 
     const bool flagW1 = (ch0_amp != 0.0);
     auto [p1, p2] = findMaxDistancePoints(cfg, record_ms, flagW1);

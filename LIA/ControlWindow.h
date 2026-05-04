@@ -296,7 +296,7 @@ inline void ControlWindow::monitor()
         const float ch0_x = liaConfig.ringBuffer.ch[0].x[idx];
         const float ch0_y = liaConfig.ringBuffer.ch[0].y[idx];
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", ch0_x, ch0_y);
-        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", computeAmplitude(ch0_x, ch0_y), computePhaseDeg(ch0_y, ch0_x));
+        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
 
         // Ch2 データ表示
         if (!liaConfig.flagCh2) ImGui::BeginDisabled();
@@ -304,7 +304,7 @@ inline void ControlWindow::monitor()
         const float ch1_x = liaConfig.ringBuffer.ch[1].x[idx];
         const float ch1_y = liaConfig.ringBuffer.ch[1].y[idx];
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", ch1_x, ch1_y);
-        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", computeAmplitude(ch1_x, ch1_y), computePhaseDeg(ch1_y, ch1_x));
+        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
 
         if (!liaConfig.flagCh2) ImGui::EndDisabled();
 
