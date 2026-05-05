@@ -284,11 +284,11 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             }
 
             // リングバッファのインデックスを計算
-            int idx = pLiaConfig->ringBuffer.tail - size;
+            int idx = pLiaConfig->ringBuffer.write_idx - size;
             if (idx < 0) {
                 if (pLiaConfig->ringBuffer.nofm <= static_cast<int>(MEASUREMENT_SIZE)) {
                     idx = 0;
-                    size = pLiaConfig->ringBuffer.tail;
+                    size = pLiaConfig->ringBuffer.write_idx;
                 } else {
                     idx += static_cast<int>(MEASUREMENT_SIZE);
                 }
@@ -316,7 +316,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         }
         // === 最新 XY データの照会 ===
         else if (subCmd == "xy?") {
-            const size_t idx = pLiaConfig->ringBuffer.idx;
+            const size_t idx = pLiaConfig->ringBuffer.latest_idx;
             std::cout << std::format("{:e},{:e}",
                 pLiaConfig->ringBuffer.ch[0].x[idx],
                 pLiaConfig->ringBuffer.ch[0].y[idx]);

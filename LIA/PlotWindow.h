@@ -161,7 +161,7 @@ inline void TimeChartWindow::show()
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
-        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx];
+        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx];
         ImPlot::SetupAxes("Time", "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
         if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
@@ -174,7 +174,7 @@ inline void TimeChartWindow::show()
         }
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         ImPlotSpec specLine;
-		specLine.Offset = liaConfig.ringBuffer.tail;
+		specLine.Offset = liaConfig.ringBuffer.write_idx;
         int count = liaConfig.ringBuffer.size; // 描画中にリングバッファが更新される可能性があるため、描画開始時のサイズを取得
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[liaConfig.plotCfg.idxStart]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.idxStart]),
@@ -193,8 +193,8 @@ inline void TimeChartWindow::show()
 			if (flag) // 初回のみ矩形を右端にセット
             {
                 liaConfig.pauseCfg.set(
-                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx] - liaConfig.plotCfg.historySec / 10,
-                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx],
+                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx] - liaConfig.plotCfg.historySec / 10,
+                    liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx],
                     -liaConfig.plotCfg.limit / 2,
                     liaConfig.plotCfg.limit / 2);
                 flag = false;
@@ -249,7 +249,7 @@ inline void TimeChartZoomWindow::show()
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
-        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx];
+        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx];
         ImPlot::SetupAxes("Time (s)", "v (V)", 0, 0);
         if (liaConfig.plotCfg.limit <= MILI_VOLT)
         {
@@ -259,7 +259,7 @@ inline void TimeChartZoomWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.pauseCfg.selectArea.X.Min, liaConfig.pauseCfg.selectArea.X.Max, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, liaConfig.pauseCfg.selectArea.Y.Min, liaConfig.pauseCfg.selectArea.Y.Max, ImGuiCond_Always);
         ImPlotSpec specLine;
-        specLine.Offset = liaConfig.ringBuffer.tail;
+        specLine.Offset = liaConfig.ringBuffer.write_idx;
         ImPlot::PlotLine(
             "Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]),
             liaConfig.ringBuffer.size, specLine
@@ -426,12 +426,12 @@ inline void DeltaTimeChartWindow::show()
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.2f V");
     // プロット描画
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
-        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.idx];
+        double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx];
         ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, (MEASUREMENT_DT - 2e-3) * 1e3, (MEASUREMENT_DT + 2e-3) * 1e3, ImGuiCond_Always);
         ImPlotSpec specLine;
-        specLine.Offset = liaConfig.ringBuffer.tail;
+        specLine.Offset = liaConfig.ringBuffer.write_idx;
         ImPlot::PlotLine(
             "##dt", &(liaConfig.ringBuffer.times[0]), &(liaConfig.dts[0]),
             liaConfig.ringBuffer.size, specLine
@@ -470,7 +470,7 @@ inline void XYPlotWindow::show()
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.1f V");
     if (ImGui::Button("Clear"))
     {
-        liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
+        liaConfig.xyRingBuffer.write_idx = 0; liaConfig.xyRingBuffer.nofm = 0;
         ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
 		liaConfig.flagAutoSetupW2History = false;
     }
@@ -482,7 +482,7 @@ inline void XYPlotWindow::show()
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) {
         liaConfig.flagAutoOffset = true;
-        liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
+        liaConfig.xyRingBuffer.write_idx = 0; liaConfig.xyRingBuffer.nofm = 0;
         ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
     }
     if (ImGui::IsItemDeactivated()) {
@@ -506,10 +506,10 @@ inline void XYPlotWindow::show()
     ImGui::SameLine();
     if (ImGui::Button("Rec."))
     {
-        ch1xs.push_back(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]);
-        ch1ys.push_back(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]);
-        ch2xs.push_back(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]);
-        ch2ys.push_back(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]);
+        ch1xs.push_back(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latest_idx]);
+        ch1ys.push_back(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.latest_idx]);
+        ch2xs.push_back(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.latest_idx]);
+        ch2ys.push_back(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.latest_idx]);
         std::ofstream file(std::format("./{}/{}", liaConfig.dirName, "rec.csv"));
         if (!file) {
             std::cerr << "Error: Could not open file " << "rec.csv" << std::endl;
@@ -545,7 +545,7 @@ inline void XYPlotWindow::show()
             ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
         }
 		ImPlotSpec specLine;
-		specLine.Offset = liaConfig.xyRingBuffer.tail;
+		specLine.Offset = liaConfig.xyRingBuffer.write_idx;
 		specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
         ImPlot::PlotLine(ch1_label, &(liaConfig.xyRingBuffer.ch[0].x[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
@@ -557,7 +557,7 @@ inline void XYPlotWindow::show()
         specScatter.MarkerFillColor = colors[2];
         specScatter.LineWeight = 2.0f;
         specScatter.MarkerLineColor = colors[2];
-        ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.idx]), 1, specScatter);
+        ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latest_idx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.latest_idx]), 1, specScatter);
         specScatter.MarkerFillColor = ImVec4(0,0,0,0);
         ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size(), specScatter);
         if (liaConfig.flagCh2)
@@ -568,7 +568,7 @@ inline void XYPlotWindow::show()
             );
             specScatter.MarkerFillColor = colors[7];
             specScatter.MarkerLineColor = colors[7];
-            ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.idx]), 1, specScatter);
+            ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.latest_idx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.latest_idx]), 1, specScatter);
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
             ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size(), specScatter);
         }
@@ -619,7 +619,7 @@ inline void ACFMPlotWindow::show()
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.1f V");
     if (ImGui::Button("Clear"))
     {
-        liaConfig.xyRingBuffer.tail = 0; liaConfig.xyRingBuffer.nofm = 0;
+        liaConfig.xyRingBuffer.write_idx = 0; liaConfig.xyRingBuffer.nofm = 0;
     }
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) {
@@ -650,7 +650,7 @@ inline void ACFMPlotWindow::show()
         ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vz_limt, liaConfig.plotCfg.Vz_limt, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vx_limt, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
         ImPlotSpec specLine;
-        specLine.Offset = liaConfig.xyRingBuffer.tail;
+        specLine.Offset = liaConfig.xyRingBuffer.write_idx;
         specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
         ImPlot::PlotLine("##ACFM", &(liaConfig.xyRingBuffer.ch[1].y[0]), &(liaConfig.xyRingBuffer.ch[0].y[0]),
             liaConfig.xyRingBuffer.size, specLine
@@ -661,8 +661,8 @@ inline void ACFMPlotWindow::show()
         specScatter.MarkerFillColor = colors[8];
         specScatter.LineWeight = -1.0f;
         specScatter.MarkerLineColor = colors[8];
-        ImPlot::PlotScatter("##NOW", &(liaConfig.xyRingBuffer.ch[1].y[liaConfig.xyRingBuffer.idx]), &(liaConfig.xyRingBuffer.ch[0].y[liaConfig.xyRingBuffer.idx]), 1, specScatter);
-        double vhreal = liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.idx];
+        ImPlot::PlotScatter("##NOW", &(liaConfig.xyRingBuffer.ch[1].y[liaConfig.xyRingBuffer.latest_idx]), &(liaConfig.xyRingBuffer.ch[0].y[liaConfig.xyRingBuffer.latest_idx]), 1, specScatter);
+        double vhreal = liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latest_idx];
         double mm = liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[2];
         const char* thickness = nullptr;
         if (mm < 0) {

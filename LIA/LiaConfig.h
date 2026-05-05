@@ -160,10 +160,10 @@ public:
     struct RingBuffer {
         std::vector<double> times;
         XYs ch[2];
-        size_t nofm = 0;
-        size_t idx = 0;
-        size_t tail = 0;
-        size_t size = 0;
+		size_t nofm = 0;  // number of measurements (総測定回数)
+		size_t latest_idx = 0;  // リングバッファの最新データのインデックス
+		size_t write_idx = 0;  // リングバッファの書き込み位置のインデックス 
+		size_t size = 0;  // リングバッファの有効データ数
 
         void resize(size_t newSize) {
             times.resize(newSize);
@@ -365,9 +365,9 @@ public:
         }
 
         // キャストとアンダーフローを安全に処理
-        size_t idx = (ringBuffer.tail >= outputSize)
-            ? (ringBuffer.tail - outputSize)
-            : (MEASUREMENT_SIZE - (outputSize - ringBuffer.tail));
+        size_t idx = (ringBuffer.write_idx >= outputSize)
+            ? (ringBuffer.write_idx - outputSize)
+            : (MEASUREMENT_SIZE - (outputSize - ringBuffer.write_idx));
 
         for (size_t i = 0; i < outputSize; ++i) {
             if (flagCh2) {
@@ -421,29 +421,29 @@ private:
         double processed_x = hpfCh[chIndex].x.process(lpfCh[chIndex].x.process(x));
         double processed_y = hpfCh[chIndex].y.process(lpfCh[chIndex].y.process(y));
 
-        const size_t rTail = ringBuffer.tail;
+        const size_t rTail = ringBuffer.write_idx;
         ringBuffer.ch[chIndex].x[rTail] = processed_x;
         ringBuffer.ch[chIndex].y[rTail] = processed_y;
 
-        const size_t xyTail = xyRingBuffer.tail;
+        const size_t xyTail = xyRingBuffer.write_idx;
         xyRingBuffer.ch[chIndex].x[xyTail] = processed_x;
         xyRingBuffer.ch[chIndex].y[xyTail] = processed_y;
     }
 
     inline void updateRingBuffers(double t) noexcept {
-        ringBuffer.times[ringBuffer.tail] = t;
-        dts[ringBuffer.tail] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.tail] - ringBuffer.times[ringBuffer.idx]) * 1e3 : 0.0;
+        ringBuffer.times[ringBuffer.write_idx] = t;
+        dts[ringBuffer.write_idx] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.write_idx] - ringBuffer.times[ringBuffer.latest_idx]) * 1e3 : 0.0;
 
-        ringBuffer.idx = ringBuffer.tail;
+        ringBuffer.latest_idx = ringBuffer.write_idx;
         ringBuffer.nofm++;
         // モジュロ演算（%）を排除
-        if (++ringBuffer.tail >= MEASUREMENT_SIZE) ringBuffer.tail = 0;
+        if (++ringBuffer.write_idx >= MEASUREMENT_SIZE) ringBuffer.write_idx = 0;
         ringBuffer.size = (ringBuffer.nofm < MEASUREMENT_SIZE) ? ringBuffer.nofm : MEASUREMENT_SIZE;
 
-        xyRingBuffer.idx = xyRingBuffer.tail;
+        xyRingBuffer.latest_idx = xyRingBuffer.write_idx;
         xyRingBuffer.nofm++;
         // モジュロ演算（%）を排除
-        if (++xyRingBuffer.tail >= XY_SIZE) xyRingBuffer.tail = 0;
+        if (++xyRingBuffer.write_idx >= XY_SIZE) xyRingBuffer.write_idx = 0;
         xyRingBuffer.size = (xyRingBuffer.nofm < XY_SIZE) ? xyRingBuffer.nofm : XY_SIZE;
     }
 
