@@ -290,7 +290,7 @@ inline void ControlWindow::post(const float nextItemWidth)
 inline void ControlWindow::monitor()
 {
     if (ImGui::TreeNode("Monitor")) {
-        const int idx = liaConfig.ringBuffer.latest_idx;
+        const int idx = liaConfig.ringBuffer.latestIdx;
 
         // Ch1 データ表示
         const float ch0_x = liaConfig.ringBuffer.ch[0].x[idx];
@@ -384,10 +384,10 @@ inline void ControlWindow::drawContent()
     ImGui::Separator();
 
     // 経過時間表示
-    const int totalSecs = static_cast<int>(liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx]);
+    const int totalSecs = static_cast<int>(liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx]);
     const int hours = totalSecs / 3600;
     const int mins = (totalSecs % 3600) / 60;
-    const double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latest_idx] - (hours * 3600) - (mins * 60);
+    const double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
     ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
 
     if (button != ButtonType::NON) {

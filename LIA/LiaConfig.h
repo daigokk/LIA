@@ -29,10 +29,10 @@ constexpr float  RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
 constexpr size_t RAW_SIZE = 5000 * 2;
 constexpr double MEASUREMENT_DT = 2e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SEC = 60 * 1;
 constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
-constexpr float  XY_HISTORY_SEC = 10.0f;
-constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
+//constexpr float  XY_HISTORY_SEC = 10.0f;
+//constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
 
 constexpr float LOW_LIMIT_FREQ = static_cast<float>(0.5 / (static_cast<double>(RAW_SIZE) * RAW_DT));
 constexpr float HIGH_LIMIT_FREQ = static_cast<float>(1.0 / (1000.0 * RAW_DT));
@@ -137,6 +137,7 @@ public:
         bool surfaceMode = false, beep = false, acfm = false;
         float Vx_limt = 1.5f, Vz_limt = 1.5f;
         int idxStart = 0, size = 0;
+        int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
     };
 
     struct PauseCfg {
@@ -161,8 +162,8 @@ public:
         std::vector<double> times;
         XYs ch[2];
 		size_t nofm = 0;  // number of measurements (総測定回数)
-		size_t latest_idx = 0;  // リングバッファの最新データのインデックス
-		size_t write_idx = 0;  // リングバッファの書き込み位置のインデックス 
+		size_t latestIdx = 0;  // リングバッファの最新データのインデックス
+		size_t writeIdx = 0;  // リングバッファの書き込み位置のインデックス 
 		size_t size = 0;  // リングバッファの有効データ数
 
         void resize(size_t newSize) {
@@ -206,8 +207,8 @@ public:
     std::vector<std::array<float, 3>> cmds;
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
-    std::vector<double> dts;
-    RingBuffer ringBuffer, xyRingBuffer;
+    std::vector<double> deltaTimes;
+    RingBuffer ringBuffer;
 
 private:
     struct Hpf { HighPassFilter x, y; };
@@ -365,9 +366,9 @@ public:
         }
 
         // キャストとアンダーフローを安全に処理
-        size_t idx = (ringBuffer.write_idx >= outputSize)
-            ? (ringBuffer.write_idx - outputSize)
-            : (MEASUREMENT_SIZE - (outputSize - ringBuffer.write_idx));
+        size_t idx = (ringBuffer.writeIdx >= outputSize)
+            ? (ringBuffer.writeIdx - outputSize)
+            : (MEASUREMENT_SIZE - (outputSize - ringBuffer.writeIdx));
 
         for (size_t i = 0; i < outputSize; ++i) {
             if (flagCh2) {
@@ -412,39 +413,45 @@ private:
         rawTime.resize(RAW_SIZE);
         rawData[0].resize(RAW_SIZE);
         rawData[1].resize(RAW_SIZE);
-        dts.resize(MEASUREMENT_SIZE);
+        deltaTimes.resize(MEASUREMENT_SIZE);
         ringBuffer.resize(MEASUREMENT_SIZE);
-        xyRingBuffer.resize(XY_SIZE);
     }
 
     inline void processAndStorePoint(int chIndex, double x, double y) noexcept {
         double processed_x = hpfCh[chIndex].x.process(lpfCh[chIndex].x.process(x));
         double processed_y = hpfCh[chIndex].y.process(lpfCh[chIndex].y.process(y));
 
-        const size_t rTail = ringBuffer.write_idx;
+        const size_t rTail = ringBuffer.writeIdx;
         ringBuffer.ch[chIndex].x[rTail] = processed_x;
         ringBuffer.ch[chIndex].y[rTail] = processed_y;
-
-        const size_t xyTail = xyRingBuffer.write_idx;
-        xyRingBuffer.ch[chIndex].x[xyTail] = processed_x;
-        xyRingBuffer.ch[chIndex].y[xyTail] = processed_y;
     }
 
     inline void updateRingBuffers(double t) noexcept {
-        ringBuffer.times[ringBuffer.write_idx] = t;
-        dts[ringBuffer.write_idx] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.write_idx] - ringBuffer.times[ringBuffer.latest_idx]) * 1e3 : 0.0;
+        ringBuffer.times[ringBuffer.writeIdx] = t;
+        deltaTimes[ringBuffer.writeIdx] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.writeIdx] - ringBuffer.times[ringBuffer.latestIdx]) * 1e3 : 0.0;
 
-        ringBuffer.latest_idx = ringBuffer.write_idx;
+        ringBuffer.latestIdx = ringBuffer.writeIdx;
         ringBuffer.nofm++;
         // モジュロ演算（%）を排除
-        if (++ringBuffer.write_idx >= MEASUREMENT_SIZE) ringBuffer.write_idx = 0;
+        if (++ringBuffer.writeIdx >= MEASUREMENT_SIZE) ringBuffer.writeIdx = 0;
         ringBuffer.size = (ringBuffer.nofm < MEASUREMENT_SIZE) ? ringBuffer.nofm : MEASUREMENT_SIZE;
 
-        xyRingBuffer.latest_idx = xyRingBuffer.write_idx;
-        xyRingBuffer.nofm++;
-        // モジュロ演算（%）を排除
-        if (++xyRingBuffer.write_idx >= XY_SIZE) xyRingBuffer.write_idx = 0;
-        xyRingBuffer.size = (xyRingBuffer.nofm < XY_SIZE) ? xyRingBuffer.nofm : XY_SIZE;
+		// XYPlot の表示範囲を更新
+        plotCfg.xyLatestIdx = ringBuffer.latestIdx;
+        size_t xyMaxSize = (size_t)(plotCfg.historySec / MEASUREMENT_DT);
+
+        if (ringBuffer.size <= xyMaxSize) {
+			plotCfg.xySize = ringBuffer.size;
+        }
+        else {
+			plotCfg.xySize = xyMaxSize;
+        }
+		if (plotCfg.xyStartIdx < ringBuffer.writeIdx) {
+            plotCfg.xyStartIdx = (ringBuffer.writeIdx >= xyMaxSize) ? (ringBuffer.writeIdx - xyMaxSize) : 0;
+        }
+        else {
+            plotCfg.xyStartIdx = (ringBuffer.writeIdx + MEASUREMENT_SIZE - xyMaxSize) % MEASUREMENT_SIZE;
+        }
     }
 
     void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {

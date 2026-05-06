@@ -51,7 +51,7 @@ std::pair<Point, Point> findMaxDistancePoints(LiaConfig* cfg, const int record_m
     targetHistory.y.resize(length);
 
     const auto& ringBuffer = cfg->ringBuffer;
-    const int idx_end = ringBuffer.latest_idx;
+    const int idx_end = ringBuffer.latestIdx;
     const int bufsize = ringBuffer.size;
 
     // リングバッファから指定オフセット位置のPointを取得するラムダ

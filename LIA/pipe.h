@@ -284,11 +284,11 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             }
 
             // リングバッファのインデックスを計算
-            int idx = pLiaConfig->ringBuffer.write_idx - size;
+            int idx = pLiaConfig->ringBuffer.writeIdx - size;
             if (idx < 0) {
                 if (pLiaConfig->ringBuffer.nofm <= static_cast<int>(MEASUREMENT_SIZE)) {
                     idx = 0;
-                    size = pLiaConfig->ringBuffer.write_idx;
+                    size = pLiaConfig->ringBuffer.writeIdx;
                 } else {
                     idx += static_cast<int>(MEASUREMENT_SIZE);
                 }
@@ -300,15 +300,15 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 if (!pLiaConfig->flagCh2) {
                     std::cout << std::format("{:e},{:e},{:e}\n",
                         pLiaConfig->ringBuffer.times[idx],
-                        pLiaConfig->xyRingBuffer.ch[0].x[idx],
-                        pLiaConfig->xyRingBuffer.ch[0].y[idx]);
+                        pLiaConfig->ringBuffer.ch[0].x[idx],
+                        pLiaConfig->ringBuffer.ch[0].y[idx]);
                 } else {
                     std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n",
                         pLiaConfig->ringBuffer.times[idx],
-                        pLiaConfig->xyRingBuffer.ch[0].x[idx],
-                        pLiaConfig->xyRingBuffer.ch[0].y[idx],
-                        pLiaConfig->xyRingBuffer.ch[1].x[idx],
-                        pLiaConfig->xyRingBuffer.ch[1].y[idx]);
+                        pLiaConfig->ringBuffer.ch[0].x[idx],
+                        pLiaConfig->ringBuffer.ch[0].y[idx],
+                        pLiaConfig->ringBuffer.ch[1].x[idx],
+                        pLiaConfig->ringBuffer.ch[1].y[idx]);
                 }
                 idx = (idx + 1) % static_cast<int>(MEASUREMENT_SIZE);
             }
@@ -316,7 +316,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         }
         // === 最新 XY データの照会 ===
         else if (subCmd == "xy?") {
-            const size_t idx = pLiaConfig->ringBuffer.latest_idx;
+            const size_t idx = pLiaConfig->ringBuffer.latestIdx;
             std::cout << std::format("{:e},{:e}",
                 pLiaConfig->ringBuffer.ch[0].x[idx],
                 pLiaConfig->ringBuffer.ch[0].y[idx]);
