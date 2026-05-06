@@ -97,7 +97,7 @@ inline void RawPlotWindow::show()
     ImGui::End();
     if (button != ButtonType::NON)
     {
-        liaConfig.cmds.push_back(std::array<float, 3>{ (float)liaConfig.timer.elapsedSec(), (float)button, value });
+        liaConfig.cmds.push_back(std::array<float, 6>{ (float)liaConfig.timer.elapsedSec(), (float)button, value, 0, 0, 0 });
     }
 }
 
@@ -144,17 +144,14 @@ inline void TimeChartWindow::show()
         );
     }
     ImGui::SameLine();
-    if (liaConfig.pauseCfg.flag)
-    {
-        if (ImGui::Button("Run")) { liaConfig.pauseCfg.flag = false; }
-    }
-    else {
-        if (ImGui::Button("Pause")) { liaConfig.pauseCfg.flag = true; }
-    }
+    // 実行/一時停止トグル
+    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
         button = ButtonType::TimePause;
         value = liaConfig.pauseCfg.flag;
+        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
+        liaConfig.buttonPause();
     }
 
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.2f V");
@@ -209,20 +206,43 @@ inline void TimeChartWindow::show()
                 ImVec4(1, 0, 1, 1), flags, &clicked, &hovered, &held
             );
             // Pauseの時は、XYPlotの描画範囲をTimeChartの全体から、矩形選択範囲にする
-            double deltaTimeMin = MEASUREMENT_DT;
-			double deltaTimeMax = MEASUREMENT_DT;
+            bool flag = false;
+            double deltaTimeMin = LONG_MAX;
+			double deltaTimeMax = LONG_MAX;
 			int xyStartIdx = 0, xyLatestIdx = liaConfig.ringBuffer.latestIdx;
-			for (int i = 0; i < liaConfig.ringBuffer.size; i++)
+            for (int idx = liaConfig.ringBuffer.latestIdx; 0 <= idx; idx--)
             {
-				double _deltaTimeMin = std::abs(liaConfig.ringBuffer.times[i] - liaConfig.pauseCfg.selectArea.X.Min);
-				double _deltaTimeMax = std::abs(liaConfig.ringBuffer.times[i] - liaConfig.pauseCfg.selectArea.X.Max);
-                if(deltaTimeMin > _deltaTimeMin) {
+                double _deltaTimeMin = std::abs(liaConfig.ringBuffer.times[idx] - liaConfig.pauseCfg.selectArea.X.Min);
+                double _deltaTimeMax = std::abs(liaConfig.ringBuffer.times[idx] - liaConfig.pauseCfg.selectArea.X.Max);
+                if (deltaTimeMin > _deltaTimeMin) {
                     deltaTimeMin = _deltaTimeMin;
-                    xyStartIdx = i;
+                    xyStartIdx = idx;
                 }
-                if(deltaTimeMax > _deltaTimeMax) {
+                if (deltaTimeMax > _deltaTimeMax) {
                     deltaTimeMax = _deltaTimeMax;
-                    xyLatestIdx = i;
+                    xyLatestIdx = idx;
+                }
+                if (deltaTimeMin < MEASUREMENT_DT and deltaTimeMax < MEASUREMENT_DT) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag and liaConfig.ringBuffer.size < liaConfig.ringBuffer.nofm) {
+                for (int idx = liaConfig.ringBuffer.size-1; liaConfig.ringBuffer.latestIdx < idx; idx--)
+                {
+                    double _deltaTimeMin = std::abs(liaConfig.ringBuffer.times[idx] - liaConfig.pauseCfg.selectArea.X.Min);
+                    double _deltaTimeMax = std::abs(liaConfig.ringBuffer.times[idx] - liaConfig.pauseCfg.selectArea.X.Max);
+                    if (deltaTimeMin > _deltaTimeMin) {
+                        deltaTimeMin = _deltaTimeMin;
+                        xyStartIdx = idx;
+                    }
+                    if (deltaTimeMax > _deltaTimeMax) {
+                        deltaTimeMax = _deltaTimeMax;
+                        xyLatestIdx = idx;
+                    }
+                    if (deltaTimeMin < MEASUREMENT_DT and deltaTimeMax < MEASUREMENT_DT) {
+                        break;
+                    }
                 }
             }
             liaConfig.plotCfg.xyStartIdx = xyStartIdx;
@@ -245,7 +265,7 @@ inline void TimeChartWindow::show()
     ImGui::End();
     if (button != ButtonType::NON)
     {
-        liaConfig.cmds.push_back(std::array<float, 3>{ (float)liaConfig.timer.elapsedSec(), (float)button, value });
+        liaConfig.cmds.push_back(std::array<float, 6>{ (float)liaConfig.timer.elapsedSec(), (float)button, value, 0, 0, 0 });
     }
 }
 
@@ -470,7 +490,7 @@ class XYPlotWindow : public ImGuiWindowBase
 {
 private:
     LiaConfig& liaConfig;
-	std::vector<double> ch1xs, ch1ys, ch2xs, ch2ys;
+	
 public:
     XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
     void show(void);
@@ -485,70 +505,34 @@ inline XYPlotWindow::XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 
 inline void XYPlotWindow::show()
 {
-    ButtonType button = ButtonType::NON;
-    static float value = 0;
     if (liaConfig.plotCfg.surfaceMode)
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
     ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.1f V");
-    if (ImGui::Button("Clear"))
-    {
-        liaConfig.plotCfg.xyStartIdx = 0; liaConfig.plotCfg.xySize = 0;
-        ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
-		liaConfig.flagAutoSetupW2History = false;
-    }
+    ImGui::Button("Clear");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::XYClear;
-        value = 0;
+        liaConfig.buttonClear();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Auto offset")) {
-        liaConfig.flagAutoOffset = true;
-        liaConfig.plotCfg.xyStartIdx = 0; liaConfig.plotCfg.xySize = 0;
-        ch1xs.clear(); ch1ys.clear(); ch2xs.clear(); ch2ys.clear();
-    }
+    ImGui::Button("Auto offset");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::XYAutoOffset;
-        value = 0;
+        liaConfig.buttonAutoOffset();
     }
     ImGui::SameLine();
-    if (liaConfig.pauseCfg.flag)
-    {
-        if (ImGui::Button("Run")) { liaConfig.pauseCfg.flag = false; }
-    }
-    else {
-        if (ImGui::Button("Pause")) { liaConfig.pauseCfg.flag = true; }
-    }
+    // 実行/一時停止トグル
+    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::XYPause;
-        value = liaConfig.pauseCfg.flag;
+        
+        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
+        liaConfig.buttonPause();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Rec."))
-    {
-        ch1xs.push_back(liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latestIdx]);
-        ch1ys.push_back(liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.latestIdx]);
-        ch2xs.push_back(liaConfig.ringBuffer.ch[1].x[liaConfig.ringBuffer.latestIdx]);
-        ch2ys.push_back(liaConfig.ringBuffer.ch[1].y[liaConfig.ringBuffer.latestIdx]);
-        std::ofstream file(std::format("./{}/{}", liaConfig.dirName, "rec.csv"));
-        if (!file) {
-            std::cerr << "Error: Could not open file " << "rec.csv" << std::endl;
-        }
-        else {
-            std::stringstream ss;
-            ss << (liaConfig.flagCh2 ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
-            for (size_t i = 0; i < ch1xs.size(); ++i) {
-                ss << (liaConfig.flagCh2 ? std::format("{:e},{:e},{:e},{:e}\n", ch1xs[i], ch1ys[i], ch2xs[i], ch2ys[i]) : std::format("{:e},{:e}\n", ch1xs[i], ch1ys[i]));
-            }
-            file << ss.str(); // メモリからファイルへ一括書き込み
-            file.close();
-        }
-    }
+    if (ImGui::Button("Rec.")) { liaConfig.buttonRec(); }
 
     // プロット描画
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0)); // 凡例の背景を透明に
@@ -595,7 +579,7 @@ inline void XYPlotWindow::show()
         specScatter.MarkerLineColor = colors[2];
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.plotCfg.xyLatestIdx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.xyLatestIdx]), 1, specScatter);
         specScatter.MarkerFillColor = ImVec4(0,0,0,0);
-        ImPlot::PlotScatter("##REC1", ch1xs.data(), ch1ys.data(), (int)ch1xs.size(), specScatter);
+        ImPlot::PlotScatter("##REC1", liaConfig.xyRecs.ch1xs.data(), liaConfig.xyRecs.ch1ys.data(), (int)liaConfig.xyRecs.ch1xs.size(), specScatter);
         if (liaConfig.flagCh2)
         {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
@@ -617,7 +601,7 @@ inline void XYPlotWindow::show()
             specScatter.MarkerLineColor = colors[7];
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.plotCfg.xyLatestIdx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.plotCfg.xyLatestIdx]), 1, specScatter);
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
-            ImPlot::PlotScatter("##REC2", ch2xs.data(), ch2ys.data(), (int)ch2xs.size(), specScatter);
+            ImPlot::PlotScatter("##REC2", liaConfig.xyRecs.ch2xs.data(), liaConfig.xyRecs.ch2ys.data(), (int)liaConfig.xyRecs.ch2xs.size(), specScatter);
         }
         if(liaConfig.flagAutoSetupW2History){
             specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
@@ -635,10 +619,6 @@ inline void XYPlotWindow::show()
     ImGui::End();
     if (liaConfig.plotCfg.surfaceMode)
         ImGui::PopStyleColor();
-    if (button != ButtonType::NON)
-    {
-        liaConfig.cmds.push_back(std::array<float, 3>{ (float)liaConfig.timer.elapsedSec(), (float)button, value });
-    }
 }
 
 
@@ -664,21 +644,24 @@ inline void ACFMPlotWindow::show()
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver); //ImGui::GetIO().DisplaySize
     ImGui::Begin(this->name);
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.1f V");
-    if (ImGui::Button("Clear"))
-    {
-        liaConfig.plotCfg.xyStartIdx = 0; liaConfig.plotCfg.xySize = 0;
+    ImGui::Button("Clear");
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        liaConfig.buttonClear();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Auto offset")) {
-        liaConfig.flagAutoOffset = true;
+    ImGui::Button("Auto offset");
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        liaConfig.buttonAutoOffset();
     }
     ImGui::SameLine();
-    if (liaConfig.pauseCfg.flag)
-    {
-        if (ImGui::Button("Run")) { liaConfig.pauseCfg.flag = false; }
-    }
-    else {
-        if (ImGui::Button("Pause")) { liaConfig.pauseCfg.flag = true; }
+    // 実行/一時停止トグル
+    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
+    if (ImGui::IsItemDeactivated()) {
+        // ボタンが離された瞬間（フォーカスが外れた）
+        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
+        liaConfig.buttonPause();
     }
     if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
         liaConfig.plotCfg.Vz_limt = liaConfig.plotCfg.Vx_limt * 2;

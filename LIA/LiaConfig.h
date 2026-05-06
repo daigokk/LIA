@@ -29,7 +29,7 @@ constexpr float  RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
 constexpr size_t RAW_SIZE = 5000 * 2;
 constexpr double MEASUREMENT_DT = 2e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 1;
+constexpr size_t MEASUREMENT_SEC = 60 * 10;
 constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
 //constexpr float  XY_HISTORY_SEC = 10.0f;
 //constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
@@ -57,7 +57,7 @@ enum class ButtonType {
     DispCh2 = 1501, PlotACFM = 1502,
     PostHpFreq = 1603, PostLpFreq = 1604,
     RawSave = 2001, RawLimit = 2002,
-    XYClear = 3001, XYAutoOffset = 3002, XYPause = 3003,
+	XYClear = 3001, XYAutoOffset = 3002, XYPause = 3003, XYRec = 3004,
     TimeHistory = 4001, TimePause = 4002,
 };
 
@@ -89,6 +89,7 @@ constexpr std::string_view cmdToString(ButtonType button) noexcept {
     case ButtonType::XYClear:          return "XYClear";
     case ButtonType::XYAutoOffset:     return "XYAutoOffset";
     case ButtonType::XYPause:          return "XYPause";
+    case ButtonType::XYRec:            return "XYRec";
     case ButtonType::TimeHistory:      return "TimeHistory";
     case ButtonType::TimePause:        return "TimePause";
     default:                           return "Unknown";
@@ -158,6 +159,11 @@ public:
         std::vector<double> y;
     };
 
+    struct XYRecs {
+        std::vector<double> ch1xs, ch1ys, ch2xs, ch2ys;
+	};
+	XYRecs xyRecs;
+
     struct RingBuffer {
         std::vector<double> times;
         XYs ch[2];
@@ -204,7 +210,7 @@ public:
     std::atomic<bool> statusPipe{ false };
 
     XYs autoSetupHistoryW1, autoSetupHistoryW2;
-    std::vector<std::array<float, 3>> cmds;
+    std::vector<std::array<float, 6>> cmds;
     std::vector<double> rawTime;
     std::vector<double> rawData[2];
     std::vector<double> deltaTimes;
@@ -302,6 +308,9 @@ public:
                 postCfg.offset[1].y = y2;
             }
             flagAutoOffset = false;
+            if (flagCh2) {
+                cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::PostAutoOffset, (float)x1, (float)y1, 0, 0 });
+            }
         }
 
         // 変数をローカルキャッシュしてメモリアクセスを減らす（高速化）
@@ -400,6 +409,55 @@ public:
         return true;
     }
 
+    void buttonClear() {
+        plotCfg.xyStartIdx = ringBuffer.latestIdx;
+        plotCfg.xySize = 0;
+        xyRecs.ch1xs.clear(); xyRecs.ch1ys.clear(); xyRecs.ch2xs.clear(); xyRecs.ch2ys.clear();
+        flagAutoSetupW2History = false;
+        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::XYClear, 0, 0, 0, 0 });
+    }
+
+    void buttonPause() {
+        if (pauseCfg.flag) {
+            pauseCfg.flag = true;
+        }
+        else {
+            buttonClear();
+            pauseCfg.flag = false;
+        }
+        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::TimePause, (float)pauseCfg.flag, 0, 0, 0 });
+	}
+
+    void buttonAutoOffset() {
+        flagAutoOffset = true;
+	}
+
+    void buttonAutoOffsetOff() {
+        flagAutoOffset = false;
+        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::PostOffsetOff, 0, 0, 0, 0 });
+	}
+
+    void buttonRec() {
+        xyRecs.ch1xs.push_back(ringBuffer.ch[0].x[ringBuffer.latestIdx]);
+        xyRecs.ch1ys.push_back(ringBuffer.ch[0].y[ringBuffer.latestIdx]);
+        xyRecs.ch2xs.push_back(ringBuffer.ch[1].x[ringBuffer.latestIdx]);
+        xyRecs.ch2ys.push_back(ringBuffer.ch[1].y[ringBuffer.latestIdx]);
+        std::ofstream file(std::format("./{}/{}", dirName, "rec.csv"));
+        if (!file) {
+            std::cerr << "Error: Could not open file " << "rec.csv" << std::endl;
+        }
+        else {
+            std::stringstream ss;
+            ss << (flagCh2 ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
+            for (size_t i = 0; i < xyRecs.ch1xs.size(); ++i) {
+                ss << (flagCh2 ? std::format("{:e},{:e},{:e},{:e}\n", xyRecs.ch1xs[i], xyRecs.ch1ys[i], xyRecs.ch2xs[i], xyRecs.ch2ys[i]) : std::format("{:e},{:e}\n", xyRecs.ch1xs[i], xyRecs.ch1ys[i]));
+            }
+            file << ss.str(); // メモリからファイルへ一括書き込み
+            file.close();
+        }
+        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::XYRec, 0, 0, 0, 0 });
+    }
+
 private:
     void initializeDirectory() {
         dirName = getCurrentTimestamp();
@@ -439,18 +497,18 @@ private:
 		// XYPlot の表示範囲を更新
         plotCfg.xyLatestIdx = ringBuffer.latestIdx;
         size_t xyMaxSize = (size_t)(plotCfg.historySec / MEASUREMENT_DT);
-
-        if (ringBuffer.size <= xyMaxSize) {
-			plotCfg.xySize = ringBuffer.size;
+        if (plotCfg.xySize < xyMaxSize) {
+            plotCfg.xySize++;
         }
         else {
-			plotCfg.xySize = xyMaxSize;
+            plotCfg.xySize = xyMaxSize;
         }
-		if (plotCfg.xyStartIdx < ringBuffer.writeIdx) {
-            plotCfg.xyStartIdx = (ringBuffer.writeIdx >= xyMaxSize) ? (ringBuffer.writeIdx - xyMaxSize) : 0;
+        int xyStartIdx = plotCfg.xyLatestIdx - plotCfg.xySize + 1;
+        if (xyStartIdx >= 0) {
+            plotCfg.xyStartIdx = xyStartIdx;
         }
         else {
-            plotCfg.xyStartIdx = (ringBuffer.writeIdx + MEASUREMENT_SIZE - xyMaxSize) % MEASUREMENT_SIZE;
+            plotCfg.xySize = ringBuffer.size - plotCfg.xyStartIdx + ringBuffer.latestIdx + 1;
         }
     }
 
