@@ -263,7 +263,6 @@ inline void ControlWindow::post(const float nextItemWidth)
 
     // 実行/一時停止トグル
     if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause", buttonSize)) {
-        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
 		liaConfig.buttonPause();
     }
     markButtonIfItemDeactivated(button, value, ButtonType::PostPause, liaConfig.pauseCfg.flag);

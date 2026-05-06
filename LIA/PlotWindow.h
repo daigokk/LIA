@@ -145,13 +145,9 @@ inline void TimeChartWindow::show()
     }
     ImGui::SameLine();
     // 実行/一時停止トグル
-    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
+    if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause")) { liaConfig.buttonPause(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        button = ButtonType::TimePause;
-        value = liaConfig.pauseCfg.flag;
-        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
-        liaConfig.buttonPause();
     }
 
     //ImGui::SliderFloat("Y limit", &(liaConfig.limit), 0.1, 2.0, "%4.2f V");
@@ -517,19 +513,15 @@ inline void XYPlotWindow::show()
         liaConfig.buttonClear();
     }
     ImGui::SameLine();
-    ImGui::Button("Auto offset");
+    if(ImGui::Button("Auto offset")) { liaConfig.buttonAutoOffset(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        liaConfig.buttonAutoOffset();
     }
     ImGui::SameLine();
     // 実行/一時停止トグル
-    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
+    if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause")) { liaConfig.buttonPause(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        
-        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
-        liaConfig.buttonPause();
     }
     ImGui::SameLine();
     if (ImGui::Button("Rec.")) { liaConfig.buttonRec(); }
@@ -650,18 +642,15 @@ inline void ACFMPlotWindow::show()
         liaConfig.buttonClear();
     }
     ImGui::SameLine();
-    ImGui::Button("Auto offset");
+    if (ImGui::Button("Auto offset")) { liaConfig.buttonAutoOffset(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        liaConfig.buttonAutoOffset();
     }
     ImGui::SameLine();
     // 実行/一時停止トグル
-    ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause");
+    if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause")) { liaConfig.buttonPause(); }
     if (ImGui::IsItemDeactivated()) {
         // ボタンが離された瞬間（フォーカスが外れた）
-        liaConfig.pauseCfg.flag = !liaConfig.pauseCfg.flag;
-        liaConfig.buttonPause();
     }
     if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
         liaConfig.plotCfg.Vz_limt = liaConfig.plotCfg.Vx_limt * 2;

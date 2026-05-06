@@ -58,7 +58,7 @@ enum class ButtonType {
     PostHpFreq = 1603, PostLpFreq = 1604,
     RawSave = 2001, RawLimit = 2002,
 	XYClear = 3001, XYAutoOffset = 3002, XYPause = 3003, XYRec = 3004,
-    TimeHistory = 4001, TimePause = 4002,
+	TimeHistory = 4001, TimePause = 4002, TimeSave = 4003,
 };
 
 constexpr std::string_view cmdToString(ButtonType button) noexcept {
@@ -92,6 +92,7 @@ constexpr std::string_view cmdToString(ButtonType button) noexcept {
     case ButtonType::XYRec:            return "XYRec";
     case ButtonType::TimeHistory:      return "TimeHistory";
     case ButtonType::TimePause:        return "TimePause";
+    case ButtonType::TimeSave:         return "TimeSave";
     default:                           return "Unknown";
     }
 }
@@ -420,7 +421,7 @@ public:
     }
 
     void buttonPause() {
-        if (pauseCfg.flag) {
+        if (!pauseCfg.flag) {
             pauseCfg.flag = true;
         }
         else {
