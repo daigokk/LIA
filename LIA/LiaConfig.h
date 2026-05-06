@@ -157,10 +157,12 @@ public:
     struct XYs {
         std::vector<double> x;
         std::vector<double> y;
+		void clear() { x.clear(); y.clear(); }
+		void push_back(double xVal, double yVal) { x.push_back(xVal); y.push_back(yVal); }
     };
 
     struct XYRecs {
-        std::vector<double> ch1xs, ch1ys, ch2xs, ch2ys;
+        XYs ch1xys, ch2xys;
 	};
 	XYRecs xyRecs;
 
@@ -412,7 +414,7 @@ public:
     void buttonClear() {
         plotCfg.xyStartIdx = ringBuffer.latestIdx;
         plotCfg.xySize = 0;
-        xyRecs.ch1xs.clear(); xyRecs.ch1ys.clear(); xyRecs.ch2xs.clear(); xyRecs.ch2ys.clear();
+        xyRecs.ch1xys.clear(); xyRecs.ch2xys.clear();
         flagAutoSetupW2History = false;
         cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::XYClear, 0, 0, 0, 0 });
     }
@@ -438,10 +440,8 @@ public:
 	}
 
     void buttonRec() {
-        xyRecs.ch1xs.push_back(ringBuffer.ch[0].x[ringBuffer.latestIdx]);
-        xyRecs.ch1ys.push_back(ringBuffer.ch[0].y[ringBuffer.latestIdx]);
-        xyRecs.ch2xs.push_back(ringBuffer.ch[1].x[ringBuffer.latestIdx]);
-        xyRecs.ch2ys.push_back(ringBuffer.ch[1].y[ringBuffer.latestIdx]);
+        xyRecs.ch1xys.push_back(ringBuffer.ch[0].x[ringBuffer.latestIdx], ringBuffer.ch[0].y[ringBuffer.latestIdx]);
+        xyRecs.ch2xys.push_back(ringBuffer.ch[1].x[ringBuffer.latestIdx], ringBuffer.ch[1].y[ringBuffer.latestIdx]);
         std::ofstream file(std::format("./{}/{}", dirName, "rec.csv"));
         if (!file) {
             std::cerr << "Error: Could not open file " << "rec.csv" << std::endl;
@@ -449,8 +449,10 @@ public:
         else {
             std::stringstream ss;
             ss << (flagCh2 ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
-            for (size_t i = 0; i < xyRecs.ch1xs.size(); ++i) {
-                ss << (flagCh2 ? std::format("{:e},{:e},{:e},{:e}\n", xyRecs.ch1xs[i], xyRecs.ch1ys[i], xyRecs.ch2xs[i], xyRecs.ch2ys[i]) : std::format("{:e},{:e}\n", xyRecs.ch1xs[i], xyRecs.ch1ys[i]));
+            for (size_t i = 0; i < xyRecs.ch1xys.x.size(); ++i) {
+                ss << (flagCh2 ?
+                    std::format("{:e},{:e},{:e},{:e}\n", xyRecs.ch1xys.x[i], xyRecs.ch1xys.y[i], xyRecs.ch2xys.x[i], xyRecs.ch2xys.y[i])
+                    : std::format("{:e},{:e}\n", xyRecs.ch1xys.x[i], xyRecs.ch1xys.y[i]));
             }
             file << ss.str(); // メモリからファイルへ一括書き込み
             file.close();
