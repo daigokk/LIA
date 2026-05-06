@@ -70,8 +70,7 @@ std::pair<Point, Point> findMaxDistancePoints(const std::vector<double>& x, cons
 }
 
 // 基準点を元に履歴データ全体をオフセット補正する
-template <typename HistoryType>
-void offsetHistory(HistoryType& history, const Point& basePoint) {
+void offsetHistory(LiaConfig::XYs& history, const Point& basePoint) {
     for (size_t i = 0; i < history.x.size(); ++i) {
         history.x[i] -= basePoint.x;
         history.y[i] -= basePoint.y;
@@ -96,14 +95,12 @@ void applyAwgSettingsAndWait(LiaConfig* cfg, const PolarVector& ch0, const Polar
 }
 
 // リングバッファから最新の指定時間分のデータを履歴バッファに抽出する
-template <typename HistoryType>
-void extractRingBufferToHistory(const LiaConfig* cfg, HistoryType& targetHistory, const int record_ms) {
+void extractRingBufferToHistory(const LiaConfig::RingBuffer& ringBuffer, LiaConfig::XYs& targetHistory, const int record_ms) {
     const int length = static_cast<int>((record_ms / 1000.0) / MEASUREMENT_DT);
 
     targetHistory.x.resize(length);
     targetHistory.y.resize(length);
 
-    const auto& ringBuffer = cfg->ringBuffer;
     const int latestIdx = ringBuffer.latestIdx;
     const int bufsize = ringBuffer.size;
 
@@ -153,7 +150,7 @@ void autosetupW2(LiaConfig* cfg) {
     // ステップ1: W1の測定 (W1=ON, W2=OFF)
     // ------------------------------------------------------------
     applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, RECORD_MS);
-    extractRingBufferToHistory(cfg, cfg->autoSetupHistoryW1, RECORD_MS);
+    extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW1, RECORD_MS);
 
     auto [w1p1, w1p2] = findMaxDistancePoints(cfg->autoSetupHistoryW1.x, cfg->autoSetupHistoryW1.y);
     offsetHistory(cfg->autoSetupHistoryW1, w1p1); // W1は点1をベースにオフセット
@@ -165,7 +162,7 @@ void autosetupW2(LiaConfig* cfg) {
     // ステップ2: W2の測定 (W1=OFF, W2=ON)
     // ------------------------------------------------------------
     applyAwgSettingsAndWait(cfg, { 0.0, 0.0 }, { original_amp, 0.0 }, RECORD_MS);
-    extractRingBufferToHistory(cfg, cfg->autoSetupHistoryW2, RECORD_MS);
+    extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW2, RECORD_MS);
 
     auto [w2p1, w2p2] = findMaxDistancePoints(cfg->autoSetupHistoryW2.x, cfg->autoSetupHistoryW2.y);
     offsetHistory(cfg->autoSetupHistoryW2, w2p2); // W2は点2をベースにオフセット
