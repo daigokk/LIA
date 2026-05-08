@@ -149,40 +149,55 @@ void autosetupW2(LiaConfig* cfg) {
     // ------------------------------------------------------------
     // ステップ1: W1の測定 (W1=ON, W2=OFF)
     // ------------------------------------------------------------
-    applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, RECORD_MS);
-    extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW1, RECORD_MS);
+    if (cfg->plotCfg.acfm) {
+        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, 100);
 
-    auto [w1p1, w1p2] = findMaxDistancePoints(cfg->autoSetupHistoryW1.x, cfg->autoSetupHistoryW1.y);
-    offsetHistory(cfg->autoSetupHistoryW1, w1p1); // W1は点1をベースにオフセット
+        double x = cfg->ringBuffer.ch[CH_HORIZONTAL].x[cfg->ringBuffer.latestIdx];
+		double y = cfg->ringBuffer.ch[CH_HORIZONTAL].y[cfg->ringBuffer.latestIdx];
+        std::tie(x, y) = cfg->psd.rotate_phase(x, y, -cfg->postCfg.offset[CH_HORIZONTAL].phase);
+		x += cfg->postCfg.offset[CH_HORIZONTAL].x;
+		y += cfg->postCfg.offset[CH_HORIZONTAL].y;
+        const PolarVector pvec = { std::hypot(x, y), std::atan2(y, x) * 180.0 / std::numbers::pi };
 
-    const PolarVector w1 = calculatePolarVector(w1p1, w1p2);
-    printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
+        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { pvec.amplitude, pvec.phaseDeg > 0 ? pvec.phaseDeg - 180 : pvec.phaseDeg + 180 }, 0);
+    }
+    else {
+        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, RECORD_MS);
+        extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW1, RECORD_MS);
 
-    // ------------------------------------------------------------
-    // ステップ2: W2の測定 (W1=OFF, W2=ON)
-    // ------------------------------------------------------------
-    applyAwgSettingsAndWait(cfg, { 0.0, 0.0 }, { original_amp, 0.0 }, RECORD_MS);
-    extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW2, RECORD_MS);
+        auto [w1p1, w1p2] = findMaxDistancePoints(cfg->autoSetupHistoryW1.x, cfg->autoSetupHistoryW1.y);
+        offsetHistory(cfg->autoSetupHistoryW1, w1p1); // W1は点1をベースにオフセット
 
-    auto [w2p1, w2p2] = findMaxDistancePoints(cfg->autoSetupHistoryW2.x, cfg->autoSetupHistoryW2.y);
-    offsetHistory(cfg->autoSetupHistoryW2, w2p2); // W2は点2をベースにオフセット
+        const PolarVector w1 = calculatePolarVector(w1p1, w1p2);
+        printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
 
-    const PolarVector w2 = calculatePolarVector(w2p1, w2p2);
-    printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
+        // ------------------------------------------------------------
+        // ステップ2: W2の測定 (W1=OFF, W2=ON)
+        // ------------------------------------------------------------
+        applyAwgSettingsAndWait(cfg, { 0.0, 0.0 }, { original_amp, 0.0 }, RECORD_MS);
+        extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW2, RECORD_MS);
 
-    // ------------------------------------------------------------
-    // ステップ3: W2の振幅と位相をW1に合わせるように調整
-    // ------------------------------------------------------------
-    const double target_amp = original_amp * (w1.amplitude / w2.amplitude);
-    const double target_phase = w2.phaseDeg - w1.phaseDeg;
-    applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { target_amp, target_phase }, 0); // 記録なし
+        auto [w2p1, w2p2] = findMaxDistancePoints(cfg->autoSetupHistoryW2.x, cfg->autoSetupHistoryW2.y);
+        offsetHistory(cfg->autoSetupHistoryW2, w2p2); // W2は点2をベースにオフセット
 
-    // ステータス更新と結果の保存
+        const PolarVector w2 = calculatePolarVector(w2p1, w2p2);
+        printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
+
+        // ------------------------------------------------------------
+        // ステップ3: W2の振幅と位相をW1に合わせるように調整
+        // ------------------------------------------------------------
+        const double target_amp = original_amp * (w1.amplitude / w2.amplitude);
+        const double target_phase = w2.phaseDeg - w1.phaseDeg;
+        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { target_amp, target_phase }, 0); // 記録なし
+
+        // 結果の保存
+        cfg->flagAutoSetupW2History = true;
+
+        exportHistoryToCsv(cfg);
+    }
+    // ステータス更新
     cfg->flagAutoOffset = true;
     cfg->flagAutoSetupW2 = false;
-    cfg->flagAutoSetupW2History = true;
-
-    exportHistoryToCsv(cfg);
 
     printf("  New w2 amp.:%f, theta:%f\n", cfg->awgCfg.ch[1].amp, cfg->awgCfg.ch[1].phase);
     printf("Done.\n");

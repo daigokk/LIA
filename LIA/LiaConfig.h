@@ -221,14 +221,14 @@ public:
     std::vector<double> rawData[2];
     std::vector<double> deltaTimes;
     RingBuffer ringBuffer;
+    Psd psd;
 
 private:
     struct Hpf { HighPassFilter x, y; };
     struct Lpf { LowPassFilter  x, y; };
     Hpf hpfCh[2];
     Lpf lpfCh[2];
-    Psd psd;
-
+    
 public:
     LiaConfig() {
         initializeDirectory();

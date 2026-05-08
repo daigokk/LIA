@@ -82,8 +82,8 @@ public:
 //#pragma omp simd reduction(+:sumX, sumY)
         for (size_t i = 0; i < usableSize_; ++i)
         {
-            sumX += pCos[i] * rawData[i];
-            sumY += pSin[i] * rawData[i];
+            sumX += pSin[i] * rawData[i];
+            sumY += pCos[i] * rawData[i];
         }
 
         return { sumX * invSize_, sumY * invSize_ };
