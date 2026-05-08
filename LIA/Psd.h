@@ -24,7 +24,7 @@ private:
 
 public:
     // [[nodiscard]] は「戻り値を無視してはいけない」というコンパイラへのヒントで、
-    // ゲッターに付けると意図しないバグ（呼び出しただけで値を使わない等）を防げます。
+    // ゲッターに付けると意図しないバグ（呼び出しただけで値を使わない等）を防ぐ。
     [[nodiscard]] double getCurrentFreq() const noexcept
     {
         return currentFreq_;

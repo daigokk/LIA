@@ -222,7 +222,7 @@ inline void TimeChartWindow::show() {
         static bool isFirstPause = true;
         if (liaConfig.pauseCfg.flag) {
             if (isFirstPause) {
-                liaConfig.pauseCfg.set(t - liaConfig.plotCfg.historySec / 10.0, t, -liaConfig.plotCfg.limit / 2.0, liaConfig.plotCfg.limit / 2.0);
+                liaConfig.pauseCfg.set(t - liaConfig.plotCfg.historySec * 0.2, t - liaConfig.plotCfg.historySec * 0.1, -liaConfig.plotCfg.limit * 0.9, liaConfig.plotCfg.limit * 0.9);
                 isFirstPause = false;
             }
 
@@ -352,7 +352,7 @@ inline void TimeChartZoomWindow::show() {
         specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
         specScatter.LineWeight = -1.0f;
 
-        // vx Vpp マーカーと 50% ライン
+        // Vx Vpp マーカーと 50% ライン
         if (liaConfig.flagCh2 && res.t50s_vx[0] < res.t50s_vx[1] && liaConfig.acfmData.vxpp > 2e-3) {
             specScatter.MarkerFillColor = colors[7]; // Amber
             ImPlot::PlotScatter("##Vx_pk", res.ts_vx, res.vxs, 2, specScatter);
@@ -366,11 +366,11 @@ inline void TimeChartZoomWindow::show() {
             // テキスト表示
             double y_offset = (area.Y.Max - area.Y.Min) * 0.05;
             ImPlot::PlotText(std::format("{:.3f}s", res.t50s_vx[1] - res.t50s_vx[0]).c_str(), (res.t50s_vx[1] + res.t50s_vx[0]) / 2, res.v50s_vx[0] - y_offset);
-            ImPlot::PlotText(std::format("Vx dV: {:.0f}mV", liaConfig.acfmData.vxpp * 1e3).c_str(),
+            ImPlot::PlotText(std::format("{} dV: {:.0f}mV", liaConfig.plotCfg.acfm ? "Vx" : "Ch1", liaConfig.acfmData.vxpp * 1e3).c_str(),
                 area.X.Min + (area.X.Max - area.X.Min) * 0.5, area.Y.Min + (area.Y.Max - area.Y.Min) * 0.2);
         }
 
-        // vz についても同様に描画
+        // Vz についても同様に描画
         if (liaConfig.acfmData.vpp_vz > 10e-3) {
             specScatter.MarkerFillColor = colors[2]; // Blue
             ImPlot::PlotScatter("##Vz_pk", res.ts_vz, res.vzs, 2, specScatter);
@@ -385,7 +385,7 @@ inline void TimeChartZoomWindow::show() {
                 (res.ts_vz[1] + res.ts_vz[0]) / 2,
                 res.v50s_vz[0] + (liaConfig.pauseCfg.selectArea.Y.Max - liaConfig.pauseCfg.selectArea.Y.Min) * 0.05
             );
-            ImPlot::PlotText(std::format("Vz dV: {:.0f}mV", liaConfig.acfmData.vpp_vz * 1e3).c_str(),
+            ImPlot::PlotText(std::format("{} dV: {:.0f}mV", liaConfig.plotCfg.acfm ? "Vz" : "Ch2", liaConfig.acfmData.vpp_vz * 1e3).c_str(),
                 area.X.Min + (area.X.Max - area.X.Min) * 0.5, area.Y.Min + (area.Y.Max - area.Y.Min) * 0.1);
         }
 
@@ -543,13 +543,13 @@ public:
 
 inline ACFMPlotWindow::ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig) {
-    this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 0 * liaConfig.windowCfg.monitorScale);
-    this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 650 * liaConfig.windowCfg.monitorScale);
+    this->windowPos = ImVec2(880 * liaConfig.windowCfg.monitorScale, 40 * liaConfig.windowCfg.monitorScale);
+    this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 560 * liaConfig.windowCfg.monitorScale);
 }
 
 inline void ACFMPlotWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
 
     if (ImGui::Button("Clear")) { liaConfig.buttonClear(); }
@@ -619,8 +619,8 @@ inline ACFMVhVvPlotWindow::ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& lia
 }
 
 inline void ACFMVhVvPlotWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
     ImGui::Begin(this->name);
 
     if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), ImPlotFlags_Equal)) {
