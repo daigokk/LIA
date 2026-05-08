@@ -44,6 +44,9 @@ constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
 constexpr auto RESULTS_FILE = "ect.csv";
 constexpr auto CMDS_FILE = "commands.csv";
 
+constexpr auto CH_VERTICAL = 0;
+constexpr auto CH_HORIZONTAL = 1;
+
 // ================================================================================
 // Enums & Utilities
 // ================================================================================
@@ -187,8 +190,8 @@ public:
         std::vector<double> Vvs = { 0.102, 0.106, 0.115, 0.121, 0.212, 0.239 };
         double mmk[3] = { 2.4827, 3.0433, 0.1393 };
         size_t size = 6;
-        double ch1vpp = 0.0;
-        double ch2vpp = 0.0;
+        double vxpp = 0.0;
+        double vpp_vz = 0.0;
     };
 
     Timer timer;

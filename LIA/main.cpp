@@ -165,10 +165,10 @@ void runMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
         if (pLiaConfig->pauseCfg.flag) continue;
 
         if (pLiaConfig->flagCh2) {
-            daq.scope.record(pLiaConfig->rawData[0], pLiaConfig->rawData[1]);
+            daq.scope.record(pLiaConfig->rawData[0].data(), pLiaConfig->rawData[1].data());
         }
         else {
-            daq.scope.record(pLiaConfig->rawData[0]);
+            daq.scope.record(pLiaConfig->rawData[0].data());
         }
 
         pLiaConfig->update(t);
