@@ -562,11 +562,10 @@ inline void ACFMPlotWindow::show() {
         liaConfig.plotCfg.Vx_limt = liaConfig.plotCfg.Vz_limt / 2;
     }
     if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
-        liaConfig.plotCfg.limit = liaConfig.plotCfg.Vz_limt;
     }
     
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
+        bool useMv = liaConfig.plotCfg.Vz_limt <= MILI_VOLT;
         ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
 
         if (useMv) {
