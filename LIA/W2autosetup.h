@@ -146,22 +146,33 @@ void autosetupW2(LiaConfig* cfg) {
     printf("Autosetup W2 in progress...\n");
     const double original_amp = cfg->awgCfg.ch[0].amp;
 
-    // ------------------------------------------------------------
-    // ステップ1: W1の測定 (W1=ON, W2=OFF)
-    // ------------------------------------------------------------
     if (cfg->plotCfg.acfm) {
+		// W2をOFFにしてW1のみの状態で測定し、最新の点を基準にしてW2の振幅と位相を調整する
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, 100);
 
-        double x = cfg->ringBuffer.ch[CH_HORIZONTAL].x[cfg->ringBuffer.latestIdx];
-		double y = cfg->ringBuffer.ch[CH_HORIZONTAL].y[cfg->ringBuffer.latestIdx];
-        std::tie(x, y) = cfg->psd.rotate_phase(x, y, -cfg->postCfg.offset[CH_HORIZONTAL].phase);
-		x += cfg->postCfg.offset[CH_HORIZONTAL].x;
-		y += cfg->postCfg.offset[CH_HORIZONTAL].y;
-        const PolarVector pvec = { std::hypot(x, y), std::atan2(y, x) * 180.0 / std::numbers::pi };
+        double x_ = cfg->ringBuffer.ch[CH_HORIZONTAL].x[cfg->ringBuffer.latestIdx];
+		double y_ = cfg->ringBuffer.ch[CH_HORIZONTAL].y[cfg->ringBuffer.latestIdx];
 
+		// 位相オフセット前の座標に変換
+        const double phase_ = -cfg->postCfg.offset[CH_HORIZONTAL].phase * std::numbers::pi / 180.0;
+		const double cos_t_ = std::cos(phase_);
+		const double sin_t_ = std::sin(phase_);
+        std::tie(x_, y_) = std::tuple <double, double>(x_ * cos_t_ - y_ * sin_t_, x_ * sin_t_ + y_ * cos_t_);
+
+		// 座標オフセット前の座標に変換
+		x_ += cfg->postCfg.offset[CH_HORIZONTAL].x;
+		y_ += cfg->postCfg.offset[CH_HORIZONTAL].y;
+
+		// W1の振幅と位相を計算
+        const PolarVector pvec = { std::hypot(x_, y_), std::atan2(y_, x_) * 180.0 / std::numbers::pi };
+
+		// W2の振幅と位相をW1と反転させる
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { pvec.amplitude, pvec.phaseDeg > 0 ? pvec.phaseDeg - 180 : pvec.phaseDeg + 180 }, 0);
     }
     else {
+        // ------------------------------------------------------------
+        // ステップ1: W1の測定 (W1=ON, W2=OFF)
+        // ------------------------------------------------------------
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, RECORD_MS);
         extractRingBufferToHistory(cfg->ringBuffer, cfg->autoSetupHistoryW1, RECORD_MS);
 
