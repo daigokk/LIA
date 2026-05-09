@@ -182,7 +182,7 @@
 ## System Requirements ⚙️
   - OS: Windows 10/11
   - Hardware: Digilent Analog Discovery 2 or 3
-  - Development: Microsoft Visual Studio 2022 (C++20)
+  - Development: Microsoft Visual Studio 2026 (C++20)
   - Dependencies:
     - [Digilent WaveForms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/start)
     - [GLFW](https://www.glfw.org/)
