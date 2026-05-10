@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
             .posX = settings.windowCfg.pos.x,
             .posY = settings.windowCfg.pos.y,
             .width = settings.windowCfg.size.x,
-            .height = settings.windowCfg.size.y
+            .height = settings.windowCfg.size.y,
+            .fontSize = settings.windowCfg.fontSize
         };
 
         Gui::Initialize(guiCfg);

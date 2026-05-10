@@ -110,6 +110,7 @@ public:
         XYint size = { 1440, 960 };
         XYint pos = { 0, 30 };
         float monitorScale = 1.0f;
+        float fontSize = 32.0f;
     };
 
     struct ImGuiCfg {
