@@ -146,7 +146,7 @@ void autosetupW2(LiaConfig* cfg) {
     printf("Autosetup W2 in progress...\n");
     const double original_amp = cfg->awgCfg.ch[0].amp;
 
-    if (cfg->plotCfg.acfm) {
+    if (cfg->windowCfg.acfmWindow) {
 		// W2をOFFにしてW1のみの状態で測定し、最新の点を基準にしてW2の振幅と位相を調整する
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, 100);
 

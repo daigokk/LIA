@@ -5,6 +5,19 @@
 #include "PlotWindow.h"
 #include "Beep.h"
 
+
+static void HelpMarker(const char* desc)
+{
+	ImGui::TextDisabled("(?)");
+	if (ImGui::BeginItemTooltip())
+	{
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::TextUnformatted(desc);
+		ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+}
+
 class GuiSub {
 private:
 	LiaConfig& liaConfig;
@@ -30,6 +43,40 @@ public:
 	{
 
 	}
+	void ShowMainMenuBar() {
+		if (ImGui::BeginMainMenuBar()) {
+			if (ImGui::BeginMenu("Windows")) {
+				ImGui::MenuItem("Control panel", NULL, &liaConfig.windowCfg.controlWindow);
+				ImGui::Separator();
+				ImGui::MenuItem("Raw", NULL, &liaConfig.windowCfg.rawWindow);
+				ImGui::MenuItem("XY", NULL, &liaConfig.windowCfg.xyWindow);
+				ImGui::MenuItem("Time", NULL, &liaConfig.windowCfg.timeWindow);
+				ImGui::MenuItem("Delta time", NULL, &liaConfig.windowCfg.deltaTimeWindow);
+				ImGui::Separator();
+				ImGui::MenuItem("ACFM", NULL, &liaConfig.windowCfg.acfmWindow);
+				ImGui::Separator();
+				const bool isFirstUse = (liaConfig.imguiCfg.windowFlag == ImGuiCond_FirstUseEver);
+				if (ImGui::Button(isFirstUse ? "Lock" : "Unlock")) {
+					liaConfig.imguiCfg.windowFlag = isFirstUse ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Theme")) {
+				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
+				ImGui::ListBox("", &liaConfig.imguiCfg.theme, themes, IM_ARRAYSIZE(themes), 10);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Settings")) {
+				ImGui::MenuItem("Beep", NULL, &liaConfig.plotCfg.beep);
+				ImGui::EndMenu();
+			}
+			//if (ImGui::BeginMenu("Help")) {
+			//	ImGui::MenuItem("About", NULL, &liaConfig.windowCfg.aboutWindow);
+			//	ImGui::EndMenu();
+			//}
+			ImGui::EndMainMenuBar();
+		}
+	}
 	void show(void) {
 		const float nextItemWidth = 150 * liaConfig.windowCfg.monitorScale;
 		static int theme = 0;
@@ -42,19 +89,18 @@ public:
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
-		xyPlotWindow.show();
-		rawPlotWindow.show();
-		timeChartWindow.show();
-		deltaTimeChartWindow.show();
-		controlWindow.show();
-		if (liaConfig.plotCfg.acfm) {
-			acfmPlotWindow.show();
-		}
-		if (liaConfig.pauseCfg.flag)
-		{
+		ShowMainMenuBar();
+
+		if (liaConfig.windowCfg.controlWindow) { controlWindow.show(); }
+		if (liaConfig.windowCfg.xyWindow) { xyPlotWindow.show(); }
+		if (liaConfig.windowCfg.rawWindow) { rawPlotWindow.show(); }
+		if (liaConfig.windowCfg.timeWindow) { timeChartWindow.show(); }
+		if (liaConfig.windowCfg.deltaTimeWindow) { deltaTimeChartWindow.show(); }
+		if (liaConfig.windowCfg.acfmWindow) { acfmPlotWindow.show(); }
+		if (liaConfig.pauseCfg.flag) {
 			col.w = 1.0f;
 			timeChartZoomWindow.show();
-			if (liaConfig.plotCfg.acfm) acfmVhVvPlotWindow.show();
+			if (liaConfig.windowCfg.acfmWindow) acfmVhVvPlotWindow.show();
 		}
 	}
 };

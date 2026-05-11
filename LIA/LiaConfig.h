@@ -111,6 +111,9 @@ public:
         XYint pos = { 0, 30 };
         float monitorScale = 1.0f;
         float fontSize = 32.0f;
+        bool controlWindow = true;
+        bool rawWindow = true, xyWindow = true, timeWindow = true, deltaTimeWindow = true, acfmWindow = false;
+		bool aboutWindow = false;
     };
 
     struct ImGuiCfg {
@@ -140,7 +143,7 @@ public:
 
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
-        bool surfaceMode = false, beep = false, acfm = false;
+        bool surfaceMode = false, beep = false;
         float Vx_limit = 1.5f;
         int size = 0;
         int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
@@ -526,6 +529,12 @@ private:
         ini.set("Window", "size.x", windowCfg.size.x);
         ini.set("Window", "size.y", windowCfg.size.y);
         ini.set("Window", "fontSize", windowCfg.fontSize);
+        ini.set("Window", "controlWindow", windowCfg.controlWindow);
+        ini.set("Window", "rawWindow", windowCfg.rawWindow);
+        ini.set("Window", "xyWindow", windowCfg.xyWindow);
+        ini.set("Window", "timeWindow", windowCfg.timeWindow);
+        ini.set("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
+        ini.set("Window", "acfm", windowCfg.acfmWindow);
         ini.set("ImGui", "theme", imguiCfg.theme);
         ini.set("ImGui", "windowFlag", imguiCfg.windowFlag);
         ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
@@ -546,7 +555,6 @@ private:
         ini.set("Plot", "historySec", plotCfg.historySec);
         ini.set("Plot", "surfaceMode", plotCfg.surfaceMode);
         ini.set("Plot", "beep", plotCfg.beep);
-        ini.set("Plot", "acfm", plotCfg.acfm);
         ini.set("Plot", "Vx_limt", plotCfg.Vx_limit);
         ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
         ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
@@ -562,6 +570,12 @@ private:
         windowCfg.size.x = ini.get("Window", "size.x", windowCfg.size.x);
         windowCfg.size.y = ini.get("Window", "size.y", windowCfg.size.y);
         windowCfg.fontSize = ini.get("Window", "fontSize", windowCfg.fontSize);
+        windowCfg.controlWindow = ini.get("Window", "controlWindow", windowCfg.controlWindow);
+        windowCfg.rawWindow = ini.get("Window", "rawWindow", windowCfg.rawWindow);
+        windowCfg.xyWindow = ini.get("Window", "xyWindow", windowCfg.xyWindow);
+        windowCfg.timeWindow = ini.get("Window", "timeWindow", windowCfg.timeWindow);
+        windowCfg.deltaTimeWindow = ini.get("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
+        windowCfg.acfmWindow = ini.get("Window", "acfmWindow", windowCfg.acfmWindow);
         imguiCfg.theme = ini.get("ImGui", "theme", imguiCfg.theme);
         imguiCfg.windowFlag = ini.get("ImGui", "windowFlag", imguiCfg.windowFlag);
         awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);
@@ -582,7 +596,6 @@ private:
         plotCfg.historySec = ini.get("Plot", "historySec", plotCfg.historySec);
         plotCfg.surfaceMode = ini.get("Plot", "surfaceMode", plotCfg.surfaceMode);
         plotCfg.beep = ini.get("Plot", "beep", plotCfg.beep);
-        plotCfg.acfm = ini.get("Plot", "acfm", plotCfg.acfm);
         plotCfg.Vx_limit = ini.get("Plot", "Vx_limt", plotCfg.Vx_limit);
         acfmData.mmk[0] = ini.get("ACFM", "mmk[0]", acfmData.mmk[0]);
         acfmData.mmk[1] = ini.get("ACFM", "mmk[1]", acfmData.mmk[1]);

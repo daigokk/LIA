@@ -377,18 +377,18 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
     // === ACFM 表示設定の制御 ===
     commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
         if (arg == "on") {
-            pLiaConfig->plotCfg.acfm = true;
+            pLiaConfig->windowCfg.acfmWindow = true;
             return true;
         }
         if (arg == "off") {
-            pLiaConfig->plotCfg.acfm = false;
+            pLiaConfig->windowCfg.acfmWindow = false;
             return true;
         }
         return false;
     };
     // ACFM 表示状態の照会
     commandMap[":acfm:disp?"] = commandMap["acfm:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pLiaConfig->plotCfg.acfm ? "on" : "off") << std::endl;
+        std::cout << (pLiaConfig->windowCfg.acfmWindow ? "on" : "off") << std::endl;
         return true;
     };
 

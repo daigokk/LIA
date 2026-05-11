@@ -49,7 +49,8 @@ public:
     ControlWindow(GLFWwindow* window, LiaConfig& liaConfig)
         : ImGuiWindowBase(window, "Control panel"), liaConfig(liaConfig)
     {
-        this->windowSize = ImVec2(450 * liaConfig.windowCfg.monitorScale, 920 * liaConfig.windowCfg.monitorScale);
+        this->windowPos = ImVec2(1000 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(455 * liaConfig.windowCfg.monitorScale, 920 * liaConfig.windowCfg.monitorScale);
     }
 
     // ボタンイベント（時刻、ボタンID、値）をコマンド履歴に記録
@@ -209,7 +210,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
         if (ImGui::BeginTabItem("Settings")) {
             ImGui::SetNextItemWidth(nextItemWidth);
             const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-            ImGui::ListBox("Thema", &liaConfig.imguiCfg.theme, themes, IM_ARRAYSIZE(themes), 3);
+            ImGui::ListBox("Theme", &liaConfig.imguiCfg.theme, themes, IM_ARRAYSIZE(themes), 3);
 
             ImGui::SameLine();
             const bool isFirstUse = (liaConfig.imguiCfg.windowFlag == ImGuiCond_FirstUseEver);
@@ -324,18 +325,17 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
     markButtonIfItemDeactivated(button, value, ButtonType::PlotBeep, liaConfig.plotCfg.beep);
 
     // ACFM有効時はCh2を強制有効化
-    if (liaConfig.plotCfg.acfm) {
+    if (liaConfig.windowCfg.acfmWindow) {
         liaConfig.flagCh2 = true;
         ImGui::BeginDisabled();
     }
     ImGui::Checkbox("Ch2", &liaConfig.flagCh2);
     markButtonIfItemDeactivated(button, value, ButtonType::DispCh2, liaConfig.flagCh2);
-    if (liaConfig.plotCfg.acfm) ImGui::EndDisabled();
+    if (liaConfig.windowCfg.acfmWindow) ImGui::EndDisabled();
 
     ImGui::SameLine();
-    ImGui::Checkbox("ACFM", &liaConfig.plotCfg.acfm);
-    markButtonIfItemDeactivated(button, value, ButtonType::PlotACFM, liaConfig.plotCfg.acfm);
-
+    ImGui::Checkbox("ACFM", &liaConfig.windowCfg.acfmWindow);
+    markButtonIfItemDeactivated(button, value, ButtonType::PlotACFM, liaConfig.windowCfg.acfmWindow);
     // フィルタ設定
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("HPF (Hz)", &liaConfig.postCfg.hpFreq, 0.1f, 1.0f, "%.1f")) {
@@ -396,7 +396,7 @@ inline void ControlWindow::drawContent()
 
 inline void ControlWindow::show()
 {
-    ImGui::SetNextWindowPos(ImVec2(0, 0), liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
     ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
 
     if (ImGui::Begin(this->name)) {
