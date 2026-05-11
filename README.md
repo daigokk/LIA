@@ -32,17 +32,21 @@
     - Supports up to 100 kHz (100 MS/s) reference frequency.
   - 📈 Real-time visualization
     - Raw waveform, XY plot, and time chart.
+  - 💾 Ring buffer recording
+    - Store default 10 minutes of continuous data.
+  - 🐍 Python integration Control
+    - LIA and retrieve data via pipe communication.
   - 🚀 Not slow
-    - Default sampling period is 2 ms. The measured sampling period for the default setting is shown below.
+    - Default sampling period of the PSD calucration is 2 ms. The measured sampling period for the default setting is shown below.
       - AMD Ryzen 5 PRO 5650GE: 2.00±0.02 ms (1.00±0.04 ms)
       - Intel Core i5-7300U: 2.00±0.77 ms <- For this CPU, a sampling period of 5 ms would be optimal.
       - Intel Core i5-9600K: 2.00±0.04 ms
       - Intel Core i5-1235U: 2.00±0.08 ms
       - Intel Core i9-13900H: 2.00±0.04 ms
-  - 💾 Ring buffer recording
-    - Store default 10 minutes of continuous data.
-  - 🐍 Python integration Control
-    - LIA and retrieve data via pipe communication.
+    - *Caution!*
+      - By default, the sample count is 10,000 samples and the sampling rate is 100 ms/s. Therefore, the sampling time is 0.1 ms.
+      - This means that only 5% of the sampling period for PSD calculation is used.
+      - For example, to ensure a 0.1 mm pitch, the scanning speed of the sensor, etc., must be 50 mm/s or less.
 
 ## Getting Started 🛠️
   1. Install Dependencies
