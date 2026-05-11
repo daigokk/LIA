@@ -29,7 +29,7 @@ constexpr float  RAW_RANGE = 2.5f;
 constexpr double RAW_DT = 1.0 / 100e6;
 constexpr size_t RAW_SIZE = 5000 * 2;
 constexpr double MEASUREMENT_DT = 2e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 10;
+constexpr size_t MEASUREMENT_SEC = 60 * 1;
 constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
 //constexpr float  XY_HISTORY_SEC = 10.0f;
 //constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
@@ -141,8 +141,8 @@ public:
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
         bool surfaceMode = false, beep = false, acfm = false;
-        float Vx_limt = 1.5f, Vz_limt = 1.5f;
-        int idxStart = 0, size = 0;
+        float Vx_limit = 1.5f;
+        int size = 0;
         int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
     };
 
@@ -547,8 +547,7 @@ private:
         ini.set("Plot", "surfaceMode", plotCfg.surfaceMode);
         ini.set("Plot", "beep", plotCfg.beep);
         ini.set("Plot", "acfm", plotCfg.acfm);
-        ini.set("Plot", "Vx_limt", plotCfg.Vx_limt);
-        ini.set("Plot", "Vz_limt", plotCfg.Vz_limt);
+        ini.set("Plot", "Vx_limt", plotCfg.Vx_limit);
         ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
         ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
         ini.set("ACFM", "mmk[2]", acfmData.mmk[2]);
@@ -584,8 +583,7 @@ private:
         plotCfg.surfaceMode = ini.get("Plot", "surfaceMode", plotCfg.surfaceMode);
         plotCfg.beep = ini.get("Plot", "beep", plotCfg.beep);
         plotCfg.acfm = ini.get("Plot", "acfm", plotCfg.acfm);
-        plotCfg.Vx_limt = ini.get("Plot", "Vx_limt", plotCfg.Vx_limt);
-        plotCfg.Vz_limt = ini.get("Plot", "Vz_limt", plotCfg.Vz_limt);
+        plotCfg.Vx_limit = ini.get("Plot", "Vx_limt", plotCfg.Vx_limit);
         acfmData.mmk[0] = ini.get("ACFM", "mmk[0]", acfmData.mmk[0]);
         acfmData.mmk[1] = ini.get("ACFM", "mmk[1]", acfmData.mmk[1]);
         acfmData.mmk[2] = ini.get("ACFM", "mmk[2]", acfmData.mmk[2]);

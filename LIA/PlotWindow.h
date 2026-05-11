@@ -214,7 +214,7 @@ inline void TimeChartWindow::show() {
         specLine.Offset = liaConfig.ringBuffer.writeIdx;
         int count = liaConfig.ringBuffer.size;
 
-        ImPlot::PlotLine("Ch1y", &(liaConfig.ringBuffer.times[liaConfig.plotCfg.idxStart]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.idxStart]), count, specLine);
+        ImPlot::PlotLine("Ch1y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[0].y[0]), count, specLine);
         if (liaConfig.flagCh2) {
             ImPlot::PlotLine("Ch2y", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.ch[1].y[0]), count, specLine);
         }
@@ -558,14 +558,14 @@ inline void ACFMPlotWindow::show() {
     ImGui::SameLine();
     if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause")) { liaConfig.buttonPause(); }
 
-    if (ImGui::SliderFloat("Vz limit", &(liaConfig.plotCfg.Vz_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
-        liaConfig.plotCfg.Vx_limt = liaConfig.plotCfg.Vz_limt / 2;
+    if (ImGui::SliderFloat("Vz limit", &(liaConfig.plotCfg.limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
+        liaConfig.plotCfg.Vx_limit = liaConfig.plotCfg.limit / 2;
     }
-    if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limt), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
+    if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
     }
     
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
-        bool useMv = liaConfig.plotCfg.Vz_limt <= MILI_VOLT;
+        bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
         ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
 
         if (useMv) {
@@ -573,8 +573,8 @@ inline void ACFMPlotWindow::show() {
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
 
-        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.Vz_limt, liaConfig.plotCfg.Vz_limt, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vx_limt, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -liaConfig.plotCfg.limit, liaConfig.plotCfg.limit, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.Vx_limit, liaConfig.plotCfg.Vx_limit, ImGuiCond_Always);
 
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
@@ -596,7 +596,7 @@ inline void ACFMPlotWindow::show() {
         double mm = std::max(0.0, liaConfig.acfmData.mmk[0] * vhreal * vhreal + liaConfig.acfmData.mmk[1] * vhreal + liaConfig.acfmData.mmk[2]);
 
         std::string thicknessStr = (mm <= 6.0) ? std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm) : std::format("{:5.2f}V:  out", vhreal);
-        ImPlot::PlotText(thicknessStr.c_str(), 0.0, liaConfig.plotCfg.Vx_limt * 0.9);
+        ImPlot::PlotText(thicknessStr.c_str(), 0.0, liaConfig.plotCfg.Vx_limit * 0.9);
 
         ImPlot::EndPlot();
     }
@@ -632,8 +632,8 @@ inline void ACFMVhVvPlotWindow::show() {
             ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
         }
 
-        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.Vz_limt * 2.0f, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vx_limt, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.limit * 2.0f, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vx_limit, ImGuiCond_Always);
 
         // 散布図の共通スタイル設定
         ImPlotSpec specScatter;
