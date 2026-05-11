@@ -46,7 +46,7 @@
     - *Caution!*
       - By default, the sample count is 10,000 samples and the sampling rate is 100 MS/s. Therefore, the sampling time is 0.1 ms.
       - This means that only 5% of the sampling period for PSD calculation is used.
-      - For example, to ensure a 0.1 mm pitch, the scanning speed of the sensor, etc., must be 50 mm/s or less.
+      - For example, to ensure a 0.1 mm pitch, the scanning speed of sensors must be 50 mm/s or less.
 
 ## Getting Started 🛠️
   1. Install Dependencies
