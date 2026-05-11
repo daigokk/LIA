@@ -44,7 +44,7 @@
       - Intel Core i5-1235U: 2.00±0.08 ms
       - Intel Core i9-13900H: 2.00±0.04 ms
     - **Caution!**
-      - To ensure a 0.1 mm pitch, the scanning speed of sensors must be 50 mm/s or less.
+      - The scanning speed of sensors must be 50 mm/s or less to ensure a 0.1 mm pitch, when the sampling period of the PSD calucration is 2 ms.
       - By default, the sample count is 10,000 samples and the sampling rate is 100 MS/s. Therefore, the sampling time is 0.1 ms.
       - This means that only 5% of the sampling period for PSD calculation is used.
 
