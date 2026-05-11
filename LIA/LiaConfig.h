@@ -525,6 +525,7 @@ private:
         ini.set("Window", "pos.y", windowCfg.pos.y);
         ini.set("Window", "size.x", windowCfg.size.x);
         ini.set("Window", "size.y", windowCfg.size.y);
+        ini.set("Window", "fontSize", windowCfg.fontSize);
         ini.set("ImGui", "theme", imguiCfg.theme);
         ini.set("ImGui", "windowFlag", imguiCfg.windowFlag);
         ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
@@ -561,6 +562,7 @@ private:
         windowCfg.pos.y = ini.get("Window", "pos.y", windowCfg.pos.y);
         windowCfg.size.x = ini.get("Window", "size.x", windowCfg.size.x);
         windowCfg.size.y = ini.get("Window", "size.y", windowCfg.size.y);
+        windowCfg.fontSize = ini.get("Window", "fontSize", windowCfg.fontSize);
         imguiCfg.theme = ini.get("ImGui", "theme", imguiCfg.theme);
         imguiCfg.windowFlag = ini.get("ImGui", "windowFlag", imguiCfg.windowFlag);
         awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);

@@ -167,7 +167,7 @@ void autosetupW2(LiaConfig* cfg) {
         const PolarVector pvec = { std::hypot(x_, y_), std::atan2(y_, x_) * 180.0 / std::numbers::pi };
 
 		// W2の振幅と位相をW1と反転させる
-        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { pvec.amplitude, pvec.phaseDeg > 0 ? pvec.phaseDeg - 180 : pvec.phaseDeg + 180 }, 0);
+        applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { pvec.amplitude, pvec.phaseDeg + 90 }, 0);
     }
     else {
         // ------------------------------------------------------------
