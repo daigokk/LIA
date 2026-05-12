@@ -214,7 +214,7 @@ void autosetupW2(LiaConfig* cfg) {
     printf("Done.\n");
 }
 
-void test_autosetup() {
+void test_w2autosetup() {
     std::cout << "\n--- Testing W2autosetup Utilities ---" << std::endl;
 
     // [1] 極座標変換のテスト

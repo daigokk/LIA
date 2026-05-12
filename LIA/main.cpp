@@ -31,15 +31,8 @@ struct LaunchOptions {
 void runMeasurement(std::stop_token st, LiaConfig* config);
 void runSimulatedMeasurement(std::stop_token st, LiaConfig* config);
 LaunchOptions parseArguments(int argc, char* argv[]);
-void setupHighPrecisionTimer();
 
 // --- ユーティリティ ---
-
-void setupHighPrecisionTimer() {
-    // 標準入出力の高速化
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-}
 
 LaunchOptions parseArguments(int argc, char* argv[]) {
     LaunchOptions options;
@@ -63,14 +56,16 @@ int main(int argc, char* argv[]) {
     try {
         test_psd();
         test_pipe();
-        test_autosetup();
+        test_w2autosetup();
     }
     catch (const std::exception& e) {
         std::cerr << "Test failed with exception: " << e.what() << std::endl;
         return 1;
     }
 #else
-    setupHighPrecisionTimer();
+    // 標準入出力の高速化
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
     const auto options = parseArguments(argc, argv);
 
     static LiaConfig settings;
