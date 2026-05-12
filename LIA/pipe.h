@@ -481,10 +481,11 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
     // ============================================================
     while (!st.stop_requested()) {
         std::string line;
-        if (!std::getline(std::cin, line) || line.empty()) {
-            continue;
+        if (!std::getline(std::cin, line)) {
+            // 入力が EOF または 読み取り不能になったら終了
+            break;
         }
-
+        
         // 元の入力行を保存（エラー出力用）
         std::string original_line = line;
 
@@ -551,9 +552,85 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             awgUpdateRequired = false;
         }
 
+
         // 出力バッファをフラッシュ
         std::cout << std::flush;
     }
 
     pLiaConfig->statusPipe = false;
+}
+
+void test_pipe() {
+    std::cout << "--- Starting Fixed Pipe Test ---" << std::endl;
+
+    // 1. 準備
+    LiaConfig config;
+    std::stringstream testInput;
+
+    // 標準入力を切り替え
+    auto* oldCinBuffer = std::cin.rdbuf(testInput.rdbuf());
+
+    // 2. stop_source を作成してスレッド開始
+    // jthread を使うと stop_token が自動的に第1引数に渡されます
+    std::stop_source sw;
+    std::jthread pipeThread(pipe, sw.get_token(), &config);
+
+    // pipe が起動するのを少し待つ
+    while (!config.statusPipe) {
+        std::this_thread::yield();
+    }
+
+    // 3. コマンド送信用ヘルパー
+    auto sendCommand = [&](const std::string& cmd) {
+        testInput << cmd << "\n";
+        // 文字列ストリームに書き込んだことを認識させるために少し待機
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        };
+
+    // --- テストケース実行 ---
+    const float DEFAULT_AMP = config.awgCfg.ch[0].amp;
+    std::cout << "[Test] Setting HPF..." << std::endl;
+    sendCommand("calc:hpf:freq 15.0");
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    assert(config.postCfg.hpFreq == 15.0f);
+
+    std::cout << "[Test] Setting W1 Amplitude..." << std::endl;
+    sendCommand("w1:amp 1.5");
+    assert(config.awgCfg.ch[0].amp == 1.5f);
+
+    std::cout << "[Test] Setting CH2 Display ON..." << std::endl;
+    sendCommand("chan2:disp on");
+    assert(config.flagCh2 == true);
+
+    std::cout << "[Test] Auto Offset (once)..." << std::endl;
+    sendCommand("calc:offset:auto once");
+    assert(config.flagAutoOffset == true);
+
+    std::cout << "[Test] HPF Frequency..." << std::endl;
+    sendCommand("calculate:hpf:freq 25.0");
+    assert(config.postCfg.hpFreq == 25.0f);
+
+    std::cout << "[Test] Reset Command..." << std::endl;
+    sendCommand("reset");
+    assert(config.awgCfg.ch[0].amp == DEFAULT_AMP);
+
+    // 4. 終了処理
+    std::cout << "[Test] Sending exit and requesting stop..." << std::endl;
+
+    // まず exit コマンドを送る
+    sendCommand("exit");
+
+    // 重要：pipe.h の continue ループを破るために stop_token をセットする
+    sw.request_stop();
+
+    // jthread なのでスコープを抜ければ自動 join されますが、
+    // 明示的に待つことで「止まる」現象を確認できます
+    if (pipeThread.joinable()) {
+        pipeThread.join();
+        std::cout << "[Test] Thread joined successfully!" << std::endl;
+    }
+
+    // 標準入力を元に戻す
+    std::cin.rdbuf(oldCinBuffer);
+    std::cout << "--- Test Passed ---" << std::endl;
 }

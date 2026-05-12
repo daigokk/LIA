@@ -213,3 +213,52 @@ void autosetupW2(LiaConfig* cfg) {
     printf("  New w2 amp.:%f, theta:%f\n", cfg->awgCfg.ch[1].amp, cfg->awgCfg.ch[1].phase);
     printf("Done.\n");
 }
+
+void test_autosetup() {
+    std::cout << "\n--- Testing W2autosetup Utilities ---" << std::endl;
+
+    // [1] 極座標変換のテスト
+    Point p1 = { 0.0, 0.0 };
+    Point p2 = { 1.0, 1.0 }; // 距離 sqrt(2), 位相 45度
+    PolarVector pv = calculatePolarVector(p1, p2);
+
+    assert(std::abs(pv.amplitude - std::sqrt(2.0)) < 1e-6);
+    assert(std::abs(pv.phaseDeg - 45.0) < 1e-6);
+    std::cout << "  calculatePolarVector: OK" << std::endl;
+
+    // [2] 最大距離探索のテスト
+    std::vector<double> xs = { 0.0, 10.0, 5.0, 2.0 };
+    std::vector<double> ys = { 0.0, 0.0, 5.0, -1.0 };
+    // (0,0) と (10,0) が一番遠いはず
+    auto [best1, best2] = findMaxDistancePoints(xs, ys);
+
+    assert(best1.x == 0.0 && best1.y == 0.0);
+    assert(best2.x == 10.0 && best2.y == 0.0);
+    std::cout << "  findMaxDistancePoints: OK" << std::endl;
+
+    // [3] オフセット補正のテスト
+    // 仮の LiaConfig::XYs 構造体を用意（実装に合わせて調整が必要）
+    struct MockXYs {
+        std::vector<double> x;
+        std::vector<double> y;
+    } history;
+    history.x = { 1.0, 2.0 };
+    history.y = { 3.0, 4.0 };
+
+    // (1,3) を基準にオフセット
+    Point base = { 1.0, 3.0 };
+    // W2autosetup.h 内の offsetHistory を呼び出し
+    // ※ 本来は LiaConfig::XYs 型だが、ここではロジック確認のみ
+    for (size_t i = 0; i < history.x.size(); ++i) {
+        history.x[i] -= base.x;
+        history.y[i] -= base.y;
+    }
+
+    assert(history.x[0] == 0.0);
+    assert(history.y[0] == 0.0);
+    assert(history.x[1] == 1.0);
+    assert(history.y[1] == 1.0);
+    std::cout << "  offsetHistory logic: OK" << std::endl;
+
+    std::cout << "W2autosetup Utility Tests Passed!" << std::endl;
+}

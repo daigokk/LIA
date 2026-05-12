@@ -1,3 +1,5 @@
+//#define TEST
+
 #include <array>
 #include <iostream>
 #include <string_view>
@@ -57,6 +59,17 @@ LaunchOptions parseArguments(int argc, char* argv[]) {
 // --- メインロジック ---
 
 int main(int argc, char* argv[]) {
+#ifdef TEST
+    try {
+        test_psd();
+        test_pipe();
+        test_autosetup();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Test failed with exception: " << e.what() << std::endl;
+        return 1;
+    }
+#else
     setupHighPrecisionTimer();
     const auto options = parseArguments(argc, argv);
 
@@ -134,7 +147,7 @@ int main(int argc, char* argv[]) {
     // 5. 終了処理 (jthreadのデストラクタが自動でjoinを呼ぶが、明示的にstopを要求)
     measurementThread.request_stop();
     if (pipeThread) pipeThread->request_stop();
-
+#endif // !TEST
     return 0;
 }
 

@@ -4,7 +4,8 @@
 #include <vector>
 #include <utility>
 #include <cstddef> // size_t
-#include <omp.h>
+//#include <omp.h>
+#include <cassert>
 
 class Psd
 {
@@ -100,3 +101,55 @@ public:
         return { x * cos_t_ - y * sin_t_, x * sin_t_ + y * cos_t_ };
     }
 };
+
+std::vector<double> generateSignal(double freq, double phase_deg, double amplitude, double interval, size_t size) {
+    std::vector<double> signal(size);
+    double phase_rad = phase_deg * (std::numbers::pi / 180.0);
+    for (size_t i = 0; i < size; ++i) {
+        signal[i] = amplitude * std::sin(2.0 * std::numbers::pi * freq * i * interval + phase_rad);
+    }
+    return signal;
+}
+
+void test_psd() {
+    Psd psd;
+
+    // パラメータ設定
+    const double targetFreq = 1000.0;     // 1kHz
+    const double samplingRate = 100000.0; // 100kHz
+    const double interval = 1.0 / samplingRate;
+    const size_t sampleSize = 2000;      // 20ms分
+    const double amplitude = 1.5;
+    const double signalPhase = 30.0;     // 信号の初期位相 30度
+
+    std::cout << "--- Psd Class Test Start ---" << std::endl;
+
+    // 1. 初期化
+    psd.initialize(targetFreq, interval, sampleSize);
+    std::cout << "[1] Initialize: Freq=" << psd.getCurrentFreq() << " Hz" << std::endl;
+
+    // 2. 信号生成と計算
+    // 振幅1.5, 位相30度のサイン波を生成
+    auto signal = generateSignal(targetFreq, signalPhase, amplitude, interval, sampleSize);
+
+    // PSD実行 (X = A*cos(phi), Y = A*sin(phi) に近い値が出るはず)
+    // ※内部で 2.0 * sin/cos を掛けているため、結果は A*cos(phi), A*sin(phi) となる
+    auto [x, y] = psd.calculate(signal.data());
+
+    std::cout << "[2] Calculate (Raw):" << std::endl;
+    std::cout << "    X (Real): " << x << " (Expected: ~" << amplitude * std::cos(signalPhase * std::numbers::pi / 180.0) << ")" << std::endl;
+    std::cout << "    Y (Imag): " << y << " (Expected: ~" << amplitude * std::sin(signalPhase * std::numbers::pi / 180.0) << ")" << std::endl;
+
+    // 3. 位相回転テスト
+    // 30度回転させて、位相を0度（あるいは特定の方向）へ戻すシミュレーション
+    auto [rx, ry] = psd.rotate_phase(x, y, -30.0);
+
+    std::cout << "[3] Rotate Phase (-30 deg):" << std::endl;
+    std::cout << "    Rotated X: " << rx << " (Expected: ~" << amplitude << ")" << std::endl;
+    std::cout << "    Rotated Y: " << ry << " (Expected: ~0.0)" << std::endl;
+
+    // 4. 精度チェック（簡易的なアサーション）
+    assert(std::abs(rx - amplitude) < 1e-3);
+    assert(std::abs(ry - 0.0) < 1e-3);
+    std::cout << "\nResult: PASS" << std::endl;
+}
