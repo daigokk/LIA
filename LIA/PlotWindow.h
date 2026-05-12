@@ -68,9 +68,9 @@ inline void RawPlotWindow::show() {
     ButtonType button = ButtonType::NON;
     static float value = 0.0f;
 
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
-    ImGui::Begin(this->name);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     if (ImGui::Button("Save")) {
         liaConfig.saveRawData(std::format("raw_{}.csv", liaConfig.getCurrentTimestamp()));
@@ -174,9 +174,9 @@ inline void TimeChartWindow::show() {
     ButtonType button = ButtonType::NON;
     static float value = 0.0f;
 
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
-    ImGui::Begin(this->name);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     static float historySecMax = (float)(MEASUREMENT_DT) * (liaConfig.ringBuffer.times.size() - 1);
 
@@ -323,7 +323,7 @@ void TimeChartZoomWindow::analyzeSelection() {
 inline void TimeChartZoomWindow::show() {
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
-    ImGui::Begin(this->name);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     analyzeSelection(); // 解析実行
 
@@ -411,9 +411,9 @@ inline DeltaTimeChartWindow::DeltaTimeChartWindow(GLFWwindow* window, LiaConfig&
 }
 
 inline void DeltaTimeChartWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
-    ImGui::Begin(this->name);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     static float historySecMax = (float)(MEASUREMENT_DT)*liaConfig.ringBuffer.times.size();
     static float historySec = 10.0f;
@@ -453,9 +453,9 @@ inline void XYPlotWindow::show() {
         ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
     }
 
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
-    ImGui::Begin(this->name);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     if (ImGui::Button("Clear")) { liaConfig.buttonClear(); }
     ImGui::SameLine();
@@ -548,9 +548,9 @@ inline ACFMPlotWindow::ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 }
 
 inline void ACFMPlotWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
-    ImGui::Begin(this->name);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     if (ImGui::Button("Clear")) { liaConfig.buttonClear(); }
     ImGui::SameLine();
@@ -620,7 +620,7 @@ inline ACFMVhVvPlotWindow::ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& lia
 inline void ACFMVhVvPlotWindow::show() {
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
-    ImGui::Begin(this->name);
+    ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
     if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), ImPlotFlags_Equal)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;

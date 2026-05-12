@@ -114,11 +114,9 @@ public:
         bool controlWindow = true;
         bool rawWindow = true, xyWindow = true, timeWindow = true, deltaTimeWindow = true, acfmWindow = false;
 		bool aboutWindow = false;
-    };
-
-    struct ImGuiCfg {
         int theme = 0;
-        int windowFlag = 4;
+        int imGuiCondFlag = 4;
+        int imGuiWindowFlag = 0;
     };
 
     struct AwgCfg {
@@ -204,7 +202,6 @@ public:
     std::string dirName = ".";
 
     WindowCfg windowCfg;
-    ImGuiCfg  imguiCfg;
     AwgCfg    awgCfg;
     PostCfg   postCfg;
     PlotCfg   plotCfg;
@@ -535,8 +532,9 @@ private:
         ini.set("Window", "timeWindow", windowCfg.timeWindow);
         ini.set("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
         ini.set("Window", "acfm", windowCfg.acfmWindow);
-        ini.set("ImGui", "theme", imguiCfg.theme);
-        ini.set("ImGui", "windowFlag", imguiCfg.windowFlag);
+        ini.set("Window", "theme", windowCfg.theme);
+        ini.set("Window", "imGuiWindowFlag", windowCfg.imGuiWindowFlag);
+        ini.set("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
         ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
         ini.set("Awg", "ch[0].amp", awgCfg.ch[0].amp);
         ini.set("Awg", "ch[1].amp", awgCfg.ch[1].amp);
@@ -576,8 +574,9 @@ private:
         windowCfg.timeWindow = ini.get("Window", "timeWindow", windowCfg.timeWindow);
         windowCfg.deltaTimeWindow = ini.get("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
         windowCfg.acfmWindow = ini.get("Window", "acfmWindow", windowCfg.acfmWindow);
-        imguiCfg.theme = ini.get("ImGui", "theme", imguiCfg.theme);
-        imguiCfg.windowFlag = ini.get("ImGui", "windowFlag", imguiCfg.windowFlag);
+        windowCfg.theme = ini.get("Window", "theme", windowCfg.theme);
+        windowCfg.imGuiWindowFlag = ini.get("Window", "imGuiWindowFlag", windowCfg.imGuiWindowFlag);
+        windowCfg.imGuiCondFlag = ini.get("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
         awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);
         awgCfg.ch[0].amp = ini.get("Awg", "ch[0].amp", awgCfg.ch[0].amp);
         awgCfg.ch[1].amp = ini.get("Awg", "ch[1].amp", awgCfg.ch[1].amp);

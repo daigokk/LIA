@@ -44,6 +44,7 @@ public:
 
 	}
 	void ShowMainMenuBar() {
+		liaConfig.windowCfg.imGuiCondFlag &= ~ImGuiCond_Always;
 		if (ImGui::BeginMainMenuBar()) {
 			if (ImGui::BeginMenu("Windows")) {
 				ImGui::MenuItem("Control panel", NULL, &liaConfig.windowCfg.controlWindow);
@@ -55,19 +56,24 @@ public:
 				ImGui::Separator();
 				ImGui::MenuItem("ACFM", NULL, &liaConfig.windowCfg.acfmWindow);
 				ImGui::Separator();
-				const bool isFirstUse = (liaConfig.imguiCfg.windowFlag == ImGuiCond_FirstUseEver);
-				if (ImGui::Button(isFirstUse ? "Lock" : "Unlock")) {
-					liaConfig.imguiCfg.windowFlag = isFirstUse ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
+				if (ImGui::MenuItem("Default size pos")) {
+					liaConfig.windowCfg.imGuiCondFlag |= ImGuiCond_Always;
+				}
+				static bool lock = (liaConfig.windowCfg.imGuiWindowFlag & (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) != 0;
+				if (ImGui::MenuItem("Lock", NULL, &lock)) {
+					liaConfig.windowCfg.imGuiWindowFlag = lock ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize : 0;
 				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Theme")) {
 				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-				ImGui::ListBox("", &liaConfig.imguiCfg.theme, themes, IM_ARRAYSIZE(themes), 10);
+				ImGui::ListBox("", &liaConfig.windowCfg.theme, themes, IM_ARRAYSIZE(themes), 10);
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Settings")) {
+				ImGui::MenuItem("Ch2", NULL, &liaConfig.flagCh2);
 				ImGui::MenuItem("Beep", NULL, &liaConfig.plotCfg.beep);
+				ImGui::MenuItem("Surface mode", NULL, &liaConfig.plotCfg.surfaceMode);
 				ImGui::EndMenu();
 			}
 			//if (ImGui::BeginMenu("Help")) {
@@ -80,9 +86,9 @@ public:
 	void show(void) {
 		const float nextItemWidth = 150 * liaConfig.windowCfg.monitorScale;
 		static int theme = 0;
-		if (theme != liaConfig.imguiCfg.theme)
+		if (theme != liaConfig.windowCfg.theme)
 		{
-			theme = liaConfig.imguiCfg.theme;
+			theme = liaConfig.windowCfg.theme;
 			Gui::SetTheme(static_cast<GuiTheme>(theme));
 		}
 		beep.update(liaConfig.plotCfg.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latestIdx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.latestIdx]);
@@ -91,11 +97,11 @@ public:
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
 		ShowMainMenuBar();
 
+		if (liaConfig.windowCfg.deltaTimeWindow) { deltaTimeChartWindow.show(); }
 		if (liaConfig.windowCfg.controlWindow) { controlWindow.show(); }
 		if (liaConfig.windowCfg.xyWindow) { xyPlotWindow.show(); }
 		if (liaConfig.windowCfg.rawWindow) { rawPlotWindow.show(); }
 		if (liaConfig.windowCfg.timeWindow) { timeChartWindow.show(); }
-		if (liaConfig.windowCfg.deltaTimeWindow) { deltaTimeChartWindow.show(); }
 		if (liaConfig.windowCfg.acfmWindow) { acfmPlotWindow.show(); }
 		if (liaConfig.pauseCfg.flag) {
 			col.w = 1.0f;

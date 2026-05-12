@@ -176,7 +176,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
 
     if (ImGui::BeginTabBar("Plot window")) {
         // ===== XY表示設定 =====
-        if (ImGui::BeginTabItem("XY window")) {
+        if (ImGui::BeginTabItem("XY")) {
             ImGui::SetNextItemWidth(nextItemWidth);
 
             const float step = (liaConfig.plotCfg.limit <= 0.1f) ? 0.01f : 0.1f;
@@ -205,19 +205,13 @@ inline void ControlWindow::plot(const float nextItemWidth)
 
             ImGui::EndTabItem();
         }
-
-        // ===== UIテーマ・ウィンドウ設定 =====
-        if (ImGui::BeginTabItem("Settings")) {
+        if (ImGui::BeginTabItem("Time chart")) {
             ImGui::SetNextItemWidth(nextItemWidth);
-            const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-            ImGui::ListBox("Theme", &liaConfig.imguiCfg.theme, themes, IM_ARRAYSIZE(themes), 3);
-
-            ImGui::SameLine();
-            const bool isFirstUse = (liaConfig.imguiCfg.windowFlag == ImGuiCond_FirstUseEver);
-            if (ImGui::Button(isFirstUse ? "Lock" : "Unlock")) {
-                liaConfig.imguiCfg.windowFlag = isFirstUse ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
+			float historySec = liaConfig.plotCfg.historySec;
+            if (ImGui::InputFloat("History (s)", &historySec, 1.0f, 10.0f, "%3.0f")) {
+                liaConfig.plotCfg.historySec = std::clamp(historySec, 1.0f, (float)MEASUREMENT_SEC);
             }
-
+            ImGui::Dummy(ImVec2(0.0f * liaConfig.windowCfg.monitorScale, 80.0f * liaConfig.windowCfg.monitorScale));
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -396,10 +390,10 @@ inline void ControlWindow::drawContent()
 
 inline void ControlWindow::show()
 {
-    ImGui::SetNextWindowPos(windowPos, liaConfig.imguiCfg.windowFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.imguiCfg.windowFlag);
+    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
 
-    if (ImGui::Begin(this->name)) {
+    if (ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag)) {
         if (liaConfig.flagAutoSetupW2) {
             ImGui::BeginDisabled();
             drawContent();

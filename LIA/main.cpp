@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
         settings.windowCfg.monitorScale = Gui::monitorScale;
         if (Gui::isSurfacePro7) {
-            settings.imguiCfg.windowFlag = ImGuiCond_Always;
+            settings.windowCfg.imGuiCondFlag = ImGuiCond_Always;
         }
         guiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
     }
