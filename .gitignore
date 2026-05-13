@@ -365,9 +365,9 @@ FodyWeavers.xsd
 # LIA temporary files
 imgui.ini
 lia.ini
-ect*.csv
-raw*.csv
+ect.csv
+raw_*.csv
+fft_*.csv
 commands.csv
 rec.csv
 autosetupw2history.csv
-/LIA/20260513215751/fft_20260513215807.csv

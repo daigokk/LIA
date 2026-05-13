@@ -183,7 +183,12 @@ inline void RawPlotWindow::show() {
 
     // Header Controls
     if (ImGui::Button("Save")) {
-        liaConfig.saveRawData(std::format("raw_{}.csv", liaConfig.getCurrentTimestamp()));
+		std::string timestamp = liaConfig.getCurrentTimestamp();
+        liaConfig.saveRawData(std::format("raw_{}.csv", timestamp));
+        liaConfig.raw.calculateFFT(liaConfig.flagCh2, liaConfig.awgCfg.ch[0].freq);
+		liaConfig.saveFftData(std::format("fft_{}.csv", timestamp));
+        button = ButtonType::RawSave;
+		value = 1.0f; // Saveボタンが押されたことを示すフラグ
     }
     if (ImGui::IsItemDeactivated()) {
         button = ButtonType::RawSave;
