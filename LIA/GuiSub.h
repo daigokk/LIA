@@ -70,7 +70,7 @@ public:
 				ImGui::ListBox("", &liaConfig.windowCfg.theme, themes, IM_ARRAYSIZE(themes), 10);
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Settings")) {
+			if (ImGui::BeginMenu("Tools")) {
 				ImGui::MenuItem("Ch2", NULL, &liaConfig.flagCh2);
 				ImGui::MenuItem("Beep", NULL, &liaConfig.plotCfg.beep);
 				ImGui::MenuItem("Surface mode", NULL, &liaConfig.plotCfg.surfaceMode);

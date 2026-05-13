@@ -115,8 +115,9 @@ public:
         bool rawWindow = true, xyWindow = true, timeWindow = true, deltaTimeWindow = true, acfmWindow = false;
 		bool aboutWindow = false;
         int theme = 0;
-        int imGuiCondFlag = 4;
+		int imGuiCondFlag = 4;  // 
         int imGuiWindowFlag = 0;
+        int imPlotFlag = 4;  // ImPlotFlags_NoMouseText
     };
 
     struct AwgCfg {
@@ -427,10 +428,12 @@ public:
     void buttonPause() {
         if (!pauseCfg.flag) {
             pauseCfg.flag = true;
+            windowCfg.imPlotFlag = 0;  // ImPlotFlags_None
         }
         else {
             buttonClear();
             pauseCfg.flag = false;
+            windowCfg.imPlotFlag |= 4;  // ImPlotFlags_NoMouseText
         }
         cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::TimePause, (float)pauseCfg.flag, 0, 0, 0 });
 	}

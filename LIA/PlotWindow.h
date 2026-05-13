@@ -86,7 +86,7 @@ inline void RawPlotWindow::show() {
         value = liaConfig.plotCfg.rawLimit;
     }
 
-    if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1))) {
+    if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.rawLimit <= MILI_VOLT;
         ImPlot::SetupAxes("Time (us)", useMv ? "v (mV)" : "v (V)", 0, 0);
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
@@ -199,7 +199,7 @@ inline void TimeChartWindow::show() {
 
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
 
-    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
+    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx];
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
 
@@ -328,7 +328,7 @@ inline void TimeChartZoomWindow::show() {
     analyzeSelection(); // 解析実行
 
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
-    if (ImPlot::BeginPlot("##ZoomPlot", ImVec2(-1, -1))) {
+    if (ImPlot::BeginPlot("##ZoomPlot", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         auto& area = liaConfig.pauseCfg.selectArea;
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
 
@@ -419,7 +419,7 @@ inline void DeltaTimeChartWindow::show() {
     static float historySec = 10.0f;
     ImGui::SliderFloat("History", &historySec, 1.0f, historySecMax, "%5.1f s");
 
-    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1))) {
+    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         double t = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx];
         ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
@@ -467,7 +467,7 @@ inline void XYPlotWindow::show() {
 
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
 
-    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal | liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
         ImPlot::SetupAxes(useMv ? "x (mV)" : "x (V)", useMv ? "y (mV)" : "y (V)", 0, 0);
 
@@ -564,7 +564,7 @@ inline void ACFMPlotWindow::show() {
     if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
     }
     
-    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
         ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
 
@@ -622,7 +622,7 @@ inline void ACFMVhVvPlotWindow::show() {
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
-    if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), ImPlotFlags_Equal)) {
+    if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
 
         // 軸のセットアップ
