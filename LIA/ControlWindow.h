@@ -24,13 +24,13 @@ inline void markButtonIfItemDeactivated(ButtonType& outButton, float& outValue, 
 }
 
 // 周波数を有効範囲内にクランプ
-inline float clampFrequency(float freqkHz) {
-    return std::clamp(freqkHz, LOW_LIMIT_FREQ * 1e-3f, HIGH_LIMIT_FREQ * 1e-3f);
+inline float clampFrequency(const float freqkHz) {
+    return std::clamp(freqkHz, LiaConfigConst::LOW_LIMIT_FREQ * 1e-3f, LiaConfigConst::HIGH_LIMIT_FREQ * 1e-3f);
 }
 
 // 振幅を有効範囲内にクランプ
-inline float clampAmplitude(float amp) {
-    return std::clamp(amp, AWG_AMP_MIN, AWG_AMP_MAX);
+inline float clampAmplitude(const float amp, const LiaConfig& cfg) {
+    return std::clamp(amp, cfg.awg.AWG_AMP_MIN, cfg.awg.AWG_AMP_MAX);
 }
 
 
@@ -40,22 +40,22 @@ inline float clampAmplitude(float amp) {
 class ControlWindow : public ImGuiWindowBase
 {
 private:
-    LiaConfig& liaConfig;
+    LiaConfig& cfg;
     void drawContent();
 
 public:
-    ControlWindow(GLFWwindow* window, LiaConfig& liaConfig)
-        : ImGuiWindowBase(window, "Control panel"), liaConfig(liaConfig)
+    ControlWindow(GLFWwindow* window, LiaConfig& cfg)
+        : ImGuiWindowBase(window, "Control panel"), cfg(cfg)
     {
-        this->windowPos = ImVec2(1000 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(455 * liaConfig.windowCfg.monitorScale, 923 * liaConfig.windowCfg.monitorScale);
+        this->windowPos = ImVec2(1000 * cfg.window.monitorScale, 37 * cfg.window.monitorScale);
+        this->windowSize = ImVec2(455 * cfg.window.monitorScale, 923 * cfg.window.monitorScale);
     }
 
     // ボタンイベント（時刻、ボタンID、値）をコマンド履歴に記録
     void buttonPressed(const ButtonType button, const float value)
     {
-        liaConfig.cmds.push_back({
-            static_cast<float>(liaConfig.timer.elapsedSec()),
+        cfg.cmds.push_back({
+            static_cast<float>(cfg.timer.elapsedSec()),
             static_cast<float>(button),
             value
             });
@@ -79,34 +79,34 @@ inline void ControlWindow::awg(const float nextItemWidth)
         // ===== W1（チャネル0）の設定 =====
         if (ImGui::BeginTabItem("W1")) {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = liaConfig.awgCfg.ch[0].freq * 1e-3f;
+            float freqkHz = cfg.awg.ch[0].freq * 1e-3f;
 
             if (ImGui::InputFloat("Freq. (kHz)", &freqkHz, 1.0f, 1.0f, "%3.0f")) {
                 freqkHz = clampFrequency(freqkHz);
                 const float newFreqHz = freqkHz * 1e3f;
-                if (liaConfig.awgCfg.ch[0].freq != newFreqHz) {
-                    liaConfig.awgCfg.ch[0].freq = newFreqHz;
-                    liaConfig.awgCfg.ch[1].freq = newFreqHz; // W2も同期
+                if (cfg.awg.ch[0].freq != newFreqHz) {
+                    cfg.awg.ch[0].freq = newFreqHz;
+                    cfg.awg.ch[1].freq = newFreqHz; // W2も同期
                     configChanged = true;
                 }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Freq, liaConfig.awgCfg.ch[0].freq);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Freq, cfg.awg.ch[0].freq);
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldCh0Amp = liaConfig.awgCfg.ch[0].amp;
-            if (ImGui::InputFloat("Amp. (V)", &liaConfig.awgCfg.ch[0].amp, 0.1f, 0.1f, "%4.1f")) {
-                liaConfig.awgCfg.ch[0].amp = clampAmplitude(liaConfig.awgCfg.ch[0].amp);
-                if (oldCh0Amp != liaConfig.awgCfg.ch[0].amp) {
-                    oldCh0Amp = liaConfig.awgCfg.ch[0].amp;
+            static float oldCh0Amp = cfg.awg.ch[0].amp;
+            if (ImGui::InputFloat("Amp. (V)", &cfg.awg.ch[0].amp, 0.1f, 0.1f, "%4.1f")) {
+                cfg.awg.ch[0].amp = clampAmplitude(cfg.awg.ch[0].amp, cfg);
+                if (oldCh0Amp != cfg.awg.ch[0].amp) {
+                    oldCh0Amp = cfg.awg.ch[0].amp;
                     configChanged = true;
                 }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Amp, liaConfig.awgCfg.ch[0].amp);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Amp, cfg.awg.ch[0].amp);
 
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::BeginDisabled();
-            ImGui::InputFloat("θ (Deg.)", &liaConfig.awgCfg.ch[0].phase, 1.0f, 1.0f, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Phase, liaConfig.awgCfg.ch[0].phase);
+            ImGui::InputFloat("θ (Deg.)", &cfg.awg.ch[0].phase, 1.0f, 1.0f, "%3.0f");
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Phase, cfg.awg.ch[0].phase);
             ImGui::EndDisabled();
 			
             ImGui::EndTabItem();
@@ -115,58 +115,58 @@ inline void ControlWindow::awg(const float nextItemWidth)
         // ===== W2（チャネル1）の設定 =====
         if (ImGui::BeginTabItem("W2")) {
             ImGui::SetNextItemWidth(nextItemWidth);
-            float freqkHz = liaConfig.awgCfg.ch[1].freq * 1e-3f;
+            float freqkHz = cfg.awg.ch[1].freq * 1e-3f;
 
             ImGui::BeginDisabled();
             ImGui::InputFloat("Freq. (kHz)", &freqkHz, 1.0f, 1.0f, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Freq, liaConfig.awgCfg.ch[1].freq);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Freq, cfg.awg.ch[1].freq);
             ImGui::EndDisabled();
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            static float oldCh1Amp = liaConfig.awgCfg.ch[1].amp;
-            if (ImGui::InputFloat("Amp. (V)", &liaConfig.awgCfg.ch[1].amp, 0.01f, 0.1f, "%4.2f")) {
-                liaConfig.awgCfg.ch[1].amp = std::clamp(liaConfig.awgCfg.ch[1].amp, 0.0f, AWG_AMP_MAX);
-                if (oldCh1Amp != liaConfig.awgCfg.ch[1].amp) {
-                    oldCh1Amp = liaConfig.awgCfg.ch[1].amp;
+            static float oldCh1Amp = cfg.awg.ch[1].amp;
+            if (ImGui::InputFloat("Amp. (V)", &cfg.awg.ch[1].amp, 0.01f, 0.1f, "%4.2f")) {
+                cfg.awg.ch[1].amp = std::clamp(cfg.awg.ch[1].amp, 0.0f, cfg.awg.AWG_AMP_MAX);
+                if (oldCh1Amp != cfg.awg.ch[1].amp) {
+                    oldCh1Amp = cfg.awg.ch[1].amp;
                     configChanged = true;
                 }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Amp, liaConfig.awgCfg.ch[1].amp);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Amp, cfg.awg.ch[1].amp);
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat("θ (Deg.)", &liaConfig.awgCfg.ch[1].phase, 1.0f, 1.0f, "%3.0f")) {
+            if (ImGui::InputFloat("θ (Deg.)", &cfg.awg.ch[1].phase, 1.0f, 1.0f, "%3.0f")) {
                 configChanged = true;
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Phase, liaConfig.awgCfg.ch[1].phase);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Phase, cfg.awg.ch[1].phase);
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (liaConfig.flagAutoSetupW2) {
+            if (cfg.flagAutoSetupW2) {
                 ImGui::BeginDisabled();
                 ImGui::Button("W2 Autosetup in progress");
                 ImGui::EndDisabled();
             }
             else {
                 if (ImGui::Button("W2 Autosetup")) {
-                    liaConfig.flagAutoSetupW2 = true;
-                    std::thread th_autosetup{ autosetupW2, &liaConfig };
+                    cfg.flagAutoSetupW2 = true;
+                    std::thread th_autosetup{ autosetupW2, &cfg };
                     th_autosetup.detach();
                 }
             }
             static const char* funcNames[] = { "Sine", "Square", "Triangle" };
-            int oldFunc = liaConfig.awgCfg.ch[0].func - 1;
+            int oldFunc = cfg.awg.ch[0].func - 1;
             if (ImGui::ListBox("Func", &oldFunc, funcNames, IM_ARRAYSIZE(funcNames), 1)) {
-                liaConfig.awgCfg.ch[0].func = oldFunc + 1;
-                liaConfig.awgCfg.ch[1].func = oldFunc + 1;
+                cfg.awg.ch[0].func = oldFunc + 1;
+                cfg.awg.ch[1].func = oldFunc + 1;
                 configChanged = true;
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, liaConfig.awgCfg.ch[0].func);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, cfg.awg.ch[0].func);
 
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
 
         if (configChanged) {
-            liaConfig.awgStart();
+            cfg.awgStart();
         }
         if (button != ButtonType::NON) {
             buttonPressed(button, value);
@@ -184,39 +184,39 @@ inline void ControlWindow::plot(const float nextItemWidth)
         if (ImGui::BeginTabItem("XY")) {
             ImGui::SetNextItemWidth(nextItemWidth);
 
-            const float step = (liaConfig.plotCfg.limit <= 0.1f) ? 0.01f : 0.1f;
-            if (ImGui::InputFloat("Limit (V)", &liaConfig.plotCfg.limit, step, 0.1f, "%.2f")) {
-                liaConfig.plotCfg.limit = std::clamp(liaConfig.plotCfg.limit, 0.01f, RAW_RANGE * 1.2f);
-                if (0.1f < liaConfig.plotCfg.limit && liaConfig.plotCfg.limit < 0.2f) {
-                    liaConfig.plotCfg.limit = 0.2f;
+            const float step = (cfg.plot.limit <= 0.1f) ? 0.01f : 0.1f;
+            if (ImGui::InputFloat("Limit (V)", &cfg.plot.limit, step, 0.1f, "%.2f")) {
+                cfg.plot.limit = std::clamp(cfg.plot.limit, 0.01f, LiaConfigConst::RAW_RANGE * 1.2f);
+                if (0.1f < cfg.plot.limit && cfg.plot.limit < 0.2f) {
+                    cfg.plot.limit = 0.2f;
                 }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::PlotLimit, liaConfig.plotCfg.limit);
+            markButtonIfItemDeactivated(button, value, ButtonType::PlotLimit, cfg.plot.limit);
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (liaConfig.pauseCfg.flag) ImGui::BeginDisabled();
+            if (cfg.pause.flag) ImGui::BeginDisabled();
 
-            ImGui::InputDouble("Ch1 θ (Deg.)", &liaConfig.postCfg.offset[0].phase, 1.0, 10.0, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, liaConfig.postCfg.offset[0].phase);
+            ImGui::InputDouble("Ch1 θ (Deg.)", &cfg.post.offset[0].phase, 1.0, 10.0, "%3.0f");
+            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, cfg.post.offset[0].phase);
 
-            if (!liaConfig.flagCh2) ImGui::BeginDisabled();
+            if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble("Ch2 θ (Deg.)", &liaConfig.postCfg.offset[1].phase, 1.0, 10.0, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, liaConfig.postCfg.offset[1].phase);
+            ImGui::InputDouble("Ch2 θ (Deg.)", &cfg.post.offset[1].phase, 1.0, 10.0, "%3.0f");
+            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, cfg.post.offset[1].phase);
 
-            if (!liaConfig.flagCh2) ImGui::EndDisabled();
-            if (liaConfig.pauseCfg.flag) ImGui::EndDisabled();
+            if (!cfg.isCh2Enabled) ImGui::EndDisabled();
+            if (cfg.pause.flag) ImGui::EndDisabled();
 
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Time chart")) {
             ImGui::SetNextItemWidth(nextItemWidth);
-			float historySec = liaConfig.plotCfg.historySec;
+			float historySec = cfg.plot.historySec;
             if (ImGui::InputFloat("History (s)", &historySec, 1.0f, 10.0f, "%3.0f")) {
-                liaConfig.plotCfg.historySec = std::clamp(historySec, 1.0f, (float)MEASUREMENT_SEC);
+                cfg.plot.historySec = std::clamp(historySec, 1.0f, (float)LiaConfigConst::MEASUREMENT_SEC);
             }
-            ImGui::Dummy(ImVec2(0.0f * liaConfig.windowCfg.monitorScale, 80.0f * liaConfig.windowCfg.monitorScale));
+            ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 80.0f * cfg.window.monitorScale));
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -232,16 +232,16 @@ inline void ControlWindow::post(const float nextItemWidth)
     ButtonType button = ButtonType::NON;
     float value = 0;
 
-    static const ImVec2 autoOffsetSize(200.0f * liaConfig.windowCfg.monitorScale, 100.0f * liaConfig.windowCfg.monitorScale);
-    static const ImVec2 buttonSize(100.0f * liaConfig.windowCfg.monitorScale, autoOffsetSize.y);
+    static const ImVec2 autoOffsetSize(200.0f * cfg.window.monitorScale, 100.0f * cfg.window.monitorScale);
+    static const ImVec2 buttonSize(100.0f * cfg.window.monitorScale, autoOffsetSize.y);
 
-    const bool offsetIsValid = (liaConfig.postCfg.offset[0].x != 0.0f || liaConfig.postCfg.offset[0].y != 0.0f);
+    const bool offsetIsValid = (cfg.post.offset[0].x != 0.0f || cfg.post.offset[0].y != 0.0f);
 
-    if (liaConfig.pauseCfg.flag) ImGui::BeginDisabled();
+    if (cfg.pause.flag) ImGui::BeginDisabled();
 
     // 自動オフセットボタン
     if (ImGui::Button(" Auto\noffset", autoOffsetSize)) {
-        liaConfig.buttonAutoOffset();
+        cfg.buttonAutoOffset();
     }
 
     ImGui::SameLine();
@@ -249,33 +249,33 @@ inline void ControlWindow::post(const float nextItemWidth)
     // オフセットリセットボタン
     if (!offsetIsValid) ImGui::BeginDisabled();
     if (ImGui::Button("Off", buttonSize)) {
-        liaConfig.postCfg.offset[0] = { 0.0f, 0.0f, liaConfig.postCfg.offset[0].phase };
-        liaConfig.postCfg.offset[1] = { 0.0f, 0.0f, liaConfig.postCfg.offset[1].phase };
+        cfg.post.offset[0] = { 0.0f, 0.0f, cfg.post.offset[0].phase };
+        cfg.post.offset[1] = { 0.0f, 0.0f, cfg.post.offset[1].phase };
     }
     markButtonIfItemDeactivated(button, value, ButtonType::PostOffsetOff, 0);
     if (!offsetIsValid) ImGui::EndDisabled();
 
-    if (liaConfig.pauseCfg.flag) ImGui::EndDisabled();
+    if (cfg.pause.flag) ImGui::EndDisabled();
 
     ImGui::SameLine();
-    ImGui::Dummy(ImVec2(1.0f * liaConfig.windowCfg.monitorScale, 0.0f));
+    ImGui::Dummy(ImVec2(1.0f * cfg.window.monitorScale, 0.0f));
     ImGui::SameLine();
 
     // 実行/一時停止トグル
-    if (ImGui::Button(liaConfig.pauseCfg.flag ? "Run" : "Pause", buttonSize)) {
-		liaConfig.buttonPause();
+    if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause", buttonSize)) {
+		cfg.buttonPause();
     }
-    markButtonIfItemDeactivated(button, value, ButtonType::PostPause, liaConfig.pauseCfg.flag);
+    markButtonIfItemDeactivated(button, value, ButtonType::PostPause, cfg.pause.flag);
 
     // オフセット値の表示
     if (ImGui::TreeNode("Offset value")) {
         if (!offsetIsValid) ImGui::BeginDisabled();
 
-        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", liaConfig.postCfg.offset[0].x, liaConfig.postCfg.offset[0].y);
+        ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", cfg.post.offset[0].x, cfg.post.offset[0].y);
 
-        if (!liaConfig.flagCh2) ImGui::BeginDisabled();
-        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", liaConfig.postCfg.offset[1].x, liaConfig.postCfg.offset[1].y);
-        if (!liaConfig.flagCh2) ImGui::EndDisabled();
+        if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
+        ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", cfg.post.offset[1].x, cfg.post.offset[1].y);
+        if (!cfg.isCh2Enabled) ImGui::EndDisabled();
 
         ImGui::TreePop();
         if (!offsetIsValid) ImGui::EndDisabled();
@@ -289,23 +289,23 @@ inline void ControlWindow::post(const float nextItemWidth)
 inline void ControlWindow::monitor()
 {
     if (ImGui::TreeNode("Monitor")) {
-        const int idx = liaConfig.ringBuffer.latestIdx;
+        const int idx = cfg.ringBuffer.latestIdx;
 
         // Ch1 データ表示
-        const float ch0_x = liaConfig.ringBuffer.ch[0].x[idx];
-        const float ch0_y = liaConfig.ringBuffer.ch[0].y[idx];
+        const float ch0_x = cfg.ringBuffer.ch[0].x[idx];
+        const float ch0_y = cfg.ringBuffer.ch[0].y[idx];
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", ch0_x, ch0_y);
         ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
 
         // Ch2 データ表示
-        if (!liaConfig.flagCh2) ImGui::BeginDisabled();
+        if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
 
-        const float ch1_x = liaConfig.ringBuffer.ch[1].x[idx];
-        const float ch1_y = liaConfig.ringBuffer.ch[1].y[idx];
+        const float ch1_x = cfg.ringBuffer.ch[1].x[idx];
+        const float ch1_y = cfg.ringBuffer.ch[1].y[idx];
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", ch1_x, ch1_y);
         ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
 
-        if (!liaConfig.flagCh2) ImGui::EndDisabled();
+        if (!cfg.isCh2Enabled) ImGui::EndDisabled();
 
         ImGui::TreePop();
     }
@@ -316,39 +316,39 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
     ButtonType button = ButtonType::NON;
     float value = 0;
 
-    ImGui::Checkbox("Surface Mode", &liaConfig.plotCfg.surfaceMode);
-    markButtonIfItemDeactivated(button, value, ButtonType::PlotSurfaceMode, liaConfig.plotCfg.surfaceMode);
+    ImGui::Checkbox("Surface Mode", &cfg.plot.surfaceMode);
+    markButtonIfItemDeactivated(button, value, ButtonType::PlotSurfaceMode, cfg.plot.surfaceMode);
 
     ImGui::SameLine();
-    ImGui::Checkbox("Beep", &liaConfig.plotCfg.beep);
-    markButtonIfItemDeactivated(button, value, ButtonType::PlotBeep, liaConfig.plotCfg.beep);
+    ImGui::Checkbox("Beep", &cfg.plot.beep);
+    markButtonIfItemDeactivated(button, value, ButtonType::PlotBeep, cfg.plot.beep);
 
     // ACFM有効時はCh2を強制有効化
-    if (liaConfig.windowCfg.acfmWindow) {
-        liaConfig.flagCh2 = true;
+    if (cfg.window.acfmWindow) {
+        cfg.isCh2Enabled = true;
         ImGui::BeginDisabled();
     }
-    ImGui::Checkbox("Ch2", &liaConfig.flagCh2);
-    markButtonIfItemDeactivated(button, value, ButtonType::DispCh2, liaConfig.flagCh2);
-    if (liaConfig.windowCfg.acfmWindow) ImGui::EndDisabled();
+    ImGui::Checkbox("Ch2", &cfg.isCh2Enabled);
+    markButtonIfItemDeactivated(button, value, ButtonType::DispCh2, cfg.isCh2Enabled);
+    if (cfg.window.acfmWindow) ImGui::EndDisabled();
 
     ImGui::SameLine();
-    ImGui::Checkbox("ACFM", &liaConfig.windowCfg.acfmWindow);
-    markButtonIfItemDeactivated(button, value, ButtonType::PlotACFM, liaConfig.windowCfg.acfmWindow);
+    ImGui::Checkbox("ACFM", &cfg.window.acfmWindow);
+    markButtonIfItemDeactivated(button, value, ButtonType::PlotACFM, cfg.window.acfmWindow);
     // フィルタ設定
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("HPF (Hz)", &liaConfig.postCfg.hpFreq, 0.1f, 1.0f, "%.1f")) {
-        liaConfig.postCfg.hpFreq = std::clamp(liaConfig.postCfg.hpFreq, 0.0f, 10.0f);
-        liaConfig.setHPFrequency(liaConfig.postCfg.hpFreq);
+    if (ImGui::InputFloat("HPF (Hz)", &cfg.post.hpFreq, 0.1f, 1.0f, "%.1f")) {
+        cfg.post.hpFreq = std::clamp(cfg.post.hpFreq, 0.0f, 10.0f);
+        cfg.setHPFrequency(cfg.post.hpFreq);
     }
-    markButtonIfItemDeactivated(button, value, ButtonType::PostHpFreq, liaConfig.postCfg.hpFreq);
+    markButtonIfItemDeactivated(button, value, ButtonType::PostHpFreq, cfg.post.hpFreq);
 
     ImGui::SetNextItemWidth(nextItemWidth);
-    if (ImGui::InputFloat("LPF (Hz)", &liaConfig.postCfg.lpFreq, 1.0f, 10.0f, "%.0f")) {
-        liaConfig.postCfg.lpFreq = std::clamp(liaConfig.postCfg.lpFreq, 1.0f, 100.0f);
-        liaConfig.setLPFrequency(liaConfig.postCfg.lpFreq);
+    if (ImGui::InputFloat("LPF (Hz)", &cfg.post.lpFreq, 1.0f, 10.0f, "%.0f")) {
+        cfg.post.lpFreq = std::clamp(cfg.post.lpFreq, 1.0f, 100.0f);
+        cfg.setLPFrequency(cfg.post.lpFreq);
     }
-    markButtonIfItemDeactivated(button, value, ButtonType::PostLpFreq, liaConfig.postCfg.lpFreq);
+    markButtonIfItemDeactivated(button, value, ButtonType::PostLpFreq, cfg.post.lpFreq);
 
     if (button != ButtonType::NON) {
         buttonPressed(button, value);
@@ -359,14 +359,14 @@ inline void ControlWindow::drawContent()
 {
     ButtonType button = ButtonType::NON;
     float value = 0;
-    const float nextItemWidth = 170.0f * liaConfig.windowCfg.monitorScale;
+    const float nextItemWidth = 170.0f * cfg.window.monitorScale;
 
     // ヘッダ
     ImGui::SetNextItemWidth(nextItemWidth);
-    ImGui::Text("%s", liaConfig.device_sn.data());
+    ImGui::Text("%s", cfg.device_sn.data());
     ImGui::SameLine();
     if (ImGui::Button("Close")) {
-        liaConfig.statusMeasurement = false;
+        cfg.statusMeasurement = false;
     }
     markButtonIfItemDeactivated(button, value, ButtonType::Close, 0);
 
@@ -382,10 +382,10 @@ inline void ControlWindow::drawContent()
     ImGui::Separator();
 
     // 経過時間表示
-    const int totalSecs = static_cast<int>(liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx]);
+    const int totalSecs = static_cast<int>(cfg.ringBuffer.times[cfg.ringBuffer.latestIdx]);
     const int hours = totalSecs / 3600;
     const int mins = (totalSecs % 3600) / 60;
-    const double secs = liaConfig.ringBuffer.times[liaConfig.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
+    const double secs = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
     ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
 
     if (button != ButtonType::NON) {
@@ -395,11 +395,11 @@ inline void ControlWindow::drawContent()
 
 inline void ControlWindow::show()
 {
-    ImGui::SetNextWindowPos(windowPos, liaConfig.windowCfg.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
+    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
 
-    if (ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag)) {
-        if (liaConfig.flagAutoSetupW2) {
+    if (ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag)) {
+        if (cfg.flagAutoSetupW2) {
             ImGui::BeginDisabled();
             drawContent();
             ImGui::EndDisabled();

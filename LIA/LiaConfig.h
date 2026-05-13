@@ -26,27 +26,26 @@
 // ================================================================================
 // Constants
 // ================================================================================
-constexpr float  RAW_RANGE = 2.5f;
-constexpr double RAW_DT = 1.0 / 100e6;
-constexpr size_t RAW_SIZE = 5000 * 2;
-constexpr double MEASUREMENT_DT = 2e-3;
-constexpr size_t MEASUREMENT_SEC = 60 * 10;
-constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
-//constexpr float  XY_HISTORY_SEC = 10.0f;
-//constexpr size_t XY_SIZE = static_cast<size_t>(XY_HISTORY_SEC / MEASUREMENT_DT);
+namespace LiaConfigConst {
+    constexpr float  RAW_RANGE = 2.5f;
+    constexpr double RAW_DT = 1.0 / 100e6;
+    constexpr size_t RAW_SIZE = 5000 * 2;
+    constexpr float LOW_LIMIT_FREQ = static_cast<float>(0.5 / (static_cast<float>(RAW_SIZE) * RAW_DT));
+    constexpr float HIGH_LIMIT_FREQ = static_cast<float>(1.0 / (1000.0 * RAW_DT));
 
-constexpr float LOW_LIMIT_FREQ = static_cast<float>(0.5 / (static_cast<double>(RAW_SIZE) * RAW_DT));
-constexpr float HIGH_LIMIT_FREQ = static_cast<float>(1.0 / (1000.0 * RAW_DT));
-constexpr float AWG_AMP_MIN = 0.0f;
-constexpr float AWG_AMP_MAX = 5.0f;
+    constexpr double MEASUREMENT_DT = 2e-3;
+    constexpr size_t MEASUREMENT_SEC = 60 * 10;
+    constexpr size_t MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
 
-constexpr auto SETTINGS_FILE = "lia.ini";
-constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
-constexpr auto RESULTS_FILE = "ect.csv";
-constexpr auto CMDS_FILE = "commands.csv";
+    
+    constexpr auto SETTINGS_FILE = "lia.ini";
+    constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
+    constexpr auto RESULTS_FILE = "ect.csv";
+    constexpr auto CMDS_FILE = "commands.csv";
 
-constexpr auto CH_VERTICAL = 0;
-constexpr auto CH_HORIZONTAL = 1;
+    constexpr auto CH_VERTICAL = 0;
+    constexpr auto CH_HORIZONTAL = 1;
+}
 
 // ================================================================================
 // Enums & Utilities
@@ -119,7 +118,7 @@ public:
 		int imGuiCondFlag = 4;  // ImGuiCond_FirstUseEver
         int imGuiWindowFlag = 0;
         int imPlotFlag = 4;  // ImPlotFlags_NoMouseText
-    };
+    } window;
 
     struct AwgCfg {
         struct Channel {
@@ -131,15 +130,21 @@ public:
             float phase = 0.0f;
         };
         Channel ch[2];
+        const float AWG_AMP_MIN = 0.0f;
+        const float AWG_AMP_MAX = 5.0f;
         AwgCfg() { ch[1].amp = 0.0f; }
-    };
+    } awg;
+
+    struct ScopeCfg {
+        
+    } scope;
 
     struct PostCfg {
         struct Offset { double phase = 0.0, x = 0.0, y = 0.0; };
         Offset offset[2];
         float hpFreq = 0.0f;
         float lpFreq = 100.0f;
-    };
+    } post;
 
     struct PlotCfg {
         float limit = 1.5f, rawLimit = 1.5f, historySec = 10.0f;
@@ -147,7 +152,7 @@ public:
         float Vx_limit = 1.5f;
         int size = 0;
         int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
-    };
+    } plot;
 
     struct PauseCfg {
         bool flag = false;
@@ -160,7 +165,7 @@ public:
             selectArea.X.Min = xMin; selectArea.X.Max = xMax;
             selectArea.Y.Min = yMin; selectArea.Y.Max = yMax;
         }
-    };
+    } pause;
 
     struct XYs {
         std::vector<double> x;
@@ -172,8 +177,7 @@ public:
 
     struct XYRecs {
         XYs ch1xys, ch2xys;
-	};
-	XYRecs xyRecs;
+	} xyRecs;
 
     struct RingBuffer {
         std::vector<double> times;
@@ -190,7 +194,7 @@ public:
             ch[0].resize(newSize);
             ch[1].resize(newSize);
         }
-    };
+    } ringBuffer;
 
     struct Raw {
         std::vector<double> times;
@@ -199,7 +203,7 @@ public:
         std::vector<std::complex<double>> fftCh[2];
         std::vector<double> fftAbs[2];
         XYs harmonics[2];
-        void resize(size_t newSize) {
+        void resize(const size_t newSize, const double raw_dt) {
 			times.resize(newSize);
 			waveform[0].resize(newSize);
 			waveform[1].resize(newSize);
@@ -209,12 +213,12 @@ public:
 			fftAbs[0].resize(newSize / 2 + 1);
 			fftAbs[1].resize(newSize / 2 + 1);
             for (size_t i = 0; i < freqs.size(); i++) {
-                freqs[i] = (double)i / times.size() / RAW_DT; // 周波数軸の値を計算
+                freqs[i] = (double)i / times.size() / raw_dt; // 周波数軸の値を計算
             }
 			harmonics[0].resize(3);  // 基本波、3倍波、5倍波の3点を保存
 			harmonics[1].resize(3);
         }
-		void calculateFFT(const bool flagCh2, const float freq) {
+		void calculateFFT(const bool flagCh2, const float freq, const double raw_dt) {
 			static size_t N = times.size();
             static pocketfft::detail::shape_t shape{ N };
             static pocketfft::detail::stride_t stride_in{ sizeof(double) };
@@ -224,7 +228,7 @@ public:
                 fftCh[0][i] = fftCh[0][i] * 2.0 / (double)N;
                 fftAbs[0][i] = std::abs(fftCh[0][i]);    // 振幅スペクトルに変換
             }
-            size_t idx = static_cast<size_t>(freq * times.size() * RAW_DT);
+            size_t idx = static_cast<size_t>(freq * times.size() * raw_dt);
             harmonics[0].x[0] = fftCh[0][idx].real();  // 基本波の周波数
             harmonics[0].y[0] = fftCh[0][idx].imag();
             harmonics[0].x[1] = fftCh[0][idx * 3].real();  // 3倍波の周波数
@@ -246,7 +250,7 @@ public:
                 harmonics[1].y[2] = fftCh[1][idx * 5].imag();
 			}
         }
-    };
+    } raw;
 
     struct ACFMData {
         std::vector<double> Vhs = { 0.022, 0.023, 0.025, 0.027, 0.058, 0.067 };
@@ -255,33 +259,23 @@ public:
         size_t size = 6;
         double vxpp = 0.0;
         double vpp_vz = 0.0;
-    };
+    } acfmData;
 
     Timer timer;
     Daq_dwf* pDaq = nullptr;
     std::string device_sn = "SN:XXXXXXXXXX";
     std::string dirName = ".";
 
-    WindowCfg windowCfg;
-    AwgCfg    awgCfg;
-    PostCfg   postCfg;
-    PlotCfg   plotCfg;
-    PauseCfg  pauseCfg;
-    ACFMData  acfmData;
-
     // スレッドセーフかつ最適化を妨げない atomic 変数へ変更
-    bool flagCh2 = false;
-    bool flagAutoOffset = false;
-    bool flagAutoSetupW2History = false;
+    bool isCh2Enabled = false;
+    std::atomic<bool> flagAutoOffset = false;
+    std::atomic<bool> flagAutoSetupW2History = false;
     std::atomic<bool> flagAutoSetupW2{ false };
     std::atomic<bool> statusMeasurement{ false };
     std::atomic<bool> statusPipe{ false };
 
     XYs autoSetupHistoryW1, autoSetupHistoryW2;
     std::vector<std::array<float, 6>> cmds;
-    
-    RingBuffer ringBuffer;
-    Raw raw;
     
 private:
     Psd psd;
@@ -297,7 +291,7 @@ public:
         loadSettingsFromFile();
 
         for (size_t i = 0; i < raw.times.size(); ++i) {
-            raw.times[i] = i * RAW_DT * 1e6;
+            raw.times[i] = i * LiaConfigConst::RAW_DT * 1e6;
         }
     }
 
@@ -310,37 +304,37 @@ public:
     void awgStart() {
         if (pDaq) {
             pDaq->awg.start(
-                awgCfg.ch[0].freq, awgCfg.ch[0].amp, awgCfg.ch[0].phase, awgCfg.ch[0].func,
-                awgCfg.ch[1].freq, awgCfg.ch[1].amp, awgCfg.ch[1].phase, awgCfg.ch[1].func
+                awg.ch[0].freq, awg.ch[0].amp, awg.ch[0].phase, awg.ch[0].func,
+                awg.ch[1].freq, awg.ch[1].amp, awg.ch[1].phase, awg.ch[1].func
             );
         }
     }
 
     void setHPFrequency(double freq) {
-        postCfg.hpFreq = static_cast<float>(freq);
+        post.hpFreq = static_cast<float>(freq);
         for (int i = 0; i < 2; ++i) {
-            hpfCh[i].x.setCutoffFrequency(freq, MEASUREMENT_DT);
-            hpfCh[i].y.setCutoffFrequency(freq, MEASUREMENT_DT);
+            hpfCh[i].x.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
+            hpfCh[i].y.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
         }
     }
 
     void setLPFrequency(double freq) {
-        postCfg.lpFreq = static_cast<float>(freq);
+        post.lpFreq = static_cast<float>(freq);
         for (int i = 0; i < 2; ++i) {
-            lpfCh[i].x.setCutoffFrequency(freq, MEASUREMENT_DT);
-            lpfCh[i].y.setCutoffFrequency(freq, MEASUREMENT_DT);
+            lpfCh[i].x.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
+            lpfCh[i].y.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
         }
     }
 
     void reset() {
-        awgCfg = AwgCfg();
-        postCfg = PostCfg();
-        plotCfg = PlotCfg();
-        flagCh2 = false;
+        //awg = AwgCfg();
+        //post = PostCfg();
+        //plot = PlotCfg();
+        isCh2Enabled = false;
         flagAutoOffset = false;
-        pauseCfg.flag = false;
-        setHPFrequency(postCfg.hpFreq);
-        setLPFrequency(postCfg.lpFreq);
+        pause.flag = false;
+        setHPFrequency(post.hpFreq);
+        setLPFrequency(post.lpFreq);
     }
 
     // クリティカルパス：inline化による高速化
@@ -356,41 +350,41 @@ public:
     }
 
     inline void update(double t) noexcept {
-        if (psd.getCurrentFreq() != awgCfg.ch[0].freq) {
-            psd.initialize(awgCfg.ch[0].freq, RAW_DT, raw.waveform[0].size());
+        if (psd.getCurrentFreq() != awg.ch[0].freq) {
+            psd.initialize(awg.ch[0].freq, LiaConfigConst::RAW_DT, raw.waveform[0].size());
         }
 
         auto [x1, y1] = psd.calculate(raw.waveform[0].data());
         double x2 = 0.0, y2 = 0.0;
 
-        if (flagCh2) {
+        if (isCh2Enabled) {
             std::tie(x2, y2) = psd.calculate(raw.waveform[1].data());
         }
 
         if (flagAutoOffset) {
-            postCfg.offset[0].x = x1;
-            postCfg.offset[0].y = y1;
-            if (flagCh2) {
-                postCfg.offset[1].x = x2;
-                postCfg.offset[1].y = y2;
+            post.offset[0].x = x1;
+            post.offset[0].y = y1;
+            if (isCh2Enabled) {
+                post.offset[1].x = x2;
+                post.offset[1].y = y2;
             }
             flagAutoOffset = false;
-            if (flagCh2) {
+            if (isCh2Enabled) {
                 cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::PostAutoOffset, (float)x1, (float)y1, 0, 0 });
             }
         }
 
         // 変数をローカルキャッシュしてメモリアクセスを減らす（高速化）
-        const double ox1 = postCfg.offset[0].x;
-        const double oy1 = postCfg.offset[0].y;
-        const double op1 = postCfg.offset[0].phase;
+        const double ox1 = post.offset[0].x;
+        const double oy1 = post.offset[0].y;
+        const double op1 = post.offset[0].phase;
 
         auto [final_x1, final_y1] = psd.rotate_phase(x1 - ox1, y1 - oy1, op1);
 
-        if (flagCh2) {
-            const double ox2 = postCfg.offset[1].x;
-            const double oy2 = postCfg.offset[1].y;
-            const double op2 = postCfg.offset[1].phase;
+        if (isCh2Enabled) {
+            const double ox2 = post.offset[1].x;
+            const double oy2 = post.offset[1].y;
+            const double op2 = post.offset[1].phase;
             auto [final_x2, final_y2] = psd.rotate_phase(x2 - ox2, y2 - oy2, op2);
             AddPoint(t, final_x1, final_y1, final_x2, final_y2);
         }
@@ -415,15 +409,15 @@ public:
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (flagCh2 ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
+        file << (isCh2Enabled ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
 
         // stringstreamの無駄なメモリ確保とコピーを排除し、直接ファイルへ流し込む
         for (size_t i = 0; i < raw.waveform[0].size(); ++i) {
-            if (flagCh2) {
-                file << std::format("{:e},{:e},{:e}\n", RAW_DT * i, raw.waveform[0][i], raw.waveform[1][i]);
+            if (isCh2Enabled) {
+                file << std::format("{:e},{:e},{:e}\n", LiaConfigConst::RAW_DT * i, raw.waveform[0][i], raw.waveform[1][i]);
             }
             else {
-                file << std::format("{:e},{:e}\n", RAW_DT * i, raw.waveform[0][i]);
+                file << std::format("{:e},{:e}\n", LiaConfigConst::RAW_DT * i, raw.waveform[0][i]);
             }
         }
         return true;
@@ -433,11 +427,11 @@ public:
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (flagCh2 ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
+        file << (isCh2Enabled ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
 
         // stringstreamの無駄なメモリ確保とコピーを排除し、直接ファイルへ流し込む
         for (size_t i = 0; i < raw.freqs.size(); ++i) {
-            if (flagCh2) {
+            if (isCh2Enabled) {
                 file << std::format("{:e},{:e},{:e},{:e},{:e}\n", raw.freqs[i], raw.fftCh[0][i].real(), raw.fftCh[0][i].imag(), raw.fftCh[1][i].real(), raw.fftCh[1][i].imag());
             }
             else {
@@ -447,25 +441,25 @@ public:
         return true;
     }
 
-    bool saveResultsToFile(const std::string& filename = RESULTS_FILE, const double sec = 0) const {
+    bool saveResultsToFile(const std::string& filename = LiaConfigConst::RESULTS_FILE, const double sec = 0) const {
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (flagCh2 ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
+        file << (isCh2Enabled ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
 
         size_t outputSize = ringBuffer.size;
         if (sec > 0) {
-            size_t reqSize = static_cast<size_t>(sec / MEASUREMENT_DT);
+            size_t reqSize = static_cast<size_t>(sec / LiaConfigConst::MEASUREMENT_DT);
             outputSize = (reqSize < ringBuffer.size) ? reqSize : ringBuffer.size;
         }
 
         // キャストとアンダーフローを安全に処理
         size_t idx = (ringBuffer.writeIdx >= outputSize)
             ? (ringBuffer.writeIdx - outputSize)
-            : (MEASUREMENT_SIZE - (outputSize - ringBuffer.writeIdx));
+            : (LiaConfigConst::MEASUREMENT_SIZE - (outputSize - ringBuffer.writeIdx));
 
         for (size_t i = 0; i < outputSize; ++i) {
-            if (flagCh2) {
+            if (isCh2Enabled) {
                 file << std::format("{:e},{:e},{:e},{:e},{:e}\n",
                     ringBuffer.times[idx],
                     ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx],
@@ -477,12 +471,12 @@ public:
                     ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx]);
             }
             // モジュロ演算（%）を排除し、高速な条件分岐に置換
-            if (++idx >= MEASUREMENT_SIZE) idx = 0;
+            if (++idx >= LiaConfigConst::MEASUREMENT_SIZE) idx = 0;
         }
         return true;
     }
 
-    bool saveCmdsToFile(const std::string& filename = CMDS_FILE) const {
+    bool saveCmdsToFile(const std::string& filename = LiaConfigConst::CMDS_FILE) const {
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
@@ -495,24 +489,24 @@ public:
     }
 
     void buttonClear() {
-        plotCfg.xyStartIdx = ringBuffer.latestIdx;
-        plotCfg.xySize = 0;
+        plot.xyStartIdx = ringBuffer.latestIdx;
+        plot.xySize = 0;
         xyRecs.ch1xys.clear(); xyRecs.ch2xys.clear();
         flagAutoSetupW2History = false;
         cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::XYClear, 0, 0, 0, 0 });
     }
 
     void buttonPause() {
-        if (!pauseCfg.flag) {
-            pauseCfg.flag = true;
-            windowCfg.imPlotFlag = 0;  // ImPlotFlags_None
+        if (!pause.flag) {
+            pause.flag = true;
+            window.imPlotFlag = 0;  // ImPlotFlags_None
         }
         else {
             buttonClear();
-            pauseCfg.flag = false;
-            windowCfg.imPlotFlag |= 4;  // ImPlotFlags_NoMouseText
+            pause.flag = false;
+            window.imPlotFlag |= 4;  // ImPlotFlags_NoMouseText
         }
-        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::TimePause, (float)pauseCfg.flag, 0, 0, 0 });
+        cmds.push_back(std::array<float, 6>{ (float)timer.elapsedSec(), (float)ButtonType::TimePause, (float)pause.flag, 0, 0, 0 });
 	}
 
     void buttonAutoOffset() {
@@ -533,9 +527,9 @@ public:
         }
         else {
             std::stringstream ss;
-            ss << (flagCh2 ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
+            ss << (isCh2Enabled ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
             for (size_t i = 0; i < xyRecs.ch1xys.x.size(); ++i) {
-                ss << (flagCh2 ?
+                ss << (isCh2Enabled ?
                     std::format("{:e},{:e},{:e},{:e}\n", xyRecs.ch1xys.x[i], xyRecs.ch1xys.y[i], xyRecs.ch2xys.x[i], xyRecs.ch2xys.y[i])
                     : std::format("{:e},{:e}\n", xyRecs.ch1xys.x[i], xyRecs.ch1xys.y[i]));
             }
@@ -555,8 +549,8 @@ private:
     }
 
     void allocateBuffers() {
-        raw.resize(RAW_SIZE);
-        ringBuffer.resize(MEASUREMENT_SIZE);
+        raw.resize(LiaConfigConst::RAW_SIZE, LiaConfigConst::RAW_DT);
+        ringBuffer.resize(LiaConfigConst::MEASUREMENT_SIZE);
     }
 
     inline void processAndStorePoint(int chIndex, double x, double y) noexcept {
@@ -575,118 +569,118 @@ private:
         ringBuffer.latestIdx = ringBuffer.writeIdx;
         ringBuffer.nofm++;
         // モジュロ演算（%）を排除
-        if (++ringBuffer.writeIdx >= MEASUREMENT_SIZE) ringBuffer.writeIdx = 0;
-        ringBuffer.size = (ringBuffer.nofm < MEASUREMENT_SIZE) ? ringBuffer.nofm : MEASUREMENT_SIZE;
+        if (++ringBuffer.writeIdx >= LiaConfigConst::MEASUREMENT_SIZE) ringBuffer.writeIdx = 0;
+        ringBuffer.size = (ringBuffer.nofm < LiaConfigConst::MEASUREMENT_SIZE) ? ringBuffer.nofm : LiaConfigConst::MEASUREMENT_SIZE;
 
 		// XYPlot の表示範囲を更新
-        plotCfg.xyLatestIdx = ringBuffer.latestIdx;
-        size_t xyMaxSize = (size_t)(plotCfg.historySec / MEASUREMENT_DT);
-        if (plotCfg.xySize < xyMaxSize) {
-            plotCfg.xySize++;
+        plot.xyLatestIdx = ringBuffer.latestIdx;
+        size_t xyMaxSize = (size_t)(plot.historySec / LiaConfigConst::MEASUREMENT_DT);
+        if (plot.xySize < xyMaxSize) {
+            plot.xySize++;
         }
         else {
-            plotCfg.xySize = xyMaxSize;
+            plot.xySize = xyMaxSize;
         }
-        int xyStartIdx = plotCfg.xyLatestIdx - plotCfg.xySize + 1;
+        int xyStartIdx = plot.xyLatestIdx - plot.xySize + 1;
         if (xyStartIdx >= 0) {
-            plotCfg.xyStartIdx = xyStartIdx;
+            plot.xyStartIdx = xyStartIdx;
         }
         else {
-            plotCfg.xySize = ringBuffer.size - plotCfg.xyStartIdx + ringBuffer.latestIdx + 1;
+            plot.xySize = ringBuffer.size - plot.xyStartIdx + ringBuffer.latestIdx + 1;
         }
     }
 
-    void saveSettingsToFile(const std::string& filename = SETTINGS_FILE) const {
+    void saveSettingsToFile(const std::string& filename = LiaConfigConst::SETTINGS_FILE) const {
         IniWrapper ini;
-        ini.set("Window", "pos.x", windowCfg.pos.x);
-        ini.set("Window", "pos.y", windowCfg.pos.y);
-        ini.set("Window", "size.x", windowCfg.size.x);
-        ini.set("Window", "size.y", windowCfg.size.y);
-        ini.set("Window", "fontSize", windowCfg.fontSize);
-        ini.set("Window", "controlWindow", windowCfg.controlWindow);
-        ini.set("Window", "rawWindow", windowCfg.rawWindow);
-        ini.set("Window", "xyWindow", windowCfg.xyWindow);
-        ini.set("Window", "timeWindow", windowCfg.timeWindow);
-        ini.set("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
-        ini.set("Window", "acfm", windowCfg.acfmWindow);
-        ini.set("Window", "theme", windowCfg.theme);
-        ini.set("Window", "imGuiWindowFlag", windowCfg.imGuiWindowFlag);
-        ini.set("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
-        ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
-        ini.set("Awg", "ch[0].amp", awgCfg.ch[0].amp);
-		ini.set("Awg", "ch[0].func", awgCfg.ch[0].func);
-        ini.set("Awg", "ch[1].amp", awgCfg.ch[1].amp);
-        ini.set("Awg", "ch[1].phase", awgCfg.ch[1].phase);
-        ini.set("Scope", "flagCh2", flagCh2);
-        ini.set("Post", "offset[0].phase", postCfg.offset[0].phase);
-        ini.set("Post", "offset[0].x", postCfg.offset[0].x);
-        ini.set("Post", "offset[0].y", postCfg.offset[0].y);
-        ini.set("Post", "offset[1].phase", postCfg.offset[1].phase);
-        ini.set("Post", "offset[1].x", postCfg.offset[1].x);
-        ini.set("Post", "offset[1].y", postCfg.offset[1].y);
-        ini.set("Post", "hpFreq", postCfg.hpFreq);
-        ini.set("Post", "lpFreq", postCfg.lpFreq);
-        ini.set("Plot", "limit", plotCfg.limit);
-        ini.set("Plot", "rawLimit", plotCfg.rawLimit);
-        ini.set("Plot", "historySec", plotCfg.historySec);
-        ini.set("Plot", "surfaceMode", plotCfg.surfaceMode);
-        ini.set("Plot", "beep", plotCfg.beep);
-        ini.set("Plot", "Vx_limt", plotCfg.Vx_limit);
+        ini.set("Window", "pos.x", window.pos.x);
+        ini.set("Window", "pos.y", window.pos.y);
+        ini.set("Window", "size.x", window.size.x);
+        ini.set("Window", "size.y", window.size.y);
+        ini.set("Window", "fontSize", window.fontSize);
+        ini.set("Window", "controlWindow", window.controlWindow);
+        ini.set("Window", "rawWindow", window.rawWindow);
+        ini.set("Window", "xyWindow", window.xyWindow);
+        ini.set("Window", "timeWindow", window.timeWindow);
+        ini.set("Window", "deltaTimeWindow", window.deltaTimeWindow);
+        ini.set("Window", "acfm", window.acfmWindow);
+        ini.set("Window", "theme", window.theme);
+        ini.set("Window", "imGuiWindowFlag", window.imGuiWindowFlag);
+        ini.set("Window", "imGuiCondFlag", window.imGuiCondFlag);
+        ini.set("Awg", "ch[0].freq", awg.ch[0].freq);
+        ini.set("Awg", "ch[0].amp", awg.ch[0].amp);
+		ini.set("Awg", "ch[0].func", awg.ch[0].func);
+        ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
+        ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
+        ini.set("Scope", "flagCh2", isCh2Enabled);
+        ini.set("Post", "offset[0].phase", post.offset[0].phase);
+        ini.set("Post", "offset[0].x", post.offset[0].x);
+        ini.set("Post", "offset[0].y", post.offset[0].y);
+        ini.set("Post", "offset[1].phase", post.offset[1].phase);
+        ini.set("Post", "offset[1].x", post.offset[1].x);
+        ini.set("Post", "offset[1].y", post.offset[1].y);
+        ini.set("Post", "hpFreq", post.hpFreq);
+        ini.set("Post", "lpFreq", post.lpFreq);
+        ini.set("Plot", "limit", plot.limit);
+        ini.set("Plot", "rawLimit", plot.rawLimit);
+        ini.set("Plot", "historySec", plot.historySec);
+        ini.set("Plot", "surfaceMode", plot.surfaceMode);
+        ini.set("Plot", "beep", plot.beep);
+        ini.set("Plot", "Vx_limt", plot.Vx_limit);
         ini.set("ACFM", "mmk[0]", acfmData.mmk[0]);
         ini.set("ACFM", "mmk[1]", acfmData.mmk[1]);
         ini.set("ACFM", "mmk[2]", acfmData.mmk[2]);
         ini.save(filename);
     }
 
-    void loadSettingsFromFile(const std::string& filename = SETTINGS_FILE) {
+    void loadSettingsFromFile(const std::string& filename = LiaConfigConst::SETTINGS_FILE) {
         IniWrapper ini;
         ini.load(filename);
-        windowCfg.pos.x = ini.get("Window", "pos.x", windowCfg.pos.x);
-        windowCfg.pos.y = ini.get("Window", "pos.y", windowCfg.pos.y);
-        windowCfg.size.x = ini.get("Window", "size.x", windowCfg.size.x);
-        windowCfg.size.y = ini.get("Window", "size.y", windowCfg.size.y);
-        windowCfg.fontSize = ini.get("Window", "fontSize", windowCfg.fontSize);
-        windowCfg.controlWindow = ini.get("Window", "controlWindow", windowCfg.controlWindow);
-        windowCfg.rawWindow = ini.get("Window", "rawWindow", windowCfg.rawWindow);
-        windowCfg.xyWindow = ini.get("Window", "xyWindow", windowCfg.xyWindow);
-        windowCfg.timeWindow = ini.get("Window", "timeWindow", windowCfg.timeWindow);
-        windowCfg.deltaTimeWindow = ini.get("Window", "deltaTimeWindow", windowCfg.deltaTimeWindow);
-        windowCfg.acfmWindow = ini.get("Window", "acfmWindow", windowCfg.acfmWindow);
-        windowCfg.theme = ini.get("Window", "theme", windowCfg.theme);
-        windowCfg.imGuiWindowFlag = ini.get("Window", "imGuiWindowFlag", windowCfg.imGuiWindowFlag);
-        windowCfg.imGuiCondFlag = ini.get("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
-        awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);
-        awgCfg.ch[0].amp = ini.get("Awg", "ch[0].amp", awgCfg.ch[0].amp);
-        awgCfg.ch[0].func = ini.get("Awg", "ch[0].func", awgCfg.ch[0].func);
-        awgCfg.ch[1].amp = ini.get("Awg", "ch[1].amp", awgCfg.ch[1].amp);
-        awgCfg.ch[1].phase = ini.get("Awg", "ch[1].phase", awgCfg.ch[1].phase);
-        flagCh2 = ini.get("Scope", "flagCh2", flagCh2);
-        postCfg.offset[0].phase = ini.get("Post", "offset[0].phase", postCfg.offset[0].phase);
-        postCfg.offset[0].x = ini.get("Post", "offset[0].x", postCfg.offset[0].x);
-        postCfg.offset[0].y = ini.get("Post", "offset[0].y", postCfg.offset[0].y);
-        postCfg.offset[1].phase = ini.get("Post", "offset[1].phase", postCfg.offset[1].phase);
-        postCfg.offset[1].x = ini.get("Post", "offset[1].x", postCfg.offset[1].x);
-        postCfg.offset[1].y = ini.get("Post", "offset[1].y", postCfg.offset[1].y);
-        postCfg.hpFreq = ini.get("Post", "hpFreq", postCfg.hpFreq);
-        postCfg.lpFreq = ini.get("Post", "lpFreq", postCfg.lpFreq);
-        plotCfg.limit = ini.get("Plot", "limit", plotCfg.limit);
-        plotCfg.rawLimit = ini.get("Plot", "rawLimit", plotCfg.rawLimit);
-        plotCfg.historySec = ini.get("Plot", "historySec", plotCfg.historySec);
-        plotCfg.surfaceMode = ini.get("Plot", "surfaceMode", plotCfg.surfaceMode);
-        plotCfg.beep = ini.get("Plot", "beep", plotCfg.beep);
-        plotCfg.Vx_limit = ini.get("Plot", "Vx_limt", plotCfg.Vx_limit);
+        window.pos.x = ini.get("Window", "pos.x", window.pos.x);
+        window.pos.y = ini.get("Window", "pos.y", window.pos.y);
+        window.size.x = ini.get("Window", "size.x", window.size.x);
+        window.size.y = ini.get("Window", "size.y", window.size.y);
+        window.fontSize = ini.get("Window", "fontSize", window.fontSize);
+        window.controlWindow = ini.get("Window", "controlWindow", window.controlWindow);
+        window.rawWindow = ini.get("Window", "rawWindow", window.rawWindow);
+        window.xyWindow = ini.get("Window", "xyWindow", window.xyWindow);
+        window.timeWindow = ini.get("Window", "timeWindow", window.timeWindow);
+        window.deltaTimeWindow = ini.get("Window", "deltaTimeWindow", window.deltaTimeWindow);
+        window.acfmWindow = ini.get("Window", "acfmWindow", window.acfmWindow);
+        window.theme = ini.get("Window", "theme", window.theme);
+        window.imGuiWindowFlag = ini.get("Window", "imGuiWindowFlag", window.imGuiWindowFlag);
+        window.imGuiCondFlag = ini.get("Window", "imGuiCondFlag", window.imGuiCondFlag);
+        awg.ch[0].freq = ini.get("Awg", "ch[0].freq", awg.ch[0].freq);
+        awg.ch[0].amp = ini.get("Awg", "ch[0].amp", awg.ch[0].amp);
+        awg.ch[0].func = ini.get("Awg", "ch[0].func", awg.ch[0].func);
+        awg.ch[1].amp = ini.get("Awg", "ch[1].amp", awg.ch[1].amp);
+        awg.ch[1].phase = ini.get("Awg", "ch[1].phase", awg.ch[1].phase);
+        isCh2Enabled = ini.get("Scope", "flagCh2", isCh2Enabled);
+        post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
+        post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);
+        post.offset[0].y = ini.get("Post", "offset[0].y", post.offset[0].y);
+        post.offset[1].phase = ini.get("Post", "offset[1].phase", post.offset[1].phase);
+        post.offset[1].x = ini.get("Post", "offset[1].x", post.offset[1].x);
+        post.offset[1].y = ini.get("Post", "offset[1].y", post.offset[1].y);
+        post.hpFreq = ini.get("Post", "hpFreq", post.hpFreq);
+        post.lpFreq = ini.get("Post", "lpFreq", post.lpFreq);
+        plot.limit = ini.get("Plot", "limit", plot.limit);
+        plot.rawLimit = ini.get("Plot", "rawLimit", plot.rawLimit);
+        plot.historySec = ini.get("Plot", "historySec", plot.historySec);
+        plot.surfaceMode = ini.get("Plot", "surfaceMode", plot.surfaceMode);
+        plot.beep = ini.get("Plot", "beep", plot.beep);
+        plot.Vx_limit = ini.get("Plot", "Vx_limt", plot.Vx_limit);
         acfmData.mmk[0] = ini.get("ACFM", "mmk[0]", acfmData.mmk[0]);
         acfmData.mmk[1] = ini.get("ACFM", "mmk[1]", acfmData.mmk[1]);
         acfmData.mmk[2] = ini.get("ACFM", "mmk[2]", acfmData.mmk[2]);
 
-        awgCfg.ch[0].freq = std::clamp(awgCfg.ch[0].freq, LOW_LIMIT_FREQ, HIGH_LIMIT_FREQ);
-        awgCfg.ch[1].freq = awgCfg.ch[0].freq;
-        awgCfg.ch[0].amp = std::clamp(awgCfg.ch[0].amp, 0.1f, 5.0f);
-        awgCfg.ch[1].amp = std::clamp(awgCfg.ch[1].amp, 0.0f, 5.0f);
-        awgCfg.ch[1].func = awgCfg.ch[0].func;
+        awg.ch[0].freq = std::clamp(awg.ch[0].freq, LiaConfigConst::LOW_LIMIT_FREQ, LiaConfigConst::HIGH_LIMIT_FREQ);
+        awg.ch[1].freq = awg.ch[0].freq;
+        awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
+        awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);
+        awg.ch[1].func = awg.ch[0].func;
 
-        plotCfg.limit = std::clamp(plotCfg.limit, 0.0f, 5.0f);
-        setHPFrequency(postCfg.hpFreq);
-        setLPFrequency(postCfg.lpFreq);
+        plot.limit = std::clamp(plot.limit, 0.0f, 5.0f);
+        setHPFrequency(post.hpFreq);
+        setLPFrequency(post.lpFreq);
     }
 };

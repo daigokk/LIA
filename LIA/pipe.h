@@ -27,8 +27,8 @@ const std::vector<std::string> helps = {
 	"  data:fft?                   : Output FFT data (frequency, ch1 [, ch2])",
     "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)",
     "  data:xy?                    : Output latest XY data point",
-    std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V)", RAW_RANGE * 1.2f),
-    std::format("  disp|display:raw:limit <value>   : Set raw display limit (0.1 to {} V)", RAW_RANGE * 1.2f),
+    std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V)", LiaConfigConst::RAW_RANGE * 1.2f),
+    std::format("  disp|display:raw:limit <value>   : Set raw display limit (0.1 to {} V)", LiaConfigConst::RAW_RANGE * 1.2f),
     "  chan2:disp [on|off] or chan2:disp?: Enable/disable or query CH2 display state",
     "  acfm:disp [on|off] or acfm:disp?  : Enable/disable or query ACFM window display state",
     "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency",
@@ -73,9 +73,9 @@ std::vector<std::string> split(const std::string& str, char delimiter = ':') {
 // パイプ処理（コマンドライン入力の処理）
 // ============================================================
 // ユーザーからのコマンド入力を受け取り、DAQ デバイスの制御を実施
-void pipe(std::stop_token st, LiaConfig* pLiaConfig)
+void pipe(std::stop_token st, LiaConfig* pCfg)
 {
-    pLiaConfig->statusPipe = true;
+    pCfg->statusPipe = true;
     std::string lastErrorCmd = "";
     bool awgUpdateRequired = false;
 
@@ -125,7 +125,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         }
 
         // チャンネルの参照を取得
-        auto& ch = isW1 ? pLiaConfig->awgCfg.ch[0] : pLiaConfig->awgCfg.ch[1];
+        auto& ch = isW1 ? pCfg->awg.ch[0] : pCfg->awg.ch[1];
 
         std::string subCmd = tokens[1];
         bool isQuery = (subCmd.back() == '?');
@@ -148,13 +148,13 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             if (isQuery) {
                 // min/max/current のいずれかを照会
                 if (arg == "min") {
-                    std::cout << LOW_LIMIT_FREQ << std::endl;
+                    std::cout << LiaConfigConst::LOW_LIMIT_FREQ << std::endl;
                 } else if (arg == "max") {
-                    std::cout << HIGH_LIMIT_FREQ << std::endl;
+                    std::cout << LiaConfigConst::HIGH_LIMIT_FREQ << std::endl;
                 } else {
                     std::cout << ch.freq << std::endl;
                 }
-            } else if (val >= LOW_LIMIT_FREQ && val <= HIGH_LIMIT_FREQ) {
+            } else if (val >= LiaConfigConst::LOW_LIMIT_FREQ && val <= LiaConfigConst::HIGH_LIMIT_FREQ) {
                 ch.freq = val;
                 awgUpdateRequired = true;
             } else {
@@ -167,13 +167,13 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             if (isQuery) {
                 // min/max/current のいずれかを照会
                 if (arg == "min") {
-                    std::cout << AWG_AMP_MIN << std::endl;
+                    std::cout << pCfg->awg.AWG_AMP_MIN << std::endl;
                 } else if (arg == "max") {
-                    std::cout << AWG_AMP_MAX << std::endl;
+                    std::cout << pCfg->awg.AWG_AMP_MAX << std::endl;
                 } else {
                     std::cout << ch.amp << std::endl;
                 }
-            } else if (val >= AWG_AMP_MIN && val <= AWG_AMP_MAX) {
+            } else if (val >= pCfg->awg.AWG_AMP_MIN && val <= pCfg->awg.AWG_AMP_MAX) {
                 ch.amp = val;
                 awgUpdateRequired = true;
             } else {
@@ -223,7 +223,7 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
     // ============================================================
     // リセット：全設定をデフォルト値に戻す
     commandMap["reset"] = [&](const auto&, const auto&, auto) {
-        pLiaConfig->reset();
+        pCfg->reset();
         lastErrorCmd = "";
         awgUpdateRequired = true;
         return true;
@@ -231,12 +231,12 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
     // 識別情報の照会：接続されたDAQ デバイスの情報を出力
     commandMap["*idn?"] = [&](const auto&, const auto&, auto) {
-        if (pLiaConfig->pDaq == nullptr) {
+        if (pCfg->pDaq == nullptr) {
             std::cout << "No DAQ is connected." << std::endl;
         } else {
             std::cout << std::format("{},{},{},{}\n",
-                pLiaConfig->pDaq->device.manufacturer, pLiaConfig->pDaq->device.name,
-                pLiaConfig->pDaq->device.sn, pLiaConfig->pDaq->device.version);
+                pCfg->pDaq->device.manufacturer, pCfg->pDaq->device.name,
+                pCfg->pDaq->device.sn, pCfg->pDaq->device.version);
         }
         return true;
     };
@@ -254,11 +254,11 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
     // 一時停止・再開：データ取得を一時停止または再開
     commandMap["pause"] = commandMap["stop"] = [&](const auto&, const auto&, auto) {
-        pLiaConfig->pauseCfg.flag = true;
+        pCfg->pause.flag = true;
         return true;
     };
     commandMap["run"] = [&](const auto&, const auto&, auto) {
-        pLiaConfig->pauseCfg.flag = false;
+        pCfg->pause.flag = false;
         return true;
     };
 
@@ -289,21 +289,21 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
                     // 生データをファイルに保存
-                    return arg.empty() ? pLiaConfig->saveRawData() : pLiaConfig->saveRawData(arg.c_str());
+                    return arg.empty() ? pCfg->saveRawData() : pCfg->saveRawData(arg.c_str());
                 } else if (tokens[2] == "size?") {
                     // 生データバッファのサイズを表示
-                    std::cout << pLiaConfig->raw.waveform[0].size() << std::endl;
+                    std::cout << pCfg->raw.waveform[0].size() << std::endl;
                     return true;
                 }
             }
         }
         // === 全生データの照会 ===
         else if (subCmd == "raw?") {
-            for (int i = 0; i < static_cast<int>(pLiaConfig->raw.waveform[0].size()); ++i) {
-                if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->raw.waveform[0][i]);
+            for (int i = 0; i < static_cast<int>(pCfg->raw.waveform[0].size()); ++i) {
+                if (!pCfg->isCh2Enabled) {
+                    std::cout << std::format("{:e},{:e}\n", LiaConfigConst::RAW_DT * i, pCfg->raw.waveform[0][i]);
                 } else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->raw.waveform[0][i], pLiaConfig->raw.waveform[1][i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", LiaConfigConst::RAW_DT * i, pCfg->raw.waveform[0][i], pCfg->raw.waveform[1][i]);
                 }
             }
             return true;
@@ -312,81 +312,81 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
                     // 生データをファイルに保存
-                    pLiaConfig->raw.calculateFFT(pLiaConfig->flagCh2, pLiaConfig->awgCfg.ch[0].freq);  // FFT を計算してから処理
-                    return arg.empty() ? pLiaConfig->saveFftData() : pLiaConfig->saveFftData(arg.c_str());
+                    pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, LiaConfigConst::RAW_DT);  // FFT を計算してから処理
+                    return arg.empty() ? pCfg->saveFftData() : pCfg->saveFftData(arg.c_str());
                 }
                 else if (tokens[2] == "size?") {
                     // 生データバッファのサイズを表示
-                    std::cout << pLiaConfig->raw.freqs.size() << std::endl;
+                    std::cout << pCfg->raw.freqs.size() << std::endl;
                     return true;
                 }
             }
         }
         // === FFTデータの照会 ===
         else if (subCmd == "fft?") {
-            pLiaConfig->raw.calculateFFT(pLiaConfig->flagCh2, pLiaConfig->awgCfg.ch[0].freq);  // FFT を計算してから処理
-            for (int i = 0; i < static_cast<int>(pLiaConfig->raw.freqs.size()); ++i) {
-                if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e}\n", pLiaConfig->raw.freqs[i], pLiaConfig->raw.fftAbs[0][i]);
+            pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, LiaConfigConst::RAW_DT);  // FFT を計算してから処理
+            for (int i = 0; i < static_cast<int>(pCfg->raw.freqs.size()); ++i) {
+                if (!pCfg->isCh2Enabled) {
+                    std::cout << std::format("{:e},{:e}\n", pCfg->raw.freqs[i], pCfg->raw.fftAbs[0][i]);
                 }
                 else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->raw.freqs[i], pLiaConfig->raw.fftAbs[0][i], pLiaConfig->raw.fftAbs[1][i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", pCfg->raw.freqs[i], pCfg->raw.fftAbs[0][i], pCfg->raw.fftAbs[1][i]);
                 }
             }
             return true;
         }
         // === 時間と XY データの照会 ===
         else if (subCmd == "txy?") {
-            int size = pLiaConfig->ringBuffer.size;
+            int size = pCfg->ringBuffer.size;
             if (val > 0) {
                 // 指定秒数のデータサイズを計算（C4244 対策：double で計算）
-                size = static_cast<int>(static_cast<double>(val) / static_cast<double>(MEASUREMENT_DT));
-                if (size > pLiaConfig->ringBuffer.size) {
-                    size = pLiaConfig->ringBuffer.size;
+                size = static_cast<int>(static_cast<double>(val) / static_cast<double>(LiaConfigConst::MEASUREMENT_DT));
+                if (size > pCfg->ringBuffer.size) {
+                    size = pCfg->ringBuffer.size;
                 }
             }
 
             // リングバッファのインデックスを計算
-            int idx = pLiaConfig->ringBuffer.writeIdx - size;
+            int idx = pCfg->ringBuffer.writeIdx - size;
             if (idx < 0) {
-                if (pLiaConfig->ringBuffer.nofm <= static_cast<int>(MEASUREMENT_SIZE)) {
+                if (pCfg->ringBuffer.nofm <= static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE)) {
                     idx = 0;
-                    size = pLiaConfig->ringBuffer.writeIdx;
+                    size = pCfg->ringBuffer.writeIdx;
                 } else {
-                    idx += static_cast<int>(MEASUREMENT_SIZE);
+                    idx += static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE);
                 }
             }
 
             // データ数を出力してから各データを出力
             std::cout << size << std::endl;
             for (int i = 0; i < size; ++i) {
-                if (!pLiaConfig->flagCh2) {
+                if (!pCfg->isCh2Enabled) {
                     std::cout << std::format("{:e},{:e},{:e}\n",
-                        pLiaConfig->ringBuffer.times[idx],
-                        pLiaConfig->ringBuffer.ch[0].x[idx],
-                        pLiaConfig->ringBuffer.ch[0].y[idx]);
+                        pCfg->ringBuffer.times[idx],
+                        pCfg->ringBuffer.ch[0].x[idx],
+                        pCfg->ringBuffer.ch[0].y[idx]);
                 } else {
                     std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n",
-                        pLiaConfig->ringBuffer.times[idx],
-                        pLiaConfig->ringBuffer.ch[0].x[idx],
-                        pLiaConfig->ringBuffer.ch[0].y[idx],
-                        pLiaConfig->ringBuffer.ch[1].x[idx],
-                        pLiaConfig->ringBuffer.ch[1].y[idx]);
+                        pCfg->ringBuffer.times[idx],
+                        pCfg->ringBuffer.ch[0].x[idx],
+                        pCfg->ringBuffer.ch[0].y[idx],
+                        pCfg->ringBuffer.ch[1].x[idx],
+                        pCfg->ringBuffer.ch[1].y[idx]);
                 }
-                idx = (idx + 1) % static_cast<int>(MEASUREMENT_SIZE);
+                idx = (idx + 1) % static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE);
             }
             return true;
         }
         // === 最新 XY データの照会 ===
         else if (subCmd == "xy?") {
-            const size_t idx = pLiaConfig->ringBuffer.latestIdx;
+            const size_t idx = pCfg->ringBuffer.latestIdx;
             std::cout << std::format("{:e},{:e}",
-                pLiaConfig->ringBuffer.ch[0].x[idx],
-                pLiaConfig->ringBuffer.ch[0].y[idx]);
-            if (pLiaConfig->flagCh2) {
+                pCfg->ringBuffer.ch[0].x[idx],
+                pCfg->ringBuffer.ch[0].y[idx]);
+            if (pCfg->isCh2Enabled) {
                 std::cout << std::format(",{:e},{:e}",
-                    pLiaConfig->ringBuffer.ch[1].x[idx],
-                    pLiaConfig->ringBuffer.ch[1].y[idx]);
+                    pCfg->ringBuffer.ch[1].x[idx],
+                    pCfg->ringBuffer.ch[1].y[idx]);
             }
             std::cout << std::endl;
             return true;
@@ -403,15 +403,15 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
         // XY 表示限界
         if (tokens[1] == "xy" && tokens[2] == "limit") {
-            if (val >= 0.01 && val <= RAW_RANGE * 1.2) {
-                pLiaConfig->plotCfg.limit = val;
+            if (val >= 0.01 && val <= LiaConfigConst::RAW_RANGE * 1.2) {
+                pCfg->plot.limit = val;
                 return true;
             }
         }
         // 生データ表示限界
         else if (tokens[1] == "raw" && tokens[2] == "limit") {
-            if (val >= 0.1 && val <= RAW_RANGE * 1.2) {
-                pLiaConfig->plotCfg.rawLimit = val;
+            if (val >= 0.1 && val <= LiaConfigConst::RAW_RANGE * 1.2) {
+                pCfg->plot.rawLimit = val;
                 return true;
             }
         }
@@ -422,36 +422,36 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
     // === CH2 表示設定の制御 ===
     commandMap[":chan2:disp"] = commandMap["chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
         if (arg == "on") {
-            pLiaConfig->flagCh2 = true;
+            pCfg->isCh2Enabled = true;
             return true;
         }
         if (arg == "off") {
-            pLiaConfig->flagCh2 = false;
+            pCfg->isCh2Enabled = false;
             return true;
         }
         return false;
     };
     // CH2 表示状態の照会
     commandMap[":chan2:disp?"] = commandMap["chan2:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pLiaConfig->flagCh2 ? "on" : "off") << std::endl;
+        std::cout << (pCfg->isCh2Enabled ? "on" : "off") << std::endl;
         return true;
     };
 
     // === ACFM 表示設定の制御 ===
     commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
         if (arg == "on") {
-            pLiaConfig->windowCfg.acfmWindow = true;
+            pCfg->window.acfmWindow = true;
             return true;
         }
         if (arg == "off") {
-            pLiaConfig->windowCfg.acfmWindow = false;
+            pCfg->window.acfmWindow = false;
             return true;
         }
         return false;
     };
     // ACFM 表示状態の照会
     commandMap[":acfm:disp?"] = commandMap["acfm:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pLiaConfig->windowCfg.acfmWindow ? "on" : "off") << std::endl;
+        std::cout << (pCfg->window.acfmWindow ? "on" : "off") << std::endl;
         return true;
     };
 
@@ -471,27 +471,27 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                 // 自動オフセット設定
                 if (tokens[2] == "auto") {
                     if (tokens.size() > 3 && tokens[3] == "once") {
-                        pLiaConfig->flagAutoOffset = true;
+                        pCfg->flagAutoOffset = true;
                         return true;
                     }
                 }
                 // オフセット自動計算の有効/無効設定
                 else if (tokens[2] == "state") {
                     if (arg == "on") {
-                        pLiaConfig->flagAutoOffset = true;
+                        pCfg->flagAutoOffset = true;
                         return true;
                     }
                     if (arg == "off") {
                         // オフの場合はオフセット値もリセット
-                        pLiaConfig->postCfg.offset[0].x = 0;
-                        pLiaConfig->postCfg.offset[0].y = 0;
-                        pLiaConfig->postCfg.offset[1].x = 0;
-                        pLiaConfig->postCfg.offset[1].y = 0;
-                        pLiaConfig->flagAutoOffset = false;
+                        pCfg->post.offset[0].x = 0;
+                        pCfg->post.offset[0].y = 0;
+                        pCfg->post.offset[1].x = 0;
+                        pCfg->post.offset[1].y = 0;
+                        pCfg->flagAutoOffset = false;
                         return true;
                     }
                     if (arg == "state?") {
-                        std::cout << (pLiaConfig->flagAutoOffset ? "on" : "off") << std::endl;
+                        std::cout << (pCfg->flagAutoOffset ? "on" : "off") << std::endl;
                         return true;
                     }
                 }
@@ -507,9 +507,9 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
             if (subCmd == "freq" || subCmd == "frequency") {
                 if (isQuery) {
-                    std::cout << pLiaConfig->postCfg.hpFreq << std::endl;
+                    std::cout << pCfg->post.hpFreq << std::endl;
                 } else if (val >= 0.0 && val <= 50.0) {
-                    pLiaConfig->postCfg.hpFreq = val;
+                    pCfg->post.hpFreq = val;
                 } else {
                     return false;  // 周波数範囲外
                 }
@@ -522,20 +522,20 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
     // === ポスト処理オフセット位相（Ch1・Ch2 個別設定） ===
     commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) {
-        pLiaConfig->postCfg.offset[0].phase = val;
+        pCfg->post.offset[0].phase = val;
         return true;
     };
     commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) {
-        pLiaConfig->postCfg.offset[1].phase = val;
+        pCfg->post.offset[1].phase = val;
         return true;
     };
     // 位相照会
     commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) {
-        std::cout << pLiaConfig->postCfg.offset[0].phase << std::endl;
+        std::cout << pCfg->post.offset[0].phase << std::endl;
         return true;
     };
     commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) {
-        std::cout << pLiaConfig->postCfg.offset[1].phase << std::endl;
+        std::cout << pCfg->post.offset[1].phase << std::endl;
         return true;
     };
 
@@ -607,10 +607,10 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
 
         // ===== AWG 更新 =====
         // 波形設定が変更された場合は DAQ デバイスに反映
-        if (awgUpdateRequired && pLiaConfig->pDaq != nullptr) {
-            pLiaConfig->pDaq->awg.start(
-                pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase, pLiaConfig->awgCfg.ch[0].func,
-                pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase, pLiaConfig->awgCfg.ch[1].func
+        if (awgUpdateRequired && pCfg->pDaq != nullptr) {
+            pCfg->pDaq->awg.start(
+                pCfg->awg.ch[0].freq, pCfg->awg.ch[0].amp, pCfg->awg.ch[0].phase, pCfg->awg.ch[0].func,
+                pCfg->awg.ch[1].freq, pCfg->awg.ch[1].amp, pCfg->awg.ch[1].phase, pCfg->awg.ch[1].func
             );
             awgUpdateRequired = false;
         }
@@ -620,14 +620,14 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         std::cout << std::flush;
     }
 
-    pLiaConfig->statusPipe = false;
+    pCfg->statusPipe = false;
 }
 
 void test_pipe() {
     std::cout << "--- Starting Fixed Pipe Test ---" << std::endl;
 
     // 1. 準備
-    LiaConfig config;
+    LiaConfig cfg;
     std::stringstream testInput;
 
     // 標準入力を切り替え
@@ -636,10 +636,10 @@ void test_pipe() {
     // 2. stop_source を作成してスレッド開始
     // jthread を使うと stop_token が自動的に第1引数に渡されます
     std::stop_source sw;
-    std::jthread pipeThread(pipe, sw.get_token(), &config);
+    std::jthread pipeThread(pipe, sw.get_token(), &cfg);
 
     // pipe が起動するのを少し待つ
-    while (!config.statusPipe) {
+    while (!cfg.statusPipe) {
         std::this_thread::yield();
     }
 
@@ -651,31 +651,31 @@ void test_pipe() {
         };
 
     // --- テストケース実行 ---
-    const float DEFAULT_AMP = config.awgCfg.ch[0].amp;
+    const float DEFAULT_AMP = cfg.awg.ch[0].amp;
     std::cout << "[Test] Setting HPF..." << std::endl;
     sendCommand("calc:hpf:freq 15.0");
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    assert(config.postCfg.hpFreq == 15.0f);
+    assert(cfg.post.hpFreq == 15.0f);
 
     std::cout << "[Test] Setting W1 Amplitude..." << std::endl;
     sendCommand("w1:amp 1.5");
-    assert(config.awgCfg.ch[0].amp == 1.5f);
+    assert(cfg.awg.ch[0].amp == 1.5f);
 
     std::cout << "[Test] Setting CH2 Display ON..." << std::endl;
     sendCommand("chan2:disp on");
-    assert(config.flagCh2 == true);
+    assert(cfg.isCh2Enabled == true);
 
     std::cout << "[Test] Auto Offset (once)..." << std::endl;
     sendCommand("calc:offset:auto once");
-    assert(config.flagAutoOffset == true);
+    assert(cfg.flagAutoOffset == true);
 
     std::cout << "[Test] HPF Frequency..." << std::endl;
     sendCommand("calculate:hpf:freq 25.0");
-    assert(config.postCfg.hpFreq == 25.0f);
+    assert(cfg.post.hpFreq == 25.0f);
 
     std::cout << "[Test] Reset Command..." << std::endl;
     sendCommand("reset");
-    assert(config.awgCfg.ch[0].amp == DEFAULT_AMP);
+    assert(cfg.awg.ch[0].amp == DEFAULT_AMP);
 
     // 4. 終了処理
     std::cout << "[Test] Sending exit and requesting stop..." << std::endl;

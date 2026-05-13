@@ -28,8 +28,8 @@ struct LaunchOptions {
 };
 
 // --- 関数プロトタイプ ---
-void runMeasurement(std::stop_token st, LiaConfig* config);
-void runSimulatedMeasurement(std::stop_token st, LiaConfig* config);
+void runMeasurement(std::stop_token st, LiaConfig* cfg);
+void runSimulatedMeasurement(std::stop_token st, LiaConfig* cfg);
 LaunchOptions parseArguments(int argc, char* argv[]);
 
 // --- ユーティリティ ---
@@ -79,19 +79,19 @@ int main(int argc, char* argv[]) {
     if (options.useGui) {
         GuiConfig guiCfg{
             .title = "Lock-in amplifier",
-            .posX = settings.windowCfg.pos.x,
-            .posY = settings.windowCfg.pos.y,
-            .width = settings.windowCfg.size.x,
-            .height = settings.windowCfg.size.y,
-            .fontSize = settings.windowCfg.fontSize
+            .posX = settings.window.pos.x,
+            .posY = settings.window.pos.y,
+            .width = settings.window.size.x,
+            .height = settings.window.size.y,
+            .fontSize = settings.window.fontSize
         };
 
         Gui::Initialize(guiCfg);
         if (!Gui::GetWindow()) return -1;
 
-        settings.windowCfg.monitorScale = Gui::monitorScale;
+        settings.window.monitorScale = Gui::monitorScale;
         if (Gui::isSurfacePro7) {
-            settings.windowCfg.imGuiCondFlag = ImGuiCond_Always;
+            settings.window.imGuiCondFlag = ImGuiCond_Always;
         }
         guiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
     }
@@ -127,8 +127,8 @@ int main(int argc, char* argv[]) {
             Gui::EndFrame();
         }
         // ウィンドウ情報の保存
-        glfwGetWindowSize(window, &settings.windowCfg.size.x, &settings.windowCfg.size.y);
-        glfwGetWindowPos(window, &settings.windowCfg.pos.x, &settings.windowCfg.pos.y);
+        glfwGetWindowSize(window, &settings.window.size.x, &settings.window.size.y);
+        glfwGetWindowPos(window, &settings.window.pos.x, &settings.window.pos.y);
         Gui::EndFrame();
     }
     else {
@@ -148,67 +148,67 @@ int main(int argc, char* argv[]) {
 
 // --- 測定処理の実装 ---
 
-void runMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
+void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
     Daq_dwf daq;
 
     // DAQ初期設定
     daq.powerSupply(5.0);
-    const auto& ch0 = pLiaConfig->awgCfg.ch[0];
-    const auto& ch1 = pLiaConfig->awgCfg.ch[1];
+    const auto& ch0 = pCfg->awg.ch[0];
+    const auto& ch1 = pCfg->awg.ch[1];
     daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch0.func, ch1.freq, ch1.amp, ch1.phase, ch1.func);
 
-    daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
+    daq.scope.open(LiaConfigConst::RAW_RANGE, LiaConfigConst::RAW_SIZE, 1.0 / LiaConfigConst::RAW_DT);
     daq.scope.trigger();
 
-    pLiaConfig->pDaq = &daq;
-    pLiaConfig->device_sn = daq.device.sn;
-    pLiaConfig->timer.sleepFor(1.0); // 安定待ち
+    pCfg->pDaq = &daq;
+    pCfg->device_sn = daq.device.sn;
+    pCfg->timer.sleepFor(1.0); // 安定待ち
 
     daq.scope.start();
-    pLiaConfig->timer.start();
-    pLiaConfig->statusMeasurement = true;
+    pCfg->timer.start();
+    pCfg->statusMeasurement = true;
 
     for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
-        double t = pLiaConfig->timer.sleepUntil(nloop * MEASUREMENT_DT);
+        double t = pCfg->timer.sleepUntil(nloop * LiaConfigConst::MEASUREMENT_DT);
 
-        if (pLiaConfig->pauseCfg.flag) continue;
+        if (pCfg->pause.flag) continue;
 
-        if (pLiaConfig->flagCh2) {
-            daq.scope.record(pLiaConfig->raw.waveform[0].data(), pLiaConfig->raw.waveform[1].data());
+        if (pCfg->isCh2Enabled) {
+            daq.scope.record(pCfg->raw.waveform[0].data(), pCfg->raw.waveform[1].data());
         }
         else {
-            daq.scope.record(pLiaConfig->raw.waveform[0].data());
+            daq.scope.record(pCfg->raw.waveform[0].data());
         }
 
-        pLiaConfig->update(t);
+        pCfg->update(t);
     }
-    pLiaConfig->statusMeasurement = false;
+    pCfg->statusMeasurement = false;
 }
 
-void runSimulatedMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
-    pLiaConfig->timer.start();
-    pLiaConfig->statusMeasurement = true;
+void runSimulatedMeasurement(std::stop_token st, LiaConfig* pCfg) {
+    pCfg->timer.start();
+    pCfg->statusMeasurement = true;
 
     for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
-        double t = pLiaConfig->timer.sleepUntil(nloop * MEASUREMENT_DT);
+        double t = pCfg->timer.sleepUntil(nloop * LiaConfigConst::MEASUREMENT_DT);
 
-        if (pLiaConfig->pauseCfg.flag) continue;
+        if (pCfg->pause.flag) continue;
 
         // シミュレーション波形の生成
         const double phaseShift = 2.0 * std::numbers::pi * t / 60.0;
-        const auto& ch0 = pLiaConfig->awgCfg.ch[0];
-        const auto& ch1 = pLiaConfig->awgCfg.ch[1];
+        const auto& ch0 = pCfg->awg.ch[0];
+        const auto& ch1 = pCfg->awg.ch[1];
 
-        for (size_t i = 0; i < pLiaConfig->raw.times.size(); ++i) {
-            double wt = 2.0 * std::numbers::pi * ch0.freq * i * RAW_DT;
-            pLiaConfig->raw.waveform[0][i] = ch0.amp * std::sin(wt - phaseShift);
+        for (size_t i = 0; i < pCfg->raw.times.size(); ++i) {
+            double wt = 2.0 * std::numbers::pi * ch0.freq * i * LiaConfigConst::RAW_DT;
+            pCfg->raw.waveform[0][i] = ch0.amp * std::sin(wt - phaseShift);
 
-            if (pLiaConfig->flagCh2) {
-                pLiaConfig->raw.waveform[1][i] = ch1.amp * std::sin(wt - ch1.phase);
+            if (pCfg->isCh2Enabled) {
+                pCfg->raw.waveform[1][i] = ch1.amp * std::sin(wt - ch1.phase);
             }
         }
 
-        pLiaConfig->update(t);
+        pCfg->update(t);
     }
-    pLiaConfig->statusMeasurement = false;
+    pCfg->statusMeasurement = false;
 }

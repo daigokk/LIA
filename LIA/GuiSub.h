@@ -20,7 +20,7 @@ static void HelpMarker(const char* desc)
 
 class GuiSub {
 private:
-	LiaConfig& liaConfig;
+	LiaConfig& cfg;
 public:
 	Beep9 beep;
 	ControlWindow controlWindow;
@@ -31,49 +31,49 @@ public:
 	XYPlotWindow xyPlotWindow;
 	ACFMPlotWindow acfmPlotWindow;
 	ACFMVhVvPlotWindow acfmVhVvPlotWindow;
-	GuiSub(GLFWwindow* window, LiaConfig& liaConfig)
-		: liaConfig(liaConfig), controlWindow(window, liaConfig),
-		rawPlotWindow(window, liaConfig),
-		timeChartWindow(window, liaConfig),
-		timeChartZoomWindow(window, liaConfig),
-		deltaTimeChartWindow(window, liaConfig),
-		xyPlotWindow(window, liaConfig),
-		acfmPlotWindow(window, liaConfig),
-		acfmVhVvPlotWindow(window, liaConfig)
+	GuiSub(GLFWwindow* window, LiaConfig& cfg)
+		: cfg(cfg), controlWindow(window, cfg),
+		rawPlotWindow(window, cfg),
+		timeChartWindow(window, cfg),
+		timeChartZoomWindow(window, cfg),
+		deltaTimeChartWindow(window, cfg),
+		xyPlotWindow(window, cfg),
+		acfmPlotWindow(window, cfg),
+		acfmVhVvPlotWindow(window, cfg)
 	{
 
 	}
 	void ShowMainMenuBar() {
-		liaConfig.windowCfg.imGuiCondFlag &= ~ImGuiCond_Always;
+		cfg.window.imGuiCondFlag &= ~ImGuiCond_Always;
 		if (ImGui::BeginMainMenuBar()) {
 			if (ImGui::BeginMenu("Windows")) {
-				ImGui::MenuItem("Control panel", NULL, &liaConfig.windowCfg.controlWindow);
+				ImGui::MenuItem("Control panel", NULL, &cfg.window.controlWindow);
 				ImGui::Separator();
-				ImGui::MenuItem("Raw", NULL, &liaConfig.windowCfg.rawWindow);
-				ImGui::MenuItem("XY", NULL, &liaConfig.windowCfg.xyWindow);
-				ImGui::MenuItem("Time", NULL, &liaConfig.windowCfg.timeWindow);
-				ImGui::MenuItem("Delta time", NULL, &liaConfig.windowCfg.deltaTimeWindow);
+				ImGui::MenuItem("Raw", NULL, &cfg.window.rawWindow);
+				ImGui::MenuItem("XY", NULL, &cfg.window.xyWindow);
+				ImGui::MenuItem("Time", NULL, &cfg.window.timeWindow);
+				ImGui::MenuItem("Delta time", NULL, &cfg.window.deltaTimeWindow);
 				ImGui::Separator();
-				ImGui::MenuItem("ACFM", NULL, &liaConfig.windowCfg.acfmWindow);
+				ImGui::MenuItem("ACFM", NULL, &cfg.window.acfmWindow);
 				ImGui::Separator();
 				if (ImGui::MenuItem("Default size pos")) {
-					liaConfig.windowCfg.imGuiCondFlag |= ImGuiCond_Always;
+					cfg.window.imGuiCondFlag |= ImGuiCond_Always;
 				}
-				static bool lock = (liaConfig.windowCfg.imGuiWindowFlag & (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) != 0;
+				static bool lock = (cfg.window.imGuiWindowFlag & (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) != 0;
 				if (ImGui::MenuItem("Lock", NULL, &lock)) {
-					liaConfig.windowCfg.imGuiWindowFlag = lock ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize : 0;
+					cfg.window.imGuiWindowFlag = lock ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize : 0;
 				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Theme")) {
 				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-				ImGui::ListBox("", &liaConfig.windowCfg.theme, themes, IM_ARRAYSIZE(themes), 10);
+				ImGui::ListBox("", &cfg.window.theme, themes, IM_ARRAYSIZE(themes), 10);
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Tools")) {
-				ImGui::MenuItem("Ch2", NULL, &liaConfig.flagCh2);
-				ImGui::MenuItem("Beep", NULL, &liaConfig.plotCfg.beep);
-				ImGui::MenuItem("Surface mode", NULL, &liaConfig.plotCfg.surfaceMode);
+				ImGui::MenuItem("Ch2", NULL, &cfg.isCh2Enabled);
+				ImGui::MenuItem("Beep", NULL, &cfg.plot.beep);
+				ImGui::MenuItem("Surface mode", NULL, &cfg.plot.surfaceMode);
 				ImGui::EndMenu();
 			}
 			//if (ImGui::BeginMenu("Help")) {
@@ -84,29 +84,29 @@ public:
 		}
 	}
 	void show(void) {
-		const float nextItemWidth = 150 * liaConfig.windowCfg.monitorScale;
+		const float nextItemWidth = 150 * cfg.window.monitorScale;
 		static int theme = 0;
-		if (theme != liaConfig.windowCfg.theme)
+		if (theme != cfg.window.theme)
 		{
-			theme = liaConfig.windowCfg.theme;
+			theme = cfg.window.theme;
 			Gui::SetTheme(static_cast<GuiTheme>(theme));
 		}
-		beep.update(liaConfig.plotCfg.beep, liaConfig.ringBuffer.ch[0].x[liaConfig.ringBuffer.latestIdx], liaConfig.ringBuffer.ch[0].y[liaConfig.ringBuffer.latestIdx]);
+		beep.update(cfg.plot.beep, cfg.ringBuffer.ch[0].x[cfg.ringBuffer.latestIdx], cfg.ringBuffer.ch[0].y[cfg.ringBuffer.latestIdx]);
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
 		col.w = 0.4f; // RGBÇÕÇªÇÃÇ‹Ç‹ÅAalphaÇÃÇ›íuÇ´ä∑Ç¶
 		ShowMainMenuBar();
 
-		if (liaConfig.windowCfg.deltaTimeWindow) { deltaTimeChartWindow.show(); }
-		if (liaConfig.windowCfg.controlWindow) { controlWindow.show(); }
-		if (liaConfig.windowCfg.xyWindow) { xyPlotWindow.show(); }
-		if (liaConfig.windowCfg.rawWindow) { rawPlotWindow.show(); }
-		if (liaConfig.windowCfg.timeWindow) { timeChartWindow.show(); }
-		if (liaConfig.windowCfg.acfmWindow) { acfmPlotWindow.show(); }
-		if (liaConfig.pauseCfg.flag) {
+		if (cfg.window.deltaTimeWindow) { deltaTimeChartWindow.show(); }
+		if (cfg.window.controlWindow) { controlWindow.show(); }
+		if (cfg.window.xyWindow) { xyPlotWindow.show(); }
+		if (cfg.window.rawWindow) { rawPlotWindow.show(); }
+		if (cfg.window.timeWindow) { timeChartWindow.show(); }
+		if (cfg.window.acfmWindow) { acfmPlotWindow.show(); }
+		if (cfg.pause.flag) {
 			col.w = 1.0f;
 			timeChartZoomWindow.show();
-			if (liaConfig.windowCfg.acfmWindow) acfmVhVvPlotWindow.show();
+			if (cfg.window.acfmWindow) acfmVhVvPlotWindow.show();
 		}
 	}
 };
