@@ -22,6 +22,9 @@ const std::vector<std::string> helps = {
     "  data:raw:save [filename]    : Save raw data to file (optional filename)",
     "  data:raw:size?              : Get size of raw data buffer",
     "  data:raw?                   : Output raw data (time, ch1 [, ch2])",
+	"  data:fft:save [filename]    : Save FFT data to file (optional filename)",
+    "  data:fft:size?              : Get size of FFT data buffer",
+	"  data:fft?                   : Output FFT data (frequency, ch1 [, ch2])",
     "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)",
     "  data:xy?                    : Output latest XY data point",
     std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V)", RAW_RANGE * 1.2f),
@@ -179,6 +182,39 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
             return true;
         }
 
+		// === Functionの設定・照会（未実装） ===
+        else if (subCmd == "func" || subCmd == "function") {
+            if (isQuery) {
+				if (ch.func == 1) {
+					std::cout << "sine" << std::endl;
+				}
+				else if (ch.func == 2) {
+					std::cout << "square" << std::endl;
+				}
+				else if (ch.func == 3) {
+					std::cout << "triangle" << std::endl;
+				}
+				else {
+					std::cout << "unknown" << std::endl;
+				}
+            }
+            else {
+                if (arg == "sine" || arg == "sin") {
+                    ch.func = 1;  // funcSine
+                }
+                else if (arg == "square" || arg == "sq") {
+                    ch.func = 2;  // funcSquare
+                }
+                else if (arg == "triangle" || arg == "tri") {
+                    ch.func = 3;  // funcTriangle
+                }
+                else {
+                    return false;  // 不明な関数タイプ
+                }
+                awgUpdateRequired = true;
+            }
+            return true;
+        }
         return false;  // 不明なサブコマンド
     };
 
@@ -256,18 +292,45 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
                     return arg.empty() ? pLiaConfig->saveRawData() : pLiaConfig->saveRawData(arg.c_str());
                 } else if (tokens[2] == "size?") {
                     // 生データバッファのサイズを表示
-                    std::cout << pLiaConfig->rawData[0].size() << std::endl;
+                    std::cout << pLiaConfig->raw.waveform[0].size() << std::endl;
                     return true;
                 }
             }
         }
         // === 全生データの照会 ===
         else if (subCmd == "raw?") {
-            for (int i = 0; i < static_cast<int>(pLiaConfig->rawData[0].size()); ++i) {
+            for (int i = 0; i < static_cast<int>(pLiaConfig->raw.waveform[0].size()); ++i) {
                 if (!pLiaConfig->flagCh2) {
-                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData[0][i]);
+                    std::cout << std::format("{:e},{:e}\n", RAW_DT * i, pLiaConfig->raw.waveform[0][i]);
                 } else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->rawData[0][i], pLiaConfig->rawData[1][i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", RAW_DT * i, pLiaConfig->raw.waveform[0][i], pLiaConfig->raw.waveform[1][i]);
+                }
+            }
+            return true;
+        }
+        if (subCmd == "fft") {
+            if (tokens.size() > 2) {
+                if (tokens[2] == "save") {
+                    // 生データをファイルに保存
+                    pLiaConfig->raw.calculateFFT(pLiaConfig->flagCh2, pLiaConfig->awgCfg.ch[0].freq);  // FFT を計算してから処理
+                    return arg.empty() ? pLiaConfig->saveFftData() : pLiaConfig->saveFftData(arg.c_str());
+                }
+                else if (tokens[2] == "size?") {
+                    // 生データバッファのサイズを表示
+                    std::cout << pLiaConfig->raw.freqs.size() << std::endl;
+                    return true;
+                }
+            }
+        }
+        // === FFTデータの照会 ===
+        else if (subCmd == "fft?") {
+            pLiaConfig->raw.calculateFFT(pLiaConfig->flagCh2, pLiaConfig->awgCfg.ch[0].freq);  // FFT を計算してから処理
+            for (int i = 0; i < static_cast<int>(pLiaConfig->raw.freqs.size()); ++i) {
+                if (!pLiaConfig->flagCh2) {
+                    std::cout << std::format("{:e},{:e}\n", pLiaConfig->raw.freqs[i], pLiaConfig->raw.fftAbs[0][i]);
+                }
+                else {
+                    std::cout << std::format("{:e},{:e},{:e}\n", pLiaConfig->raw.freqs[i], pLiaConfig->raw.fftAbs[0][i], pLiaConfig->raw.fftAbs[1][i]);
                 }
             }
             return true;
@@ -546,8 +609,8 @@ void pipe(std::stop_token st, LiaConfig* pLiaConfig)
         // 波形設定が変更された場合は DAQ デバイスに反映
         if (awgUpdateRequired && pLiaConfig->pDaq != nullptr) {
             pLiaConfig->pDaq->awg.start(
-                pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase,
-                pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase
+                pLiaConfig->awgCfg.ch[0].freq, pLiaConfig->awgCfg.ch[0].amp, pLiaConfig->awgCfg.ch[0].phase, pLiaConfig->awgCfg.ch[0].func,
+                pLiaConfig->awgCfg.ch[1].freq, pLiaConfig->awgCfg.ch[1].amp, pLiaConfig->awgCfg.ch[1].phase, pLiaConfig->awgCfg.ch[1].func
             );
             awgUpdateRequired = false;
         }

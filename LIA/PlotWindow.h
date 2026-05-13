@@ -3,40 +3,63 @@
 #include "ImGuiWindowBase.h"
 #include "LiaConfig.h"
 
+// ============================================================================
+// Constants & Enums
+// ============================================================================
+
 constexpr float MILI_VOLT = 0.2f; // 0.2Vより大きい時はV表示、以下はmV表示
 
-const ImVec4 colors[] = {
-    ImVec4(1.0f, 0.0f, 0.0f, 1.0f), // Red
-    ImVec4(0.0f, 1.0f, 0.0f, 1.0f), // Green
-    ImVec4(0.0f, 0.0f, 1.0f, 1.0f), // Blue
-    ImVec4(1.0f, 1.0f, 0.0f, 1.0f), // Yellow
-    ImVec4(1.0f, 0.0f, 1.0f, 1.0f), // Magenta
-    ImVec4(1.0f, 0.645f, 0.0f, 1.0f), // Orange
-    ImVec4(234.0f / 255.0f, 162.0f / 255.0f, 34.0f / 255.0f, 1.0f), // Marigold
-    ImVec4(251.0f / 255.0f, 189.0f / 255.0f, 4.0f / 255.0f, 1.0f),  // Amber
-    ImVec4(176.0f / 255.0f, 252.0f / 255.0f, 56.0f / 255.0f, 1.0f), // Chartreuse
-    ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // White
-    ImVec4(0.0f, 0.0f, 0.0f, 1.0f)  // Black
+// 色インデックスのマジックナンバーを排除するための列挙型
+enum PaletteColor {
+    Color_Red = 0,
+    Color_Green,
+    Color_Blue,
+    Color_Yellow,
+    Color_Magenta,
+    Color_Orange,
+    Color_Marigold,
+    Color_Amber,
+    Color_Chartreuse,
+    Color_White,
+    Color_Black
 };
 
-// --- Formatters ---
+const ImVec4 colors[] = {
+    ImVec4(1.0f, 0.0f, 0.0f, 1.0f), // 0: Red
+    ImVec4(0.0f, 1.0f, 0.0f, 1.0f), // 1: Green
+    ImVec4(0.0f, 0.0f, 1.0f, 1.0f), // 2: Blue
+    ImVec4(1.0f, 1.0f, 0.0f, 1.0f), // 3: Yellow
+    ImVec4(1.0f, 0.0f, 1.0f, 1.0f), // 4: Magenta
+    ImVec4(1.0f, 0.645f, 0.0f, 1.0f), // 5: Orange
+    ImVec4(234.0f / 255.0f, 162.0f / 255.0f, 34.0f / 255.0f, 1.0f), // 6: Marigold
+    ImVec4(251.0f / 255.0f, 189.0f / 255.0f, 4.0f / 255.0f, 1.0f),  // 7: Amber
+    ImVec4(176.0f / 255.0f, 252.0f / 255.0f, 56.0f / 255.0f, 1.0f), // 8: Chartreuse
+    ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // 9: White
+    ImVec4(0.0f, 0.0f, 0.0f, 1.0f)  // 10: Black
+};
 
-void ScientificFormatter(double value, char* buff, int size, void*) {
+// ============================================================================
+// Formatters & Helper Utilities
+// ============================================================================
+
+inline void ScientificFormatter(double value, char* buff, int size, void*) {
     snprintf(buff, size, "%.1e", value);
 }
 
-void MiliFormatter(double value, char* buff, int size, void*) {
+inline void KiloFormatter(double value, char* buff, int size, void*) {
+    snprintf(buff, size, "%.0f", value * 1e-3);
+}
+
+inline void MiliFormatter(double value, char* buff, int size, void*) {
     snprintf(buff, size, "%.0f", value * 1e3);
 }
 
-void MicroFormatter(double value, char* buff, int size, void*) {
+inline void MicroFormatter(double value, char* buff, int size, void*) {
     snprintf(buff, size, "%.0f", value * 1e6);
 }
 
-// --- Helper Utilities ---
-
 // リングバッファの折り返しを考慮して線を描画するヘルパー
-auto plotRingBufferLine = [](const char* label, const std::vector<double>& x, const std::vector<double>& y, int startIdx, int size, const ImPlotSpec& spec) {
+inline auto plotRingBufferLine = [](const char* label, const std::vector<double>& x, const std::vector<double>& y, int startIdx, int size, const ImPlotSpec& spec) {
     int totalSize = static_cast<int>(x.size());
     if (startIdx + size > totalSize) {
         int firstPartSize = totalSize - startIdx;
@@ -48,16 +71,102 @@ auto plotRingBufferLine = [](const char* label, const std::vector<double>& x, co
     }
     };
 
-// --- Windows ---
+
+// ============================================================================
+// Class Declarations (クラス宣言部)
+// ============================================================================
 
 class RawPlotWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
 public:
     RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+
+    // 可読性向上のため、複雑なタブ描画処理を分離
+    void drawWaveformTab(bool useMv);
+    void drawFftTab(bool useMv);
 };
 
+
+class TimeChartWindow : public ImGuiWindowBase {
+public:
+    TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+    void calculateXYPlotIndices();
+};
+
+
+class TimeChartZoomWindow : public ImGuiWindowBase {
+public:
+    TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+
+    struct AnalysisResult {
+        double ts_vx[2], vxs[2], t50s_vx[2], v50s_vx[2];
+        double ts_vz[2], vzs[2], v50s_vz[2];
+        int vminIdx_vx, vmaxIdx_vx;
+        double x_min_last = -1.0, x_max_last = -1.0;
+    } res;
+
+    void analyzeSelection();
+};
+
+
+class DeltaTimeChartWindow : public ImGuiWindowBase {
+public:
+    DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+};
+
+
+class XYPlotWindow : public ImGuiWindowBase {
+public:
+    XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+};
+
+
+class ACFMPlotWindow : public ImGuiWindowBase {
+public:
+    ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+};
+
+
+class ACFMVhVvPlotWindow : public ImGuiWindowBase {
+public:
+    ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
+    void show();
+
+private:
+    LiaConfig& liaConfig;
+};
+
+
+// ============================================================================
+// Class Implementations (クラス実装部)
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// RawPlotWindow
+// ----------------------------------------------------------------------------
 inline RawPlotWindow::RawPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "Raw waveform"), liaConfig(liaConfig) {
     this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
@@ -72,6 +181,7 @@ inline void RawPlotWindow::show() {
     ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
+    // Header Controls
     if (ImGui::Button("Save")) {
         liaConfig.saveRawData(std::format("raw_{}.csv", liaConfig.getCurrentTimestamp()));
     }
@@ -86,43 +196,80 @@ inline void RawPlotWindow::show() {
         value = liaConfig.plotCfg.rawLimit;
     }
 
-    if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
+    // Tabs
+    if (ImGui::BeginTabBar("Raw")) {
         bool useMv = liaConfig.plotCfg.rawLimit <= MILI_VOLT;
+
+        if (ImGui::BeginTabItem("Waveform")) {
+            drawWaveformTab(useMv);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("FFT")) {
+            drawFftTab(useMv);
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+    ImGui::End();
+
+    // Command Logging
+    if (button != ButtonType::NON) {
+        liaConfig.cmds.push_back({ (float)liaConfig.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+    }
+}
+
+inline void RawPlotWindow::drawWaveformTab(bool useMv) {
+    if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         ImPlot::SetupAxes("Time (us)", useMv ? "v (mV)" : "v (V)", 0, 0);
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
 
-        ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.rawTime.front(), liaConfig.rawTime.back(), ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, liaConfig.raw.times.front(), liaConfig.raw.times.back(), ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -liaConfig.plotCfg.rawLimit, liaConfig.plotCfg.rawLimit, ImGuiCond_Always);
 
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
-        ImPlot::PlotLine(ch1_label, liaConfig.rawTime.data(), liaConfig.rawData[0].data(), (int)liaConfig.rawTime.size(), specLine);
+        ImPlot::PlotLine(ch1_label, liaConfig.raw.times.data(), liaConfig.raw.waveform[0].data(), (int)liaConfig.raw.times.size(), specLine);
 
         if (liaConfig.flagCh2) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-            ImPlot::PlotLine("Ch2", liaConfig.rawTime.data(), liaConfig.rawData[1].data(), (int)liaConfig.rawTime.size(), specLine);
+            ImPlot::PlotLine("Ch2", liaConfig.raw.times.data(), liaConfig.raw.waveform[1].data(), (int)liaConfig.raw.times.size(), specLine);
         }
         ImPlot::EndPlot();
     }
-    ImGui::End();
+}
 
-    if (button != ButtonType::NON) {
-        liaConfig.cmds.push_back({ (float)liaConfig.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+inline void RawPlotWindow::drawFftTab(bool useMv) {
+    if (ImPlot::BeginPlot("##FFT", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
+        ImPlot::SetupAxes("Freq. (kHz)", useMv ? "v (mV)" : "v (V)", 0, 0);
+        ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(KiloFormatter));
+        if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.raw.freqs[liaConfig.raw.freqs.size() / 80], ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.rawLimit, ImGuiCond_Always);
+
+        ImPlotSpec specLine;
+		specLine.LineWeight = 5.0f;
+        specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+
+        const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
+		liaConfig.raw.calculateFFT(liaConfig.flagCh2, liaConfig.awgCfg.ch[0].freq); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
+        ImPlot::PlotLine(ch1_label, liaConfig.raw.freqs.data(), liaConfig.raw.fftAbs[0].data(), (int)liaConfig.raw.freqs.size() / 80, specLine);
+
+        // Ch2 FFT Calculation & Plot
+        if (liaConfig.flagCh2) {
+            specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+            ImPlot::PlotLine("Ch2", liaConfig.raw.freqs.data(), liaConfig.raw.fftAbs[1].data(), (int)liaConfig.raw.freqs.size() / 80, specLine);
+        }
+
+        ImPlot::EndPlot();
     }
 }
 
 
-class TimeChartWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-    void calculateXYPlotIndices(); // 複雑な計算を分離
-public:
-    TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
-
+// ----------------------------------------------------------------------------
+// TimeChartWindow
+// ----------------------------------------------------------------------------
 inline TimeChartWindow::TimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "Time chart"), liaConfig(liaConfig) {
     this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 637 * liaConfig.windowCfg.monitorScale);
@@ -229,7 +376,7 @@ inline void TimeChartWindow::show() {
             bool clicked = false, hovered = false, held = false;
             ImPlot::DragRect(0, &liaConfig.pauseCfg.selectArea.X.Min, &liaConfig.pauseCfg.selectArea.Y.Min,
                 &liaConfig.pauseCfg.selectArea.X.Max, &liaConfig.pauseCfg.selectArea.Y.Max,
-                ImVec4(1, 0, 1, 1), ImPlotDragToolFlags_None, &clicked, &hovered, &held);
+                colors[Color_Magenta], ImPlotDragToolFlags_None, &clicked, &hovered, &held);
 
             calculateXYPlotIndices();
         }
@@ -247,33 +394,16 @@ inline void TimeChartWindow::show() {
 }
 
 
-class TimeChartZoomWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-
-    // 解析結果を保持する構造体（可読性向上のため）
-    struct AnalysisResult {
-        double ts_vx[2], vxs[2], t50s_vx[2], v50s_vx[2];
-        double ts_vz[2], vzs[2], v50s_vz[2];
-        int vminIdx_vx, vmaxIdx_vx;
-        double x_min_last = -1.0, x_max_last = -1.0;
-    } res;
-
-    void analyzeSelection();
-
-public:
-    TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
-
+// ----------------------------------------------------------------------------
+// TimeChartZoomWindow
+// ----------------------------------------------------------------------------
 inline TimeChartZoomWindow::TimeChartZoomWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "Time chart zoom"), liaConfig(liaConfig) {
-    this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 37*2 * liaConfig.windowCfg.monitorScale);
+    this->windowPos = ImVec2(0 * liaConfig.windowCfg.monitorScale, 37 * 2 * liaConfig.windowCfg.monitorScale);
     this->windowSize = ImVec2(440 * liaConfig.windowCfg.monitorScale, 563 * liaConfig.windowCfg.monitorScale);
 }
 
-// データの解析ロジックを分離
-void TimeChartZoomWindow::analyzeSelection() {
+inline void TimeChartZoomWindow::analyzeSelection() {
     auto& area = liaConfig.pauseCfg.selectArea;
     if (res.x_min_last == area.X.Min && res.x_max_last == area.X.Max) return;
 
@@ -325,7 +455,7 @@ inline void TimeChartZoomWindow::show() {
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
     ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
-    analyzeSelection(); // 解析実行
+    analyzeSelection();
 
     ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
     if (ImPlot::BeginPlot("##ZoomPlot", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
@@ -354,13 +484,13 @@ inline void TimeChartZoomWindow::show() {
 
         // Vx Vpp マーカーと 50% ライン
         if (liaConfig.flagCh2 && res.t50s_vx[0] < res.t50s_vx[1] && liaConfig.acfmData.vxpp > 2e-3) {
-            specScatter.MarkerFillColor = colors[7]; // Amber
+            specScatter.MarkerFillColor = colors[Color_Amber];
             ImPlot::PlotScatter("##Vx_pk", res.ts_vx, res.vxs, 2, specScatter);
 
-            specScatter.MarkerFillColor = colors[9]; // White
+            specScatter.MarkerFillColor = colors[Color_White];
             ImPlot::PlotScatter("##Vx_50%", res.t50s_vx, res.v50s_vx, 2, specScatter);
 
-            specLine.LineColor = colors[9];
+            specLine.LineColor = colors[Color_White];
             ImPlot::PlotLine("##Vx_line", res.t50s_vx, res.v50s_vx, 2, specLine);
 
             // テキスト表示
@@ -372,11 +502,11 @@ inline void TimeChartZoomWindow::show() {
 
         // Vz についても同様に描画
         if (liaConfig.acfmData.vpp_vz > 10e-3) {
-            specScatter.MarkerFillColor = colors[2]; // Blue
+            specScatter.MarkerFillColor = colors[Color_Blue];
             ImPlot::PlotScatter("##Vz_pk", res.ts_vz, res.vzs, 2, specScatter);
-            specScatter.MarkerFillColor = colors[9]; // White
+            specScatter.MarkerFillColor = colors[Color_White];
             ImPlot::PlotScatter("##Vz_50% marker", res.ts_vz, res.v50s_vz, 2, specScatter);
-            specLine.LineColor = colors[9]; // White
+            specLine.LineColor = colors[Color_White];
             ImPlot::PlotLine("##ch2 line", res.ts_vz, res.v50s_vz, 2, specLine);
 
             // テキスト表示
@@ -396,14 +526,9 @@ inline void TimeChartZoomWindow::show() {
 }
 
 
-class DeltaTimeChartWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-public:
-    DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
-
+// ----------------------------------------------------------------------------
+// DeltaTimeChartWindow
+// ----------------------------------------------------------------------------
 inline DeltaTimeChartWindow::DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "DeltTime chart"), liaConfig(liaConfig) {
     this->windowPos = ImVec2(1000 * liaConfig.windowCfg.monitorScale, 750 * liaConfig.windowCfg.monitorScale);
@@ -427,21 +552,16 @@ inline void DeltaTimeChartWindow::show() {
 
         ImPlotSpec specLine;
         specLine.Offset = liaConfig.ringBuffer.writeIdx;
-        ImPlot::PlotLine("##dt", &(liaConfig.ringBuffer.times[0]), &(liaConfig.deltaTimes[0]), liaConfig.ringBuffer.size, specLine);
+        ImPlot::PlotLine("##dt", &(liaConfig.ringBuffer.times[0]), &(liaConfig.ringBuffer.deltaTimes[0]), liaConfig.ringBuffer.size, specLine);
         ImPlot::EndPlot();
     }
     ImGui::End();
 }
 
 
-class XYPlotWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-public:
-    XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
-
+// ----------------------------------------------------------------------------
+// XYPlotWindow
+// ----------------------------------------------------------------------------
 inline XYPlotWindow::XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "XY"), liaConfig(liaConfig) {
     this->windowPos = ImVec2(440 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
@@ -457,6 +577,7 @@ inline void XYPlotWindow::show() {
     ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
+    // Toolbar Controls
     if (ImGui::Button("Clear")) { liaConfig.buttonClear(); }
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) { liaConfig.buttonAutoOffset(); }
@@ -489,19 +610,19 @@ inline void XYPlotWindow::show() {
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
         const char* ch1_label = liaConfig.flagCh2 ? "Ch1" : "##Ch1";
 
-        // ヘルパーを使用して描画を簡略化
         plotRingBufferLine(ch1_label, liaConfig.ringBuffer.ch[0].x, liaConfig.ringBuffer.ch[0].y,
             liaConfig.plotCfg.xyStartIdx, liaConfig.plotCfg.xySize, specLine);
-
         ImPlotSpec specScatter;
         specScatter.Marker = ImPlotMarker_Circle;
         specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
-        specScatter.MarkerFillColor = colors[2];
-        specScatter.LineWeight = 2.0f;
-        specScatter.MarkerLineColor = colors[2];
+        specScatter.MarkerFillColor = colors[Color_Blue];
+        specScatter.MarkerLineColor = colors[Color_Blue];
 
         ImPlot::PlotScatter("##NOW1", &(liaConfig.ringBuffer.ch[0].x[liaConfig.plotCfg.xyLatestIdx]), &(liaConfig.ringBuffer.ch[0].y[liaConfig.plotCfg.xyLatestIdx]), 1, specScatter);
-
+        if (liaConfig.awgCfg.ch[0].func != 1) {
+            specScatter.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+            ImPlot::PlotScatter("##FFT1", liaConfig.raw.harmonics[0].x.data(), liaConfig.raw.harmonics[0].y.data(), liaConfig.raw.harmonics[0].y.size(), specScatter);
+        }
         specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
         ImPlot::PlotScatter("##REC1", liaConfig.xyRecs.ch1xys.x.data(), liaConfig.xyRecs.ch1xys.y.data(), (int)liaConfig.xyRecs.ch1xys.x.size(), specScatter);
 
@@ -510,9 +631,13 @@ inline void XYPlotWindow::show() {
             plotRingBufferLine("Ch2", liaConfig.ringBuffer.ch[1].x, liaConfig.ringBuffer.ch[1].y,
                 liaConfig.plotCfg.xyStartIdx, liaConfig.plotCfg.xySize, specLine);
 
-            specScatter.MarkerFillColor = colors[7];
-            specScatter.MarkerLineColor = colors[7];
+            specScatter.MarkerFillColor = colors[Color_Amber];
+            specScatter.MarkerLineColor = colors[Color_Amber];
             ImPlot::PlotScatter("##NOW2", &(liaConfig.ringBuffer.ch[1].x[liaConfig.plotCfg.xyLatestIdx]), &(liaConfig.ringBuffer.ch[1].y[liaConfig.plotCfg.xyLatestIdx]), 1, specScatter);
+            if (liaConfig.awgCfg.ch[1].func != 1) {
+                specScatter.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+                ImPlot::PlotScatter("##FFT2", liaConfig.raw.harmonics[1].x.data(), liaConfig.raw.harmonics[1].y.data(), liaConfig.raw.harmonics[1].y.size(), specScatter);
+            }
 
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
             ImPlot::PlotScatter("##REC2", liaConfig.xyRecs.ch2xys.x.data(), liaConfig.xyRecs.ch2xys.y.data(), (int)liaConfig.xyRecs.ch2xys.x.size(), specScatter);
@@ -533,17 +658,12 @@ inline void XYPlotWindow::show() {
 }
 
 
-class ACFMPlotWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-public:
-    ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
-
+// ----------------------------------------------------------------------------
+// ACFMPlotWindow
+// ----------------------------------------------------------------------------
 inline ACFMPlotWindow::ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "ACFM"), liaConfig(liaConfig) {
-    this->windowPos = ImVec2(440 * liaConfig.windowCfg.monitorScale, 37*2 * liaConfig.windowCfg.monitorScale);
+    this->windowPos = ImVec2(440 * liaConfig.windowCfg.monitorScale, 37 * 2 * liaConfig.windowCfg.monitorScale);
     this->windowSize = ImVec2(560 * liaConfig.windowCfg.monitorScale, 560 * liaConfig.windowCfg.monitorScale);
 }
 
@@ -552,6 +672,7 @@ inline void ACFMPlotWindow::show() {
     ImGui::SetNextWindowSize(windowSize, liaConfig.windowCfg.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, liaConfig.windowCfg.imGuiWindowFlag);
 
+    // Toolbar Controls
     if (ImGui::Button("Clear")) { liaConfig.buttonClear(); }
     ImGui::SameLine();
     if (ImGui::Button("Auto offset")) { liaConfig.buttonAutoOffset(); }
@@ -563,7 +684,7 @@ inline void ACFMPlotWindow::show() {
     }
     if (ImGui::SliderFloat("Vx limit", &(liaConfig.plotCfg.Vx_limit), 0.01f, RAW_RANGE * 1.2f, "%4.2f V")) {
     }
-    
+
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
         ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
@@ -579,16 +700,15 @@ inline void ACFMPlotWindow::show() {
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
 
-        // ヘルパーを使用して描画を簡略化
         plotRingBufferLine("##ACFM", liaConfig.ringBuffer.ch[CH_VERTICAL].y, liaConfig.ringBuffer.ch[CH_HORIZONTAL].y,
             liaConfig.plotCfg.xyStartIdx, liaConfig.plotCfg.xySize, specLine);
 
         ImPlotSpec specScatter;
         specScatter.Marker = ImPlotMarker_Circle;
         specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
-        specScatter.MarkerFillColor = colors[8];
+        specScatter.MarkerFillColor = colors[Color_Chartreuse];
         specScatter.LineWeight = -1.0f;
-        specScatter.MarkerLineColor = colors[8];
+        specScatter.MarkerLineColor = colors[Color_Chartreuse];
 
         ImPlot::PlotScatter("##NOW", &(liaConfig.ringBuffer.ch[CH_VERTICAL].y[liaConfig.plotCfg.xyLatestIdx]), &(liaConfig.ringBuffer.ch[CH_HORIZONTAL].y[liaConfig.plotCfg.xyLatestIdx]), 1, specScatter);
 
@@ -603,14 +723,10 @@ inline void ACFMPlotWindow::show() {
     ImGui::End();
 }
 
-class ACFMVhVvPlotWindow : public ImGuiWindowBase {
-private:
-    LiaConfig& liaConfig;
-public:
-    ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig);
-    void show(void);
-};
 
+// ----------------------------------------------------------------------------
+// ACFMVhVvPlotWindow
+// ----------------------------------------------------------------------------
 inline ACFMVhVvPlotWindow::ACFMVhVvPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "ACFM Vx-Vz"), liaConfig(liaConfig) {
     this->windowPos = ImVec2(730 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
@@ -625,7 +741,6 @@ inline void ACFMVhVvPlotWindow::show() {
     if (ImPlot::BeginPlot("##Vx-Vz", ImVec2(-1, -1), liaConfig.windowCfg.imPlotFlag)) {
         bool useMv = liaConfig.plotCfg.limit <= MILI_VOLT;
 
-        // 軸のセットアップ
         ImPlot::SetupAxes(useMv ? "Vzpp (mV)" : "Vzpp (V)", useMv ? "Vxpp (mV)" : "Vhpp (V)", 0, 0);
         if (useMv) {
             ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
@@ -635,20 +750,19 @@ inline void ACFMVhVvPlotWindow::show() {
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, liaConfig.plotCfg.limit * 2.0f, ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0, liaConfig.plotCfg.Vx_limit, ImGuiCond_Always);
 
-        // 散布図の共通スタイル設定
         ImPlotSpec specScatter;
         specScatter.Marker = ImPlotMarker_Circle;
         specScatter.MarkerSize = 5 * liaConfig.windowCfg.monitorScale;
         specScatter.LineWeight = -1.0f;
 
-        // References (青色系)
-        specScatter.MarkerFillColor = colors[2];
-        specScatter.MarkerLineColor = colors[2];
+        // References
+        specScatter.MarkerFillColor = colors[Color_Blue];
+        specScatter.MarkerLineColor = colors[Color_Blue];
         ImPlot::PlotScatter("References", liaConfig.acfmData.Vvs.data(), liaConfig.acfmData.Vhs.data(), liaConfig.acfmData.size, specScatter);
 
-        // Result (アンバー系)
-        specScatter.MarkerFillColor = colors[7];
-        specScatter.MarkerLineColor = colors[7];
+        // Result
+        specScatter.MarkerFillColor = colors[Color_Amber];
+        specScatter.MarkerLineColor = colors[Color_Amber];
         ImPlot::PlotScatter("Result", &(liaConfig.acfmData.vpp_vz), &(liaConfig.acfmData.vxpp), 1, specScatter);
 
         ImPlot::EndPlot();

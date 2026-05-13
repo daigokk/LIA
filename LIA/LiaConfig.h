@@ -21,6 +21,7 @@
 #include "Psd.h"
 #include "Timer.h"
 #include "Filter.h"
+#include "pocketfft_hdronly.h"
 
 // ================================================================================
 // Constants
@@ -52,7 +53,7 @@ constexpr auto CH_HORIZONTAL = 1;
 // ================================================================================
 enum class ButtonType {
     NON = 0, Close = 1001,
-    AwgW1Freq = 1011, AwgW1Amp = 1012, AwgW1Phase = 1013,
+    AwgW1Freq = 1011, AwgW1Amp = 1012, AwgW1Phase = 1013, AwgW1Func = 1014,
     AwgW2Freq = 1021, AwgW2Amp = 1022, AwgW2Phase = 1023, AwgW2AutoSetup = 1024,
     PlotLimit = 1101, PostOffset1Phase = 1201, PostOffset2Phase = 1202,
     PlotSurfaceMode = 1301, PlotBeep = 1302,
@@ -115,7 +116,7 @@ public:
         bool rawWindow = true, xyWindow = true, timeWindow = true, deltaTimeWindow = true, acfmWindow = false;
 		bool aboutWindow = false;
         int theme = 3;
-		int imGuiCondFlag = 4;  // 
+		int imGuiCondFlag = 4;  // ImGuiCond_FirstUseEver
         int imGuiWindowFlag = 0;
         int imPlotFlag = 4;  // ImPlotFlags_NoMouseText
     };
@@ -166,6 +167,7 @@ public:
         std::vector<double> y;
 		void clear() { x.clear(); y.clear(); }
 		void push_back(double xVal, double yVal) { x.push_back(xVal); y.push_back(yVal); }
+		void resize(size_t newSize) { x.resize(newSize); y.resize(newSize); }
     };
 
     struct XYRecs {
@@ -175,6 +177,7 @@ public:
 
     struct RingBuffer {
         std::vector<double> times;
+        std::vector<double> deltaTimes;
         XYs ch[2];
 		size_t nofm = 0;  // number of measurements (総測定回数)
 		size_t latestIdx = 0;  // リングバッファの最新データのインデックス
@@ -183,8 +186,65 @@ public:
 
         void resize(size_t newSize) {
             times.resize(newSize);
-            ch[0].x.resize(newSize); ch[0].y.resize(newSize);
-            ch[1].x.resize(newSize); ch[1].y.resize(newSize);
+			deltaTimes.resize(newSize);
+            ch[0].resize(newSize);
+            ch[1].resize(newSize);
+        }
+    };
+
+    struct Raw {
+        std::vector<double> times;
+        std::vector<double> waveform[2];
+		std::vector<double> freqs;
+        std::vector<std::complex<double>> fftCh[2];
+        std::vector<double> fftAbs[2];
+        XYs harmonics[2];
+        void resize(size_t newSize) {
+			times.resize(newSize);
+			waveform[0].resize(newSize);
+			waveform[1].resize(newSize);
+			freqs.resize(newSize / 2 + 1);
+			fftCh[0].resize(newSize / 2 + 1);
+			fftCh[1].resize(newSize / 2 + 1);
+			fftAbs[0].resize(newSize / 2 + 1);
+			fftAbs[1].resize(newSize / 2 + 1);
+            for (size_t i = 0; i < freqs.size(); i++) {
+                freqs[i] = (double)i / times.size() / RAW_DT; // 周波数軸の値を計算
+            }
+			harmonics[0].resize(3);  // 基本波、3倍波、5倍波の3点を保存
+			harmonics[1].resize(3);
+        }
+		void calculateFFT(const bool flagCh2, const float freq) {
+			static size_t N = times.size();
+            static pocketfft::detail::shape_t shape{ N };
+            static pocketfft::detail::stride_t stride_in{ sizeof(double) };
+            static pocketfft::detail::stride_t stride_out{ sizeof(std::complex<double>) };
+            pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD, waveform[0].data(), fftCh[0].data(), 1.0);
+            for (size_t i = 0; i < fftCh[0].size(); i++) {
+                fftCh[0][i] = fftCh[0][i] * 2.0 / (double)N;
+                fftAbs[0][i] = std::abs(fftCh[0][i]);    // 振幅スペクトルに変換
+            }
+            size_t idx = static_cast<size_t>(freq * times.size() * RAW_DT);
+            harmonics[0].x[0] = fftCh[0][idx].real();  // 基本波の周波数
+            harmonics[0].y[0] = fftCh[0][idx].imag();
+            harmonics[0].x[1] = fftCh[0][idx * 3].real();  // 3倍波の周波数
+            harmonics[0].y[1] = fftCh[0][idx * 3].imag();
+            harmonics[0].x[2] = fftCh[0][idx * 5].real();  // 5倍波の周波数
+            harmonics[0].y[2] = fftCh[0][idx * 5].imag();
+
+			if (flagCh2) {
+				pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD, waveform[1].data(), fftCh[1].data(), 1.0);
+				for (size_t i = 0; i < fftCh[1].size(); i++) {
+                    fftCh[1][i] = fftCh[1][i] * 2.0 / (double)N;
+					fftAbs[1][i] = std::abs(fftCh[1][i]);
+				}
+                harmonics[1].x[0] = fftCh[1][idx].real();  // 基本波の周波数
+                harmonics[1].y[0] = fftCh[1][idx].imag();
+                harmonics[1].x[1] = fftCh[1][idx * 3].real();  // 3倍波の周波数
+                harmonics[1].y[1] = fftCh[1][idx * 3].imag();
+                harmonics[1].x[2] = fftCh[1][idx * 5].real();  // 5倍波の周波数
+                harmonics[1].y[2] = fftCh[1][idx * 5].imag();
+			}
         }
     };
 
@@ -219,10 +279,9 @@ public:
 
     XYs autoSetupHistoryW1, autoSetupHistoryW2;
     std::vector<std::array<float, 6>> cmds;
-    std::vector<double> rawTime;
-    std::vector<double> rawData[2];
-    std::vector<double> deltaTimes;
+    
     RingBuffer ringBuffer;
+    Raw raw;
     
 private:
     Psd psd;
@@ -237,8 +296,8 @@ public:
         allocateBuffers();
         loadSettingsFromFile();
 
-        for (size_t i = 0; i < rawTime.size(); ++i) {
-            rawTime[i] = i * RAW_DT * 1e6;
+        for (size_t i = 0; i < raw.times.size(); ++i) {
+            raw.times[i] = i * RAW_DT * 1e6;
         }
     }
 
@@ -251,8 +310,8 @@ public:
     void awgStart() {
         if (pDaq) {
             pDaq->awg.start(
-                awgCfg.ch[0].freq, awgCfg.ch[0].amp, awgCfg.ch[0].phase,
-                awgCfg.ch[1].freq, awgCfg.ch[1].amp, awgCfg.ch[1].phase
+                awgCfg.ch[0].freq, awgCfg.ch[0].amp, awgCfg.ch[0].phase, awgCfg.ch[0].func,
+                awgCfg.ch[1].freq, awgCfg.ch[1].amp, awgCfg.ch[1].phase, awgCfg.ch[1].func
             );
         }
     }
@@ -298,14 +357,14 @@ public:
 
     inline void update(double t) noexcept {
         if (psd.getCurrentFreq() != awgCfg.ch[0].freq) {
-            psd.initialize(awgCfg.ch[0].freq, RAW_DT, rawData[0].size());
+            psd.initialize(awgCfg.ch[0].freq, RAW_DT, raw.waveform[0].size());
         }
 
-        auto [x1, y1] = psd.calculate(rawData[0].data());
+        auto [x1, y1] = psd.calculate(raw.waveform[0].data());
         double x2 = 0.0, y2 = 0.0;
 
         if (flagCh2) {
-            std::tie(x2, y2) = psd.calculate(rawData[1].data());
+            std::tie(x2, y2) = psd.calculate(raw.waveform[1].data());
         }
 
         if (flagAutoOffset) {
@@ -359,12 +418,30 @@ public:
         file << (flagCh2 ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
 
         // stringstreamの無駄なメモリ確保とコピーを排除し、直接ファイルへ流し込む
-        for (size_t i = 0; i < rawData[0].size(); ++i) {
+        for (size_t i = 0; i < raw.waveform[0].size(); ++i) {
             if (flagCh2) {
-                file << std::format("{:e},{:e},{:e}\n", RAW_DT * i, rawData[0][i], rawData[1][i]);
+                file << std::format("{:e},{:e},{:e}\n", RAW_DT * i, raw.waveform[0][i], raw.waveform[1][i]);
             }
             else {
-                file << std::format("{:e},{:e}\n", RAW_DT * i, rawData[0][i]);
+                file << std::format("{:e},{:e}\n", RAW_DT * i, raw.waveform[0][i]);
+            }
+        }
+        return true;
+    }
+
+    bool saveFftData(const std::string& filename = "fft.csv") const {
+        std::ofstream file(std::format("./{}/{}", dirName, filename));
+        if (!file) return false;
+
+        file << (flagCh2 ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
+
+        // stringstreamの無駄なメモリ確保とコピーを排除し、直接ファイルへ流し込む
+        for (size_t i = 0; i < raw.freqs.size(); ++i) {
+            if (flagCh2) {
+                file << std::format("{:e},{:e},{:e},{:e},{:e}\n", raw.freqs[i], raw.fftCh[0][i].real(), raw.fftCh[0][i].imag(), raw.fftCh[1][i].real(), raw.fftCh[1][i].imag());
+            }
+            else {
+                file << std::format("{:e},{:e},{:e}\n", raw.freqs[i], raw.fftCh[0][i].real(), raw.fftCh[0][i].imag());
             }
         }
         return true;
@@ -478,10 +555,7 @@ private:
     }
 
     void allocateBuffers() {
-        rawTime.resize(RAW_SIZE);
-        rawData[0].resize(RAW_SIZE);
-        rawData[1].resize(RAW_SIZE);
-        deltaTimes.resize(MEASUREMENT_SIZE);
+        raw.resize(RAW_SIZE);
         ringBuffer.resize(MEASUREMENT_SIZE);
     }
 
@@ -496,7 +570,7 @@ private:
 
     inline void updateRingBuffers(double t) noexcept {
         ringBuffer.times[ringBuffer.writeIdx] = t;
-        deltaTimes[ringBuffer.writeIdx] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.writeIdx] - ringBuffer.times[ringBuffer.latestIdx]) * 1e3 : 0.0;
+        ringBuffer.deltaTimes[ringBuffer.writeIdx] = (ringBuffer.nofm > 0) ? (ringBuffer.times[ringBuffer.writeIdx] - ringBuffer.times[ringBuffer.latestIdx]) * 1e3 : 0.0;
 
         ringBuffer.latestIdx = ringBuffer.writeIdx;
         ringBuffer.nofm++;
@@ -540,6 +614,7 @@ private:
         ini.set("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
         ini.set("Awg", "ch[0].freq", awgCfg.ch[0].freq);
         ini.set("Awg", "ch[0].amp", awgCfg.ch[0].amp);
+		ini.set("Awg", "ch[0].func", awgCfg.ch[0].func);
         ini.set("Awg", "ch[1].amp", awgCfg.ch[1].amp);
         ini.set("Awg", "ch[1].phase", awgCfg.ch[1].phase);
         ini.set("Scope", "flagCh2", flagCh2);
@@ -582,6 +657,7 @@ private:
         windowCfg.imGuiCondFlag = ini.get("Window", "imGuiCondFlag", windowCfg.imGuiCondFlag);
         awgCfg.ch[0].freq = ini.get("Awg", "ch[0].freq", awgCfg.ch[0].freq);
         awgCfg.ch[0].amp = ini.get("Awg", "ch[0].amp", awgCfg.ch[0].amp);
+        awgCfg.ch[0].func = ini.get("Awg", "ch[0].func", awgCfg.ch[0].func);
         awgCfg.ch[1].amp = ini.get("Awg", "ch[1].amp", awgCfg.ch[1].amp);
         awgCfg.ch[1].phase = ini.get("Awg", "ch[1].phase", awgCfg.ch[1].phase);
         flagCh2 = ini.get("Scope", "flagCh2", flagCh2);
@@ -607,6 +683,8 @@ private:
         awgCfg.ch[1].freq = awgCfg.ch[0].freq;
         awgCfg.ch[0].amp = std::clamp(awgCfg.ch[0].amp, 0.1f, 5.0f);
         awgCfg.ch[1].amp = std::clamp(awgCfg.ch[1].amp, 0.0f, 5.0f);
+        awgCfg.ch[1].func = awgCfg.ch[0].func;
+
         plotCfg.limit = std::clamp(plotCfg.limit, 0.0f, 5.0f);
         setHPFrequency(postCfg.hpFreq);
         setLPFrequency(postCfg.lpFreq);

@@ -155,7 +155,7 @@ void runMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
     daq.powerSupply(5.0);
     const auto& ch0 = pLiaConfig->awgCfg.ch[0];
     const auto& ch1 = pLiaConfig->awgCfg.ch[1];
-    daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch1.freq, ch1.amp, ch1.phase);
+    daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch0.func, ch1.freq, ch1.amp, ch1.phase, ch1.func);
 
     daq.scope.open(RAW_RANGE, RAW_SIZE, 1.0 / RAW_DT);
     daq.scope.trigger();
@@ -174,10 +174,10 @@ void runMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
         if (pLiaConfig->pauseCfg.flag) continue;
 
         if (pLiaConfig->flagCh2) {
-            daq.scope.record(pLiaConfig->rawData[0].data(), pLiaConfig->rawData[1].data());
+            daq.scope.record(pLiaConfig->raw.waveform[0].data(), pLiaConfig->raw.waveform[1].data());
         }
         else {
-            daq.scope.record(pLiaConfig->rawData[0].data());
+            daq.scope.record(pLiaConfig->raw.waveform[0].data());
         }
 
         pLiaConfig->update(t);
@@ -199,12 +199,12 @@ void runSimulatedMeasurement(std::stop_token st, LiaConfig* pLiaConfig) {
         const auto& ch0 = pLiaConfig->awgCfg.ch[0];
         const auto& ch1 = pLiaConfig->awgCfg.ch[1];
 
-        for (size_t i = 0; i < pLiaConfig->rawTime.size(); ++i) {
+        for (size_t i = 0; i < pLiaConfig->raw.times.size(); ++i) {
             double wt = 2.0 * std::numbers::pi * ch0.freq * i * RAW_DT;
-            pLiaConfig->rawData[0][i] = ch0.amp * std::sin(wt - phaseShift);
+            pLiaConfig->raw.waveform[0][i] = ch0.amp * std::sin(wt - phaseShift);
 
             if (pLiaConfig->flagCh2) {
-                pLiaConfig->rawData[1][i] = ch1.amp * std::sin(wt - ch1.phase);
+                pLiaConfig->raw.waveform[1][i] = ch1.amp * std::sin(wt - ch1.phase);
             }
         }
 

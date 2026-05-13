@@ -139,16 +139,18 @@ public:
         }
 
         void start(
-            const double frequency1, const double amplitude1, const double phaseDeg1,
-            const double frequency2, const double amplitude2, const double phaseDeg2
+			const double frequency1, const double amplitude1, const double phaseDeg1, const FUNC func1,
+            const double frequency2, const double amplitude2, const double phaseDeg2, const FUNC func2
         )
         {
             this->frequency[0] = frequency1;
             this->amplitude[0] = amplitude1;
             this->phaseDeg[0] = phaseDeg1;
+            this->func[0] = func1;
             this->frequency[1] = frequency2;
             this->amplitude[1] = amplitude2;
             this->phaseDeg[1] = phaseDeg2;
+            this->func[1] = func2;
             start();
         }
 

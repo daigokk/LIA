@@ -41,8 +41,6 @@ class ControlWindow : public ImGuiWindowBase
 {
 private:
     LiaConfig& liaConfig;
-
-    // 内部用の描画メソッド（旧 show_）
     void drawContent();
 
 public:
@@ -50,7 +48,7 @@ public:
         : ImGuiWindowBase(window, "Control panel"), liaConfig(liaConfig)
     {
         this->windowPos = ImVec2(1000 * liaConfig.windowCfg.monitorScale, 37 * liaConfig.windowCfg.monitorScale);
-        this->windowSize = ImVec2(455 * liaConfig.windowCfg.monitorScale, 920 * liaConfig.windowCfg.monitorScale);
+        this->windowSize = ImVec2(455 * liaConfig.windowCfg.monitorScale, 923 * liaConfig.windowCfg.monitorScale);
     }
 
     // ボタンイベント（時刻、ボタンID、値）をコマンド履歴に記録
@@ -110,7 +108,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::InputFloat("θ (Deg.)", &liaConfig.awgCfg.ch[0].phase, 1.0f, 1.0f, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Phase, liaConfig.awgCfg.ch[0].phase);
             ImGui::EndDisabled();
-
+			
             ImGui::EndTabItem();
         }
 
@@ -154,7 +152,14 @@ inline void ControlWindow::awg(const float nextItemWidth)
                     th_autosetup.detach();
                 }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2AutoSetup, 0);
+            static const char* funcNames[] = { "Sine", "Square", "Triangle" };
+            int oldFunc = liaConfig.awgCfg.ch[0].func - 1;
+            if (ImGui::ListBox("Func", &oldFunc, funcNames, IM_ARRAYSIZE(funcNames), 1)) {
+                liaConfig.awgCfg.ch[0].func = oldFunc + 1;
+                liaConfig.awgCfg.ch[1].func = oldFunc + 1;
+                configChanged = true;
+            }
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, liaConfig.awgCfg.ch[0].func);
 
             ImGui::EndTabItem();
         }
