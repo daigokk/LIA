@@ -114,7 +114,7 @@ public:
         bool controlWindow = true;
         bool rawWindow = true, xyWindow = true, timeWindow = true, deltaTimeWindow = true, acfmWindow = false;
 		bool aboutWindow = false;
-        int theme = 0;
+        int theme = 3;
 		int imGuiCondFlag = 4;  // 
         int imGuiWindowFlag = 0;
         int imPlotFlag = 4;  // ImPlotFlags_NoMouseText
