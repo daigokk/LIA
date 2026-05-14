@@ -157,7 +157,7 @@ void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
     const auto& ch1 = pCfg->awg.ch[1];
     daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch0.func, ch1.freq, ch1.amp, ch1.phase, ch1.func);
 
-    daq.scope.open(LiaConfigConst::RAW_RANGE, LiaConfigConst::RAW_SIZE, 1.0 / LiaConfigConst::RAW_DT);
+    daq.scope.open(pCfg->scope.ch[0].range, LiaConfigConst::RAW_SIZE, 1.0 / LiaConfigConst::RAW_DT);
     daq.scope.trigger();
 
     pCfg->pDaq = &daq;

@@ -27,8 +27,8 @@ const std::vector<std::string> helps = {
 	"  data:fft?                   : Output FFT data (frequency, ch1 [, ch2])",
     "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)",
     "  data:xy?                    : Output latest XY data point",
-    std::format("  disp|display:xy:limit <value>    : Set XY display limit (0.01 to {} V)", LiaConfigConst::RAW_RANGE * 1.2f),
-    std::format("  disp|display:raw:limit <value>   : Set raw display limit (0.1 to {} V)", LiaConfigConst::RAW_RANGE * 1.2f),
+    "  disp|display:xy:limit <value>    : Set XY display limit",
+    "  disp|display:raw:limit <value>   : Set raw display limit",
     "  chan2:disp [on|off] or chan2:disp?: Enable/disable or query CH2 display state",
     "  acfm:disp [on|off] or acfm:disp?  : Enable/disable or query ACFM window display state",
     "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency",
@@ -337,29 +337,29 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
         }
         // === 時間と XY データの照会 ===
         else if (subCmd == "txy?") {
-            int size = pCfg->ringBuffer.size;
+            size_t size = pCfg->ringBuffer.size;
             if (val > 0) {
                 // 指定秒数のデータサイズを計算（C4244 対策：double で計算）
-                size = static_cast<int>(static_cast<double>(val) / static_cast<double>(LiaConfigConst::MEASUREMENT_DT));
+                size = static_cast<size_t>(static_cast<double>(val) / static_cast<double>(LiaConfigConst::MEASUREMENT_DT));
                 if (size > pCfg->ringBuffer.size) {
                     size = pCfg->ringBuffer.size;
                 }
             }
 
             // リングバッファのインデックスを計算
-            int idx = pCfg->ringBuffer.writeIdx - size;
+            size_t idx = pCfg->ringBuffer.writeIdx - size;
             if (idx < 0) {
-                if (pCfg->ringBuffer.nofm <= static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE)) {
+                if (pCfg->ringBuffer.nofm <= static_cast<size_t>(LiaConfigConst::MEASUREMENT_SIZE)) {
                     idx = 0;
                     size = pCfg->ringBuffer.writeIdx;
                 } else {
-                    idx += static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE);
+                    idx += static_cast<size_t>(LiaConfigConst::MEASUREMENT_SIZE);
                 }
             }
 
             // データ数を出力してから各データを出力
             std::cout << size << std::endl;
-            for (int i = 0; i < size; ++i) {
+            for (size_t i = 0; i < size; ++i) {
                 if (!pCfg->isCh2Enabled) {
                     std::cout << std::format("{:e},{:e},{:e}\n",
                         pCfg->ringBuffer.times[idx],
@@ -403,14 +403,14 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
 
         // XY 表示限界
         if (tokens[1] == "xy" && tokens[2] == "limit") {
-            if (val >= 0.01 && val <= LiaConfigConst::RAW_RANGE * 1.2) {
+            if (val >= 0.01 && val <= pCfg->scope.ch[0].range * 1.2) {
                 pCfg->plot.limit = val;
                 return true;
             }
         }
         // 生データ表示限界
         else if (tokens[1] == "raw" && tokens[2] == "limit") {
-            if (val >= 0.1 && val <= LiaConfigConst::RAW_RANGE * 1.2) {
+            if (val >= 0.1 && val <= pCfg->scope.ch[0].range * 1.2) {
                 pCfg->plot.rawLimit = val;
                 return true;
             }

@@ -77,8 +77,8 @@ public:
         double sumX = 0.0;
         double sumY = 0.0;
 
-        const double* __restrict pCos = cosTable_.data();
         const double* __restrict pSin = sinTable_.data();
+        const double* __restrict pCos = cosTable_.data();
 
 //#pragma omp simd reduction(+:sumX, sumY)
         for (size_t i = 0; i < usableSize_; ++i)

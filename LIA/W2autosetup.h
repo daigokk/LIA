@@ -83,10 +83,10 @@ void offsetHistory(LiaConfig::XYs& history, const Point& basePoint) {
 
 // AWGの設定を適用し、指定時間だけ待機する
 void applyAwgSettingsAndWait(LiaConfig* cfg, const PolarVector& ch0, const PolarVector& ch1, const int record_ms) {
-    cfg->awg.ch[0].amp = ch0.amplitude;
-    cfg->awg.ch[0].phase = ch0.phaseDeg;
-    cfg->awg.ch[1].amp = ch1.amplitude;
-    cfg->awg.ch[1].phase = ch1.phaseDeg;
+    cfg->awg.ch[0].amp = (float)ch0.amplitude;
+    cfg->awg.ch[0].phase = (float)ch0.phaseDeg;
+    cfg->awg.ch[1].amp = (float)ch1.amplitude;
+    cfg->awg.ch[1].phase = (float)ch1.phaseDeg;
     cfg->awgStart();
 
     // 安定化のための待機時間(ms) + 記録時間(ms)
@@ -101,11 +101,11 @@ void extractRingBufferToHistory(const LiaConfig::RingBuffer& ringBuffer, LiaConf
     targetHistory.x.resize(length);
     targetHistory.y.resize(length);
 
-    const int latestIdx = ringBuffer.latestIdx;
-    const int bufsize = ringBuffer.size;
+    const size_t latestIdx = ringBuffer.latestIdx;
+    const size_t bufsize = ringBuffer.size;
 
-    for (int i = 0; i < length; ++i) {
-        int idx = latestIdx - length + 1 + i;
+    for (size_t i = 0; i < length; ++i) {
+        size_t idx = latestIdx - length + 1 + i;
         // バッファのラップアラウンドを考慮
         while (idx < 0) {
             idx += bufsize;

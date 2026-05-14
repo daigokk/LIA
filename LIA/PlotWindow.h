@@ -195,7 +195,7 @@ inline void RawPlotWindow::show() {
         value = 0.0f;
     }
 
-    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, LiaConfigConst::RAW_RANGE * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.ch[0].range * 1.2f, "%4.1f V");
     if (ImGui::IsItemDeactivated()) {
         button = ButtonType::RawLimit;
         value = cfg.plot.rawLimit;
@@ -247,6 +247,7 @@ inline void RawPlotWindow::drawWaveformTab(bool useMv) {
 
 inline void RawPlotWindow::drawFftTab(bool useMv) {
     if (ImPlot::BeginPlot("##FFT", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
+        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, LiaConfigConst::RAW_DT); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
         ImPlot::SetupAxes("Freq. (kHz)", useMv ? "v (mV)" : "v (V)", 0, 0);
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(KiloFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
@@ -258,8 +259,7 @@ inline void RawPlotWindow::drawFftTab(bool useMv) {
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
         const char* ch1_label = cfg.isCh2Enabled ? "Ch1" : "##Ch1";
-		cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, LiaConfigConst::RAW_DT); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
-        ImPlot::PlotLine(ch1_label, cfg.raw.freqs.data(), cfg.raw.fftAbs[0].data(), (int)cfg.raw.freqs.size() / 80, specLine);
+		ImPlot::PlotLine(ch1_label, cfg.raw.freqs.data(), cfg.raw.fftAbs[0].data(), (int)cfg.raw.freqs.size() / 80, specLine);
 
         // Ch2 FFT Calculation & Plot
         if (cfg.isCh2Enabled) {
@@ -284,12 +284,12 @@ inline TimeChartWindow::TimeChartWindow(GLFWwindow* window, LiaConfig& cfg)
 inline void TimeChartWindow::calculateXYPlotIndices() {
     double deltaTimeMin = LONG_MAX;
     double deltaTimeMax = LONG_MAX;
-    int xyStartIdx = 0;
-    int xyLatestIdx = cfg.ringBuffer.latestIdx;
+    size_t xyStartIdx = 0;
+    size_t xyLatestIdx = cfg.ringBuffer.latestIdx;
     bool found = false;
 
     // 最新から逆順で検索
-    for (int idx = cfg.ringBuffer.latestIdx; 0 <= idx; idx--) {
+    for (size_t idx = cfg.ringBuffer.latestIdx; 0 <= idx; idx--) {
         double diffMin = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Min);
         double diffMax = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Max);
 
@@ -304,7 +304,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
 
     // リングバッファの終端側を検索（ラップアラウンド時）
     if (!found && cfg.ringBuffer.size < cfg.ringBuffer.nofm) {
-        for (int idx = cfg.ringBuffer.size - 1; cfg.ringBuffer.latestIdx < idx; idx--) {
+        for (size_t idx = cfg.ringBuffer.size - 1; cfg.ringBuffer.latestIdx < idx; idx--) {
             double diffMin = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Min);
             double diffMax = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Max);
 
@@ -318,7 +318,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
     cfg.plot.xyStartIdx = xyStartIdx;
     cfg.plot.xyLatestIdx = xyLatestIdx;
 
-    int xySize = xyLatestIdx - xyStartIdx;
+    size_t xySize = xyLatestIdx - xyStartIdx;
     cfg.plot.xySize = (xySize >= 0) ? xySize : (cfg.ringBuffer.size - xyStartIdx + xyLatestIdx);
 }
 
@@ -363,8 +363,8 @@ inline void TimeChartWindow::show() {
         ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
 
         ImPlotSpec specLine;
-        specLine.Offset = cfg.ringBuffer.writeIdx;
-        int count = cfg.ringBuffer.size;
+        specLine.Offset = (int)cfg.ringBuffer.writeIdx;
+        int count = (int)cfg.ringBuffer.size;
 
         ImPlot::PlotLine("Ch1y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[0].y[0]), count, specLine);
         if (cfg.isCh2Enabled) {
@@ -619,14 +619,14 @@ inline void XYPlotWindow::show() {
             cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
         ImPlotSpec specScatter;
         specScatter.Marker = ImPlotMarker_Circle;
-        specScatter.MarkerSize = 5 * cfg.window.monitorScale;
+        specScatter.MarkerSize = 5.0f * cfg.window.monitorScale;
         specScatter.MarkerFillColor = colors[Color_Blue];
         specScatter.MarkerLineColor = colors[Color_Blue];
 
         ImPlot::PlotScatter("##NOW1", &(cfg.ringBuffer.ch[0].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[0].y[cfg.plot.xyLatestIdx]), 1, specScatter);
-        if (cfg.awg.ch[0].func != 1) {
+		if (cfg.awg.ch[0].func != 1) { // Sin waveの場合はFFTを表示しない
             specScatter.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
-            ImPlot::PlotScatter("##FFT1", cfg.raw.harmonics[0].x.data(), cfg.raw.harmonics[0].y.data(), cfg.raw.harmonics[0].y.size(), specScatter);
+            ImPlot::PlotScatter("##FFT1", cfg.raw.harmonics[0].x.data(), cfg.raw.harmonics[0].y.data(), (int)cfg.raw.harmonics[0].y.size(), specScatter);
         }
         specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
         ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
@@ -641,7 +641,7 @@ inline void XYPlotWindow::show() {
             ImPlot::PlotScatter("##NOW2", &(cfg.ringBuffer.ch[1].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[1].y[cfg.plot.xyLatestIdx]), 1, specScatter);
             if (cfg.awg.ch[1].func != 1) {
                 specScatter.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-                ImPlot::PlotScatter("##FFT2", cfg.raw.harmonics[1].x.data(), cfg.raw.harmonics[1].y.data(), cfg.raw.harmonics[1].y.size(), specScatter);
+                ImPlot::PlotScatter("##FFT2", cfg.raw.harmonics[1].x.data(), cfg.raw.harmonics[1].y.data(), (int)cfg.raw.harmonics[1].y.size(), specScatter);
             }
 
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
@@ -650,9 +650,9 @@ inline void XYPlotWindow::show() {
 
         if (cfg.flagAutoSetupW2History) {
             specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
-            ImPlot::PlotLine("##HISTORY W1", cfg.autoSetupHistoryW1.x.data(), cfg.autoSetupHistoryW1.y.data(), cfg.autoSetupHistoryW1.x.size(), specLine);
+            ImPlot::PlotLine("##HISTORY W1", cfg.autoSetupHistoryW1.x.data(), cfg.autoSetupHistoryW1.y.data(), (int)cfg.autoSetupHistoryW1.x.size(), specLine);
             specLine.LineColor = ImPlot::GetColormapColor(3, ImPlotColormap_Deep);
-            ImPlot::PlotLine("##HISTORY W2", cfg.autoSetupHistoryW2.x.data(), cfg.autoSetupHistoryW2.y.data(), cfg.autoSetupHistoryW2.x.size(), specLine);
+            ImPlot::PlotLine("##HISTORY W2", cfg.autoSetupHistoryW2.x.data(), cfg.autoSetupHistoryW2.y.data(), (int)cfg.autoSetupHistoryW2.x.size(), specLine);
         }
         ImPlot::EndPlot();
     }
@@ -684,10 +684,10 @@ inline void ACFMPlotWindow::show() {
     ImGui::SameLine();
     if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
 
-    if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, LiaConfigConst::RAW_RANGE * 1.2f, "%4.2f V")) {
+    if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, cfg.scope.ch[LiaConfigConst::CH_VERTICAL].range * 1.2f, "%4.2f V")) {
         cfg.plot.Vx_limit = cfg.plot.limit / 2;
     }
-    if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, LiaConfigConst::RAW_RANGE * 1.2f, "%4.2f V")) {
+    if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, cfg.scope.ch[LiaConfigConst::CH_HORIZONTAL].range * 1.2f, "%4.2f V")) {
     }
 
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), cfg.window.imPlotFlag)) {

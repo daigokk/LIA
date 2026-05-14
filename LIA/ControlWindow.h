@@ -154,12 +154,12 @@ inline void ControlWindow::awg(const float nextItemWidth)
             }
             static const char* funcNames[] = { "Sine", "Square", "Triangle" };
             int oldFunc = cfg.awg.ch[0].func - 1;
-            if (ImGui::ListBox("Func", &oldFunc, funcNames, IM_ARRAYSIZE(funcNames), 1)) {
+            if (ImGui::ListBox("Func", &oldFunc, funcNames, IM_ARRAYSIZE(funcNames), 3)) {
                 cfg.awg.ch[0].func = oldFunc + 1;
                 cfg.awg.ch[1].func = oldFunc + 1;
                 configChanged = true;
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, cfg.awg.ch[0].func);
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, (float)cfg.awg.ch[0].func);
 
             ImGui::EndTabItem();
         }
@@ -186,7 +186,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
 
             const float step = (cfg.plot.limit <= 0.1f) ? 0.01f : 0.1f;
             if (ImGui::InputFloat("Limit (V)", &cfg.plot.limit, step, 0.1f, "%.2f")) {
-                cfg.plot.limit = std::clamp(cfg.plot.limit, 0.01f, LiaConfigConst::RAW_RANGE * 1.2f);
+                cfg.plot.limit = std::clamp(cfg.plot.limit, 0.01f, cfg.scope.ch[0].range * 1.2f);
                 if (0.1f < cfg.plot.limit && cfg.plot.limit < 0.2f) {
                     cfg.plot.limit = 0.2f;
                 }
@@ -197,13 +197,13 @@ inline void ControlWindow::plot(const float nextItemWidth)
             if (cfg.pause.flag) ImGui::BeginDisabled();
 
             ImGui::InputDouble("Ch1 θ (Deg.)", &cfg.post.offset[0].phase, 1.0, 10.0, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, cfg.post.offset[0].phase);
+            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, (float)cfg.post.offset[0].phase);
 
             if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
 
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::InputDouble("Ch2 θ (Deg.)", &cfg.post.offset[1].phase, 1.0, 10.0, "%3.0f");
-            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, cfg.post.offset[1].phase);
+            markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, (float)cfg.post.offset[1].phase);
 
             if (!cfg.isCh2Enabled) ImGui::EndDisabled();
             if (cfg.pause.flag) ImGui::EndDisabled();
@@ -289,7 +289,7 @@ inline void ControlWindow::post(const float nextItemWidth)
 inline void ControlWindow::monitor()
 {
     if (ImGui::TreeNode("Monitor")) {
-        const int idx = cfg.ringBuffer.latestIdx;
+        const size_t idx = cfg.ringBuffer.latestIdx;
 
         // Ch1 データ表示
         const float ch0_x = cfg.ringBuffer.ch[0].x[idx];
@@ -385,8 +385,8 @@ inline void ControlWindow::drawContent()
     const int totalSecs = static_cast<int>(cfg.ringBuffer.times[cfg.ringBuffer.latestIdx]);
     const int hours = totalSecs / 3600;
     const int mins = (totalSecs % 3600) / 60;
-    const double secs = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
-    ImGui::Text("Time:%02d:%02d:%02.0f", hours, mins, secs);
+    const int secs = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
+    ImGui::Text("Time:%02d:%02d:%02d", hours, mins, secs);
 
     if (button != ButtonType::NON) {
         buttonPressed(button, value);
