@@ -27,12 +27,6 @@
 // Constants
 // ================================================================================
 namespace LiaConfigConst {
-    constexpr float  RAW_RANGE = 2.5f;
-    constexpr double RAW_DT = 1.0 / 100e6;
-    constexpr int RAW_SIZE = 5000 * 2;
-    constexpr float  LOW_LIMIT_FREQ = static_cast<float>(0.5 / (static_cast<float>(RAW_SIZE) * RAW_DT));
-    constexpr float  HIGH_LIMIT_FREQ = static_cast<float>(1.0 / (1000.0 * RAW_DT));
-
     constexpr double MEASUREMENT_DT = 2e-3;
     constexpr int  MEASUREMENT_SEC = 60 * 10;
     constexpr int  MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
@@ -138,11 +132,37 @@ public:
     } awg;
 
     struct ScopeCfg {
+    public:
         struct Channel {
             float range = 2.5f;
+			//std::vector<double> buffer;
         };
         std::vector<Channel> ch;
-		ScopeCfg(int numChannels = 2) : ch(numChannels) {}
+        
+        double getSamplingDt() const { return samplingDt; }
+        int getBufferSize() const { return bufferSize; }
+        float getLowLimitFreq() const { return lowLimitFreq; }
+        float getHighLimitFreq() const { return highLimitFreq; }
+		ScopeCfg(int numChannels = 2) : ch(numChannels) {
+			updateFreqLimits(bufferSize, samplingDt);
+        }
+		void updateFreqLimits(const int bufferSize_, const double samplingDt_) {
+			bufferSize = bufferSize_;
+			samplingDt = samplingDt_;
+            // ナイキスト周波数や分解能に基づく制限計算
+            // 0.5 / (Size * dt) は、このバッファ長で観測できる最低周波数（の半分）
+            lowLimitFreq = static_cast<float>(0.5f / (static_cast<float>(bufferSize) * samplingDt));
+            // 1.0 / (1000 * dt) は、サンプリングレートの 1/1000
+            highLimitFreq = static_cast<float>(1.0f / (1000.0f * samplingDt));
+			//for (int i = 0; i < ch.size(); ++i) {
+			//	ch[i].buffer.resize(bufferSize);
+			//}
+		}
+    private:
+        double samplingDt = 1.0 / 100e6;
+        int bufferSize = 5000 * 2;
+        float lowLimitFreq;
+        float highLimitFreq;
     } scope;
 
     struct PostCfg {
@@ -302,7 +322,7 @@ public:
         loadSettingsFromFile();
 
         for (size_t i = 0; i < raw.times.size(); ++i) {
-            raw.times[i] = i * LiaConfigConst::RAW_DT * 1e6;
+            raw.times[i] = i * scope.getSamplingDt() * 1e6;
         }
     }
 
@@ -362,7 +382,7 @@ public:
     inline void update(double t) noexcept {
         // PSD初期化
         if (psd.getCurrentFreq() != awg.ch[0].freq) {
-            psd.initialize(awg.ch[0].freq, LiaConfigConst::RAW_DT, raw.waveform[0].size());
+            psd.initialize(awg.ch[0].freq, scope.getSamplingDt(), raw.waveform[0].size());
         }
 
         // PSD計算
@@ -420,7 +440,7 @@ public:
 
         file << (isCh2Enabled ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
         for (size_t i = 0; i < raw.waveform[0].size(); ++i) {
-            file << std::format("{:e},{:e}", LiaConfigConst::RAW_DT * i, raw.waveform[0][i]);
+            file << std::format("{:e},{:e}", scope.getSamplingDt() * i, raw.waveform[0][i]);
             if (isCh2Enabled) file << std::format(",{:e}", raw.waveform[1][i]);
             file << "\n";
         }
@@ -542,7 +562,7 @@ private:
     }
 
     void allocateBuffers() {
-        raw.resize(LiaConfigConst::RAW_SIZE, LiaConfigConst::RAW_DT);
+        raw.resize(scope.getBufferSize(), scope.getSamplingDt());
         ringBuffer.resize(LiaConfigConst::MEASUREMENT_SIZE);
     }
 
@@ -677,7 +697,7 @@ private:
         acfmData.mmk[2] = ini.get("ACFM", "mmk[2]", acfmData.mmk[2]);
 
         // 値のクランプと初期化
-        awg.ch[0].freq = std::clamp(awg.ch[0].freq, LiaConfigConst::LOW_LIMIT_FREQ, LiaConfigConst::HIGH_LIMIT_FREQ);
+        awg.ch[0].freq = std::clamp(awg.ch[0].freq, scope.getLowLimitFreq(), scope.getHighLimitFreq());
         awg.ch[1].freq = awg.ch[0].freq;
         awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
         awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);

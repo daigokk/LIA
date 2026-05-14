@@ -148,13 +148,13 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
             if (isQuery) {
                 // min/max/current のいずれかを照会
                 if (arg == "min") {
-                    std::cout << LiaConfigConst::LOW_LIMIT_FREQ << std::endl;
+                    std::cout << pCfg->scope.getLowLimitFreq() << std::endl;
                 } else if (arg == "max") {
-                    std::cout << LiaConfigConst::HIGH_LIMIT_FREQ << std::endl;
+                    std::cout << pCfg->scope.getHighLimitFreq() << std::endl;
                 } else {
                     std::cout << ch.freq << std::endl;
                 }
-            } else if (val >= LiaConfigConst::LOW_LIMIT_FREQ && val <= LiaConfigConst::HIGH_LIMIT_FREQ) {
+            } else if (val >= pCfg->scope.getLowLimitFreq() && val <= pCfg->scope.getHighLimitFreq()) {
                 ch.freq = val;
                 awgUpdateRequired = true;
             } else {
@@ -301,9 +301,9 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
         else if (subCmd == "raw?") {
             for (int i = 0; i < static_cast<int>(pCfg->raw.waveform[0].size()); ++i) {
                 if (!pCfg->isCh2Enabled) {
-                    std::cout << std::format("{:e},{:e}\n", LiaConfigConst::RAW_DT * i, pCfg->raw.waveform[0][i]);
+                    std::cout << std::format("{:e},{:e}\n", pCfg->scope.getSamplingDt() * i, pCfg->raw.waveform[0][i]);
                 } else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", LiaConfigConst::RAW_DT * i, pCfg->raw.waveform[0][i], pCfg->raw.waveform[1][i]);
+                    std::cout << std::format("{:e},{:e},{:e}\n", pCfg->scope.getSamplingDt() * i, pCfg->raw.waveform[0][i], pCfg->raw.waveform[1][i]);
                 }
             }
             return true;
@@ -312,7 +312,7 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
                     // 生データをファイルに保存
-                    pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, LiaConfigConst::RAW_DT);  // FFT を計算してから処理
+                    pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());  // FFT を計算してから処理
                     return arg.empty() ? pCfg->saveFftData() : pCfg->saveFftData(arg.c_str());
                 }
                 else if (tokens[2] == "size?") {
@@ -324,7 +324,7 @@ void pipe(std::stop_token st, LiaConfig* pCfg)
         }
         // === FFTデータの照会 ===
         else if (subCmd == "fft?") {
-            pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, LiaConfigConst::RAW_DT);  // FFT を計算してから処理
+            pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());  // FFT を計算してから処理
             for (int i = 0; i < static_cast<int>(pCfg->raw.freqs.size()); ++i) {
                 if (!pCfg->isCh2Enabled) {
                     std::cout << std::format("{:e},{:e}\n", pCfg->raw.freqs[i], pCfg->raw.fftAbs[0][i]);

@@ -185,7 +185,7 @@ inline void RawPlotWindow::show() {
     if (ImGui::Button("Save")) {
 		std::string timestamp = cfg.getCurrentTimestamp();
         cfg.saveRawData(std::format("raw_{}.csv", timestamp));
-        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, LiaConfigConst::RAW_DT);
+        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt());
 		cfg.saveFftData(std::format("fft_{}.csv", timestamp));
         button = ButtonType::RawSave;
 		value = 1.0f; // Saveボタンが押されたことを示すフラグ
@@ -247,7 +247,7 @@ inline void RawPlotWindow::drawWaveformTab(bool useMv) {
 
 inline void RawPlotWindow::drawFftTab(bool useMv) {
     if (ImPlot::BeginPlot("##FFT", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, LiaConfigConst::RAW_DT); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
+        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt()); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
         ImPlot::SetupAxes("Freq. (kHz)", useMv ? "v (mV)" : "v (V)", 0, 0);
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(KiloFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));

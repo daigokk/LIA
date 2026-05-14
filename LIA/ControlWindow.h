@@ -24,8 +24,8 @@ inline void markButtonIfItemDeactivated(ButtonType& outButton, float& outValue, 
 }
 
 // 周波数を有効範囲内にクランプ
-inline float clampFrequency(const float freqkHz) {
-    return std::clamp(freqkHz, LiaConfigConst::LOW_LIMIT_FREQ * 1e-3f, LiaConfigConst::HIGH_LIMIT_FREQ * 1e-3f);
+inline float clampFrequency(const float freqkHz, const LiaConfig& cfg) {
+    return std::clamp(freqkHz, cfg.scope.getLowLimitFreq() * 1e-3f, cfg.scope.getHighLimitFreq() * 1e-3f);
 }
 
 // 振幅を有効範囲内にクランプ
@@ -82,7 +82,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             float freqkHz = cfg.awg.ch[0].freq * 1e-3f;
 
             if (ImGui::InputFloat("Freq. (kHz)", &freqkHz, 1.0f, 1.0f, "%3.0f")) {
-                freqkHz = clampFrequency(freqkHz);
+                freqkHz = clampFrequency(freqkHz, cfg);
                 const float newFreqHz = freqkHz * 1e3f;
                 if (cfg.awg.ch[0].freq != newFreqHz) {
                     cfg.awg.ch[0].freq = newFreqHz;

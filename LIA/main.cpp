@@ -157,7 +157,7 @@ void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
     const auto& ch1 = pCfg->awg.ch[1];
     daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch0.func, ch1.freq, ch1.amp, ch1.phase, ch1.func);
 
-    daq.scope.open(pCfg->scope.ch[0].range, LiaConfigConst::RAW_SIZE, 1.0 / LiaConfigConst::RAW_DT);
+    daq.scope.open(pCfg->scope.ch[0].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
     daq.scope.trigger();
 
     pCfg->pDaq = &daq;
@@ -200,7 +200,7 @@ void runSimulatedMeasurement(std::stop_token st, LiaConfig* pCfg) {
         const auto& ch1 = pCfg->awg.ch[1];
 
         for (size_t i = 0; i < pCfg->raw.times.size(); ++i) {
-            double wt = 2.0 * std::numbers::pi * ch0.freq * i * LiaConfigConst::RAW_DT;
+            double wt = 2.0 * std::numbers::pi * ch0.freq * i * pCfg->scope.getSamplingDt();
             pCfg->raw.waveform[0][i] = ch0.amp * std::sin(wt - phaseShift);
 
             if (pCfg->isCh2Enabled) {
