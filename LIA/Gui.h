@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // リンカ設定（Windows API + OpenGL + GLFW）
 #pragma comment(lib, "opengl32.lib")

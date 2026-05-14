@@ -284,12 +284,12 @@ inline TimeChartWindow::TimeChartWindow(GLFWwindow* window, LiaConfig& cfg)
 inline void TimeChartWindow::calculateXYPlotIndices() {
     double deltaTimeMin = LONG_MAX;
     double deltaTimeMax = LONG_MAX;
-    size_t xyStartIdx = 0;
-    size_t xyLatestIdx = cfg.ringBuffer.latestIdx;
+    int xyStartIdx = 0;
+    int xyLatestIdx = cfg.ringBuffer.latestIdx;
     bool found = false;
 
     // 最新から逆順で検索
-    for (size_t idx = cfg.ringBuffer.latestIdx; 0 <= idx; idx--) {
+    for (int idx = cfg.ringBuffer.latestIdx; 0 <= idx; idx--) {
         double diffMin = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Min);
         double diffMax = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Max);
 
@@ -304,7 +304,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
 
     // リングバッファの終端側を検索（ラップアラウンド時）
     if (!found && cfg.ringBuffer.size < cfg.ringBuffer.nofm) {
-        for (size_t idx = cfg.ringBuffer.size - 1; cfg.ringBuffer.latestIdx < idx; idx--) {
+        for (int idx = cfg.ringBuffer.size - 1; cfg.ringBuffer.latestIdx < idx; idx--) {
             double diffMin = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Min);
             double diffMax = std::abs(cfg.ringBuffer.times[idx] - cfg.pause.selectArea.X.Max);
 
@@ -318,7 +318,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
     cfg.plot.xyStartIdx = xyStartIdx;
     cfg.plot.xyLatestIdx = xyLatestIdx;
 
-    size_t xySize = xyLatestIdx - xyStartIdx;
+    int xySize = xyLatestIdx - xyStartIdx;
     cfg.plot.xySize = (xySize >= 0) ? xySize : (cfg.ringBuffer.size - xyStartIdx + xyLatestIdx);
 }
 
@@ -617,7 +617,7 @@ inline void XYPlotWindow::show() {
 
         plotRingBufferLine(ch1_label, cfg.ringBuffer.ch[0].x, cfg.ringBuffer.ch[0].y,
             cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
-        ImPlotSpec specScatter;
+        ImPlotSpec specScatter, specScatterFft;
         specScatter.Marker = ImPlotMarker_Circle;
         specScatter.MarkerSize = 5.0f * cfg.window.monitorScale;
         specScatter.MarkerFillColor = colors[Color_Blue];
@@ -625,8 +625,11 @@ inline void XYPlotWindow::show() {
 
         ImPlot::PlotScatter("##NOW1", &(cfg.ringBuffer.ch[0].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[0].y[cfg.plot.xyLatestIdx]), 1, specScatter);
 		if (cfg.awg.ch[0].func != 1) { // Sin waveの場合はFFTを表示しない
-            specScatter.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
-            ImPlot::PlotScatter("##FFT1", cfg.raw.harmonics[0].x.data(), cfg.raw.harmonics[0].y.data(), (int)cfg.raw.harmonics[0].y.size(), specScatter);
+            specScatterFft.Marker = ImPlotMarker_Circle;
+            specScatterFft.MarkerSize = 3.0f * cfg.window.monitorScale;
+            specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+            specScatter.MarkerLineColor = colors[Color_Red];
+            ImPlot::PlotScatter("##FFT1", cfg.raw.harmonics[0].x.data(), cfg.raw.harmonics[0].y.data(), (int)cfg.raw.harmonics[0].y.size(), specScatterFft);
         }
         specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
         ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
@@ -640,8 +643,8 @@ inline void XYPlotWindow::show() {
             specScatter.MarkerLineColor = colors[Color_Amber];
             ImPlot::PlotScatter("##NOW2", &(cfg.ringBuffer.ch[1].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[1].y[cfg.plot.xyLatestIdx]), 1, specScatter);
             if (cfg.awg.ch[1].func != 1) {
-                specScatter.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-                ImPlot::PlotScatter("##FFT2", cfg.raw.harmonics[1].x.data(), cfg.raw.harmonics[1].y.data(), (int)cfg.raw.harmonics[1].y.size(), specScatter);
+                specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+                ImPlot::PlotScatter("##FFT2", cfg.raw.harmonics[1].x.data(), cfg.raw.harmonics[1].y.data(), (int)cfg.raw.harmonics[1].y.size(), specScatterFft);
             }
 
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
@@ -763,7 +766,7 @@ inline void ACFMVhVvPlotWindow::show() {
         // References
         specScatter.MarkerFillColor = colors[Color_Blue];
         specScatter.MarkerLineColor = colors[Color_Blue];
-        ImPlot::PlotScatter("References", cfg.acfmData.Vvs.data(), cfg.acfmData.Vhs.data(), cfg.acfmData.size, specScatter);
+        ImPlot::PlotScatter("References", cfg.acfmData.Vvs.data(), cfg.acfmData.Vhs.data(), (int)cfg.acfmData.size, specScatter);
 
         // Result
         specScatter.MarkerFillColor = colors[Color_Amber];

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "LiaConfig.h"
 #include <algorithm>   // std::transform
 #include <cmath>       // std::round

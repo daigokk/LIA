@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <iostream>
 #include <cmath>
@@ -292,16 +292,16 @@ inline void ControlWindow::monitor()
         const size_t idx = cfg.ringBuffer.latestIdx;
 
         // Ch1 データ表示
-        const float ch0_x = cfg.ringBuffer.ch[0].x[idx];
-        const float ch0_y = cfg.ringBuffer.ch[0].y[idx];
+        const float ch0_x = (float)cfg.ringBuffer.ch[0].x[idx];
+        const float ch0_y = (float)cfg.ringBuffer.ch[0].y[idx];
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", ch0_x, ch0_y);
         ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
 
         // Ch2 データ表示
         if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
 
-        const float ch1_x = cfg.ringBuffer.ch[1].x[idx];
-        const float ch1_y = cfg.ringBuffer.ch[1].y[idx];
+        const float ch1_x = (float)cfg.ringBuffer.ch[1].x[idx];
+        const float ch1_y = (float)cfg.ringBuffer.ch[1].y[idx];
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", ch1_x, ch1_y);
         ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
 
@@ -385,7 +385,7 @@ inline void ControlWindow::drawContent()
     const int totalSecs = static_cast<int>(cfg.ringBuffer.times[cfg.ringBuffer.latestIdx]);
     const int hours = totalSecs / 3600;
     const int mins = (totalSecs % 3600) / 60;
-    const int secs = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
+    const int secs = (int)cfg.ringBuffer.times[cfg.ringBuffer.latestIdx] - (hours * 3600) - (mins * 60);
     ImGui::Text("Time:%02d:%02d:%02d", hours, mins, secs);
 
     if (button != ButtonType::NON) {
