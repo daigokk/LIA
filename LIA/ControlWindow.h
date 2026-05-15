@@ -105,7 +105,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
 
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::BeginDisabled();
-            ImGui::InputFloat("θ (Deg.)", &cfg.awg.ch[0].phase, 1.0f, 1.0f, "%3.0f");
+            ImGui::InputFloat((const char*)u8"θ (Deg.)", &cfg.awg.ch[0].phase, 1.0f, 1.0f, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Phase, cfg.awg.ch[0].phase);
             ImGui::EndDisabled();
 			
@@ -134,7 +134,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Amp, cfg.awg.ch[1].amp);
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat("θ (Deg.)", &cfg.awg.ch[1].phase, 1.0f, 1.0f, "%3.0f")) {
+            if (ImGui::InputFloat((const char*)u8"θ (Deg.)", &cfg.awg.ch[1].phase, 1.0f, 1.0f, "%3.0f")) {
                 configChanged = true;
             }
             markButtonIfItemDeactivated(button, value, ButtonType::AwgW2Phase, cfg.awg.ch[1].phase);
@@ -177,6 +177,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
 inline void ControlWindow::plot(const float nextItemWidth)
 {
     ButtonType button = ButtonType::NON;
+    bool configChanged = false;
     float value = 0;
 
     if (ImGui::BeginTabBar("Plot window")) {
@@ -196,13 +197,13 @@ inline void ControlWindow::plot(const float nextItemWidth)
             ImGui::SetNextItemWidth(nextItemWidth);
             if (cfg.pause.flag) ImGui::BeginDisabled();
 
-            ImGui::InputDouble("Ch1 θ (Deg.)", &cfg.post.offset[0].phase, 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((const char*)u8"Ch1 θ (Deg.)", &cfg.post.offset[0].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, (float)cfg.post.offset[0].phase);
 
             if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
 
             ImGui::SetNextItemWidth(nextItemWidth);
-            ImGui::InputDouble("Ch2 θ (Deg.)", &cfg.post.offset[1].phase, 1.0, 10.0, "%3.0f");
+            ImGui::InputDouble((const char*)u8"Ch2 θ (Deg.)", &cfg.post.offset[1].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, (float)cfg.post.offset[1].phase);
 
             if (!cfg.isCh2Enabled) ImGui::EndDisabled();
@@ -210,17 +211,43 @@ inline void ControlWindow::plot(const float nextItemWidth)
 
             ImGui::EndTabItem();
         }
+        // ===== Time chart表示設定 =====
         if (ImGui::BeginTabItem("Time chart")) {
             ImGui::SetNextItemWidth(nextItemWidth);
 			float historySec = cfg.plot.historySec;
             if (ImGui::InputFloat("History (s)", &historySec, 1.0f, 10.0f, "%3.0f")) {
-                cfg.plot.historySec = std::clamp(historySec, 1.0f, (float)LiaConfigConst::MEASUREMENT_SEC);
+                cfg.plot.historySec = std::clamp(historySec, 1.0f, (float)cfg.ringBuffer.getSec());
             }
             ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 80.0f * cfg.window.monitorScale));
             ImGui::EndTabItem();
         }
+		// ===== Scope設定 =====
+        if (ImGui::BeginTabItem("Scope")) {
+            ImGui::SetNextItemWidth(nextItemWidth*0.75f);
+            static const char* rangeNames[] = { "+-2.5V", "+-25V" };
+            int oldRange1 = ((int)(cfg.scope.ch[0].range / 25.0f));
+            if (ImGui::ListBox("Ch1", &oldRange1, rangeNames, IM_ARRAYSIZE(rangeNames), 2)) {
+                if (oldRange1 == 0) { cfg.scope.ch[0].range = 2.5f; }
+                else { cfg.scope.ch[0].range = 25.0f; }
+                configChanged = true;
+            }
+			ImGui::SameLine(); ImGui::SetNextItemWidth(nextItemWidth*0.75f);
+            int oldRange2 = ((int)(cfg.scope.ch[1].range / 25.0f));
+            if (ImGui::ListBox("Ch2", &oldRange2, rangeNames, IM_ARRAYSIZE(rangeNames), 2)) {
+                if (oldRange2 == 0) { cfg.scope.ch[1].range = 2.5f; }
+                else { cfg.scope.ch[1].range = 25.0f; }
+                configChanged = true;
+            }
+            ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 31.0f * cfg.window.monitorScale));
+            ImGui::EndTabItem();
+        }
         ImGui::EndTabBar();
-
+        if (configChanged) {
+            cfg.scope.setMaxRange();
+            cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.getBufferSize(), 1.0 / cfg.scope.getSamplingDt());
+            cfg.pDaq->scope.trigger();
+            cfg.pDaq->scope.start();
+        }
         if (button != ButtonType::NON) {
             buttonPressed(button, value);
         }
@@ -295,7 +322,7 @@ inline void ControlWindow::monitor()
         const float ch0_x = (float)cfg.ringBuffer.ch[0].x[idx];
         const float ch0_y = (float)cfg.ringBuffer.ch[0].y[idx];
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", ch0_x, ch0_y);
-        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
+        ImGui::Text((const char*)u8"Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
 
         // Ch2 データ表示
         if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
@@ -303,7 +330,7 @@ inline void ControlWindow::monitor()
         const float ch1_x = (float)cfg.ringBuffer.ch[1].x[idx];
         const float ch1_y = (float)cfg.ringBuffer.ch[1].y[idx];
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", ch1_x, ch1_y);
-        ImGui::Text("Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
+        ImGui::Text((const char*)u8"Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
 
         if (!cfg.isCh2Enabled) ImGui::EndDisabled();
 

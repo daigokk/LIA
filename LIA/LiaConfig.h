@@ -26,10 +26,14 @@
 // ================================================================================
 // Constants
 // ================================================================================
-namespace LiaConfigConst {
-    constexpr double MEASUREMENT_DT = 2e-3;
-    constexpr int  MEASUREMENT_SEC = 60 * 10;
-    constexpr int  MEASUREMENT_SIZE = static_cast<size_t>(MEASUREMENT_SEC / MEASUREMENT_DT + 1);
+namespace LiaConfigDefaultConsts {
+    constexpr float AWG_FREQ = 100e3f;
+	constexpr float AWG_AMP = 1.0f;
+	constexpr float SCOPE_RANGE = 2.5f;
+    constexpr double SCOPE_DT = 1e-8; // 100 MHz sampling rate
+	constexpr int SCOPE_BUFFER_SIZE = 10000; // 0.1ms分のデータを保存
+    constexpr double RINGBUFFER_DT = 2e-3;
+	constexpr int RINGBUFFER_SEC = 60 * 10; // 10 minutes
 
     constexpr auto SETTINGS_FILE = "lia.ini";
     constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
@@ -121,26 +125,30 @@ public:
             bool enable = true;
             int func = funcSine;
             int trigsrc = 0;
-            float freq = 100e3f;
-            float amp = 1.0f;
+            float freq = LiaConfigDefaultConsts::AWG_FREQ;
+            float amp = LiaConfigDefaultConsts::AWG_AMP;
             float phase = 0.0f;
         };
         Channel ch[2];
         const float AWG_AMP_MIN = 0.0f;
         const float AWG_AMP_MAX = 5.0f;
         AwgCfg() { ch[1].amp = 0.0f; }
+        void reset() {
+            ch[0] = Channel();
+            ch[1] = Channel();
+        }
     } awg;
 
     struct ScopeCfg {
     public:
         struct Channel {
-            float range = 2.5f;
-			//std::vector<double> buffer;
+            float range = LiaConfigDefaultConsts::SCOPE_RANGE;
         };
         std::vector<Channel> ch;
-        
+        float getMaxRange() { return maxRange; }
+        int getNumChannels() const { return static_cast<int>(ch.size()); }
+		int getBufferSize() const { return bufferSize; }
         double getSamplingDt() const { return samplingDt; }
-        int getBufferSize() const { return bufferSize; }
         float getLowLimitFreq() const { return lowLimitFreq; }
         float getHighLimitFreq() const { return highLimitFreq; }
 		ScopeCfg(int numChannels = 2) : ch(numChannels) {
@@ -152,17 +160,30 @@ public:
             // ナイキスト周波数や分解能に基づく制限計算
             // 0.5 / (Size * dt) は、このバッファ長で観測できる最低周波数（の半分）
             lowLimitFreq = static_cast<float>(0.5f / (static_cast<float>(bufferSize) * samplingDt));
-            // 1.0 / (1000 * dt) は、サンプリングレートの 1/1000
+            // 1.0 / (100 * dt) は、サンプリングレートの 1/100
             highLimitFreq = static_cast<float>(1.0f / (1000.0f * samplingDt));
-			//for (int i = 0; i < ch.size(); ++i) {
-			//	ch[i].buffer.resize(bufferSize);
-			//}
 		}
+        void setMaxRange() {
+			maxRange = 0.0f;
+			for (auto& channel : ch) {
+				if (maxRange < channel.range) {
+					maxRange = channel.range;
+				}
+			}
+        }
+        void reset() {
+            for (auto& channel : ch) {
+                channel.range = LiaConfigDefaultConsts::SCOPE_RANGE;
+            }
+            setMaxRange();
+			updateFreqLimits(bufferSize, samplingDt);
+        }
     private:
-        double samplingDt = 1.0 / 100e6;
-        int bufferSize = 5000 * 2;
+        double samplingDt = LiaConfigDefaultConsts::SCOPE_DT;
+        int bufferSize = LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE;
         float lowLimitFreq;
         float highLimitFreq;
+		float maxRange = LiaConfigDefaultConsts::SCOPE_RANGE;
     } scope;
 
     struct PostCfg {
@@ -170,6 +191,12 @@ public:
         Offset offset[2];
         float hpFreq = 0.0f;
         float lpFreq = 100.0f;
+		void reset() {
+			offset[0] = Offset();
+			offset[1] = Offset();
+			hpFreq = 0.0f;
+			lpFreq = 100.0f;
+		}
     } post;
 
     struct PlotCfg {
@@ -178,6 +205,18 @@ public:
         float Vx_limit = 1.5f;
         int size = 0;
         int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
+		void reset() {
+			limit = 1.5f;
+			rawLimit = 1.5f;
+			historySec = 10.0f;
+			surfaceMode = false;
+			beep = false;
+			Vx_limit = 1.5f;
+			size = 0;
+			xyStartIdx = 0;
+			xySize = 0;
+			xyLatestIdx = 0;
+		}
     } plot;
 
     struct PauseCfg {
@@ -216,58 +255,70 @@ public:
         int latestIdx = 0; // 最新データのインデックス
         int writeIdx = 0;  // 書き込み位置のインデックス 
         int size = 0;      // 有効データ数
-
-        void resize(int newSize) {
-            times.resize(newSize);
-            deltaTimes.resize(newSize);
-            ch[0].resize(newSize);
-            ch[1].resize(newSize);
+		RingBuffer() {
+			update(dt, sec);
+		}
+        void update(const double dt_, const int  sec_) {
+            dt = dt_;
+            sec = sec_;
+            int bufferSize = static_cast<int>(sec / dt + 1);
+            times.resize(bufferSize);
+            deltaTimes.resize(bufferSize);
+            ch[0].resize(bufferSize);
+            ch[1].resize(bufferSize);
         }
+		double getDt() const { return dt; }
+		int getSec() const { return sec; }
+		int getMeasurementSize() const { return static_cast<int>(times.size()); }
+    private:
+        double dt = LiaConfigDefaultConsts::RINGBUFFER_DT;
+        int  sec = LiaConfigDefaultConsts::RINGBUFFER_SEC;
     } ringBuffer;
 
     struct Raw {
         std::vector<double> times;
-        std::vector<double> waveform[2];
+        std::vector<std::vector<double>> waveforms;
         std::vector<double> freqs;
-        std::vector<std::complex<double>> fftCh[2];
-        std::vector<double> fftAbs[2];
-        XYs harmonics[2];
+        std::vector<std::vector<std::complex<double>>> fftCh;
+        std::vector<std::vector<double>> fftAbs;
+		const int numHarmonics = 10; // 1倍、3倍、5倍波
+        std::vector<XYs> harmonics;
 
-        void resize(const size_t newSize, const double raw_dt) {
-            times.resize(newSize);
-            waveform[0].resize(newSize);
-            waveform[1].resize(newSize);
-
+        void initialize(const int numChannels, const size_t newSize, const double raw_dt) {
             size_t halfSize = newSize / 2 + 1;
+            times.resize(newSize);
+            for (size_t i = 0; i < times.size(); i++) {
+                times[i] = (double)i * raw_dt;
+            }
             freqs.resize(halfSize);
             for (size_t i = 0; i < freqs.size(); i++) {
                 freqs[i] = (double)i / newSize / raw_dt;
             }
-
-            for (int i = 0; i < 2; ++i) {
-                fftCh[i].resize(halfSize);
-                fftAbs[i].resize(halfSize);
-                harmonics[i].resize(3); // 基本波、3倍波、5倍波
-            }
+			for (int i = 0; i < numChannels; ++i) {
+				waveforms.push_back(std::vector<double>(newSize));
+				fftCh.push_back(std::vector<std::complex<double>>(halfSize));
+				fftAbs.push_back(std::vector<double>(halfSize));
+				harmonics.push_back(XYs{ std::vector<double>(numHarmonics), std::vector<double>(numHarmonics) });
+			}
         }
 
         void calculateFFT(const bool flagCh2, const float freq, const double raw_dt) {
-            const size_t N = times.size();
+            static size_t N = times.size();
             static pocketfft::detail::shape_t shape{ N };
-            static pocketfft::detail::stride_t stride_in{ sizeof(double) };
-            static pocketfft::detail::stride_t stride_out{ sizeof(std::complex<double>) };
+            static const pocketfft::detail::stride_t stride_in{ sizeof(double) };
+            static const pocketfft::detail::stride_t stride_out{ sizeof(std::complex<double>) };
 
             auto processChannel = [&](int chIndex) {
-                pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD, waveform[chIndex].data(), fftCh[chIndex].data(), 1.0);
+                pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD, waveforms[chIndex].data(), fftCh[chIndex].data(), 1.0);
                 for (size_t i = 0; i < fftCh[chIndex].size(); i++) {
                     fftCh[chIndex][i] *= (2.0 / (double)N);
                     fftAbs[chIndex][i] = std::abs(fftCh[chIndex][i]);
                 }
 
-                size_t idx = static_cast<size_t>(freq * N * raw_dt);
+                int baseIdx = static_cast<int>(N * raw_dt * freq);
                 // 1倍、3倍、5倍波の抽出
-                for (int m = 0; m < 3; ++m) {
-                    size_t harmonicIdx = idx * (1 + m * 2);
+                for (int m = 0; m < numHarmonics; ++m) {
+                    int harmonicIdx = baseIdx * (1 + m * 2);
                     harmonics[chIndex].x[m] = fftCh[chIndex][harmonicIdx].real() * cos(std::numbers::pi /2) - fftCh[chIndex][harmonicIdx].imag() * sin(std::numbers::pi /2);
                     harmonics[chIndex].y[m] = fftCh[chIndex][harmonicIdx].imag() * cos(std::numbers::pi /2) + fftCh[chIndex][harmonicIdx].real() * sin(std::numbers::pi /2);
                 }
@@ -320,10 +371,7 @@ public:
         initializeDirectory();
         allocateBuffers();
         loadSettingsFromFile();
-
-        for (size_t i = 0; i < raw.times.size(); ++i) {
-            raw.times[i] = i * scope.getSamplingDt() * 1e6;
-        }
+        raw.initialize(scope.getNumChannels(), scope.getBufferSize(), scope.getSamplingDt());
     }
 
     ~LiaConfig() {
@@ -333,9 +381,21 @@ public:
     }
 
     void reset() {
+		plot.reset();
+		post.reset();
+        window.acfmWindow = false;
         isCh2Enabled = false;
         flagAutoOffset = false;
         pause.flag = false;
+		
+        awg.reset();
+		scope.reset();
+		if (pDaq) {
+            pDaq->awg.start(awg.ch[0].freq, awg.ch[0].amp, awg.ch[0].phase, awg.ch[0].func, awg.ch[1].freq, awg.ch[1].amp, awg.ch[1].phase, awg.ch[1].func);
+			pDaq->scope.open(scope.ch[0].range, scope.ch[1].range, scope.getBufferSize(), 1.0 / scope.getSamplingDt());
+            pDaq->scope.trigger();
+            pDaq->scope.start();
+		}
         setHPFrequency(post.hpFreq);
         setLPFrequency(post.lpFreq);
     }
@@ -355,16 +415,16 @@ public:
     void setHPFrequency(double freq) {
         post.hpFreq = static_cast<float>(freq);
         for (int i = 0; i < 2; ++i) {
-            hpfCh[i].x.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
-            hpfCh[i].y.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
+            hpfCh[i].x.setCutoffFrequency(freq, ringBuffer.getDt());
+            hpfCh[i].y.setCutoffFrequency(freq, ringBuffer.getDt());
         }
     }
 
     void setLPFrequency(double freq) {
         post.lpFreq = static_cast<float>(freq);
         for (int i = 0; i < 2; ++i) {
-            lpfCh[i].x.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
-            lpfCh[i].y.setCutoffFrequency(freq, LiaConfigConst::MEASUREMENT_DT);
+            lpfCh[i].x.setCutoffFrequency(freq, ringBuffer.getDt());
+            lpfCh[i].y.setCutoffFrequency(freq, ringBuffer.getDt());
         }
     }
 
@@ -382,14 +442,14 @@ public:
     inline void update(double t) noexcept {
         // PSD初期化
         if (psd.getCurrentFreq() != awg.ch[0].freq) {
-            psd.initialize(awg.ch[0].freq, scope.getSamplingDt(), raw.waveform[0].size());
+            psd.initialize(awg.ch[0].freq, scope.getSamplingDt(), raw.waveforms[0].size());
         }
 
         // PSD計算
-        auto [x1, y1] = psd.calculate(raw.waveform[0].data());
+        auto [x1, y1] = psd.calculate(raw.waveforms[0].data());
         double x2 = 0.0, y2 = 0.0;
         if (isCh2Enabled) {
-            std::tie(x2, y2) = psd.calculate(raw.waveform[1].data());
+            std::tie(x2, y2) = psd.calculate(raw.waveforms[1].data());
         }
 
         // オートオフセット処理
@@ -439,9 +499,9 @@ public:
         if (!file) return false;
 
         file << (isCh2Enabled ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
-        for (size_t i = 0; i < raw.waveform[0].size(); ++i) {
-            file << std::format("{:e},{:e}", scope.getSamplingDt() * i, raw.waveform[0][i]);
-            if (isCh2Enabled) file << std::format(",{:e}", raw.waveform[1][i]);
+        for (size_t i = 0; i < raw.waveforms[0].size(); ++i) {
+            file << std::format("{:e},{:e}", scope.getSamplingDt() * i, raw.waveforms[0][i]);
+            if (isCh2Enabled) file << std::format(",{:e}", raw.waveforms[1][i]);
             file << "\n";
         }
         return true;
@@ -460,7 +520,7 @@ public:
         return true;
     }
 
-    bool saveResultsToFile(const std::string& filename = LiaConfigConst::RESULTS_FILE, const double sec = 0) const {
+    bool saveResultsToFile(const std::string& filename = LiaConfigDefaultConsts::RESULTS_FILE, const double sec = 0) const {
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
@@ -468,25 +528,25 @@ public:
 
         int outputSize = ringBuffer.size;
         if (sec > 0) {
-            int reqSize = static_cast<int>(sec / LiaConfigConst::MEASUREMENT_DT);
+            int reqSize = static_cast<int>(sec / ringBuffer.getDt());
             outputSize = std::min(reqSize, ringBuffer.size);
         }
 
         int idx = (ringBuffer.writeIdx >= outputSize)
             ? (ringBuffer.writeIdx - outputSize)
-            : (LiaConfigConst::MEASUREMENT_SIZE - (outputSize - ringBuffer.writeIdx));
+            : (ringBuffer.getMeasurementSize() - (outputSize - ringBuffer.writeIdx));
 
         for (int i = 0; i < outputSize; ++i) {
             file << std::format("{:e},{:e},{:e}", ringBuffer.times[idx], ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx]);
             if (isCh2Enabled) file << std::format(",{:e},{:e}", ringBuffer.ch[1].x[idx], ringBuffer.ch[1].y[idx]);
             file << "\n";
 
-            if (++idx >= LiaConfigConst::MEASUREMENT_SIZE) idx = 0;
+            if (++idx >= ringBuffer.getMeasurementSize()) idx = 0;
         }
         return true;
     }
 
-    bool saveCmdRecordsToFile(const std::string& filename = LiaConfigConst::CMDS_FILE) const {
+    bool saveCmdRecordsToFile(const std::string& filename = LiaConfigDefaultConsts::CMDS_FILE) const {
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
@@ -562,8 +622,8 @@ private:
     }
 
     void allocateBuffers() {
-        raw.resize(scope.getBufferSize(), scope.getSamplingDt());
-        ringBuffer.resize(LiaConfigConst::MEASUREMENT_SIZE);
+        raw.initialize(scope.getNumChannels(), scope.getBufferSize(), scope.getSamplingDt());
+        ringBuffer.update(ringBuffer.getDt(), ringBuffer.getMeasurementSize());
     }
 
     inline void processAndStorePoint(int chIndex, double x, double y) noexcept {
@@ -583,12 +643,12 @@ private:
         ringBuffer.latestIdx = ringBuffer.writeIdx;
         ringBuffer.nofm++;
 
-        if (++ringBuffer.writeIdx >= LiaConfigConst::MEASUREMENT_SIZE) ringBuffer.writeIdx = 0;
-        ringBuffer.size = std::min(ringBuffer.nofm, LiaConfigConst::MEASUREMENT_SIZE);
+        if (++ringBuffer.writeIdx >= ringBuffer.getMeasurementSize()) ringBuffer.writeIdx = 0;
+        ringBuffer.size = std::min(ringBuffer.nofm, ringBuffer.getMeasurementSize());
 
         // XYPlot 表示範囲の更新
         plot.xyLatestIdx = ringBuffer.latestIdx;
-        int xyMaxSize = static_cast<int>(plot.historySec / LiaConfigConst::MEASUREMENT_DT);
+        int xyMaxSize = static_cast<int>(plot.historySec / ringBuffer.getDt());
 
         plot.xySize = std::min(plot.xySize + 1, xyMaxSize);
 
@@ -601,7 +661,7 @@ private:
         }
     }
 
-    void saveSettingsToFile(const std::string& filename = LiaConfigConst::SETTINGS_FILE) const {
+    void saveSettingsToFile(const std::string& filename = LiaConfigDefaultConsts::SETTINGS_FILE) const {
         IniWrapper ini;
         // Window
         ini.set("Window", "pos.x", window.pos.x);
@@ -624,7 +684,11 @@ private:
         ini.set("Awg", "ch[0].func", awg.ch[0].func);
         ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
         ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
+		// Scope
         ini.set("Scope", "flagCh2", isCh2Enabled);
+		for (int i = 0; i < scope.getNumChannels(); ++i) {
+			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
+		}
         // Post
         ini.set("Post", "offset[0].phase", post.offset[0].phase);
         ini.set("Post", "offset[0].x", post.offset[0].x);
@@ -649,7 +713,7 @@ private:
         ini.save(filename);
     }
 
-    void loadSettingsFromFile(const std::string& filename = LiaConfigConst::SETTINGS_FILE) {
+    void loadSettingsFromFile(const std::string& filename = LiaConfigDefaultConsts::SETTINGS_FILE) {
         IniWrapper ini;
         ini.load(filename);
 
@@ -675,6 +739,10 @@ private:
         awg.ch[1].phase = ini.get("Awg", "ch[1].phase", awg.ch[1].phase);
 
         isCh2Enabled = ini.get("Scope", "flagCh2", isCh2Enabled);
+        for (int i = 0; i < scope.getNumChannels(); ++i) {
+            scope.ch[i].range = ini.get("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
+        }
+        scope.setMaxRange();
 
         post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
         post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);

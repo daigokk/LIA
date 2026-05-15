@@ -74,6 +74,9 @@ public:
 				ImGui::MenuItem("Ch2", NULL, &cfg.isCh2Enabled);
 				ImGui::MenuItem("Beep", NULL, &cfg.plot.beep);
 				ImGui::MenuItem("Surface mode", NULL, &cfg.plot.surfaceMode);
+				if (ImGui::MenuItem("Reset")) {
+					cfg.reset();
+				}
 				ImGui::EndMenu();
 			}
 			//if (ImGui::BeginMenu("Help")) {

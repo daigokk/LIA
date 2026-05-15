@@ -174,7 +174,8 @@ public:
         explicit Scope(Daq_dwf& parent) : m_parent(parent) {}
 
         // --- 設定 ---
-        double voltsRange = 5.0;
+        double voltsRange1 = 5.0;
+        double voltsRange2 = 5.0;
         int bufferSize = 5000;
         double SamplingRate = 100e6;
         double secTimeout = 0.0;
@@ -189,7 +190,8 @@ public:
         {
             DWF_CALL(FDwfAnalogInChannelEnableSet(getHdwf(), -1, true));
             DWF_CALL(FDwfAnalogInChannelOffsetSet(getHdwf(), -1, 0.0));
-            DWF_CALL(FDwfAnalogInChannelRangeSet(getHdwf(), -1, voltsRange * 2));
+            DWF_CALL(FDwfAnalogInChannelRangeSet(getHdwf(), 0, voltsRange1 * 2));
+            DWF_CALL(FDwfAnalogInChannelRangeSet(getHdwf(), 1, voltsRange2 * 2));
             DWF_CALL(FDwfAnalogInBufferSizeSet(getHdwf(), bufferSize));
             // 実際に設定されたバッファサイズを読み戻す
             DWF_CALL(FDwfAnalogInBufferSizeGet(getHdwf(), &bufferSize));
@@ -197,9 +199,10 @@ public:
             DWF_CALL(FDwfAnalogInChannelFilterSet(getHdwf(), -1, filterAverageFit));
         }
 
-        void open(const double voltsRange, const int bufferSize, const double SamplingRate)
+        void open(const double voltsRange1, const double voltsRange2, const int bufferSize, const double SamplingRate)
         {
-            this->voltsRange = voltsRange;
+            this->voltsRange1 = voltsRange1;
+			this->voltsRange2 = voltsRange2;
             this->bufferSize = bufferSize;
             this->SamplingRate = SamplingRate;
             open();

@@ -96,7 +96,7 @@ void applyAwgSettingsAndWait(LiaConfig* cfg, const PolarVector& ch0, const Polar
 
 // リングバッファから最新の指定時間分のデータを履歴バッファに抽出する
 void extractRingBufferToHistory(const LiaConfig::RingBuffer& ringBuffer, LiaConfig::XYs& targetHistory, const int record_ms) {
-    const int length = static_cast<int>((record_ms / 1000.0) / LiaConfigConst::MEASUREMENT_DT);
+    const int length = static_cast<int>((record_ms / 1000.0) / ringBuffer.getDt());
 
     targetHistory.x.resize(length);
     targetHistory.y.resize(length);
@@ -129,7 +129,7 @@ void exportHistoryToCsv(const LiaConfig* cfg) {
     ss << "# t(s),w1x(V),w1y(V),w2x(V),w2y(V)\n";
     for (size_t i = 0; i < cfg->autoSetupHistoryW1.x.size(); ++i) {
         ss << std::format("{:e},{:e},{:e},{:e},{:e}\n",
-            LiaConfigConst::MEASUREMENT_DT * i,
+            cfg->ringBuffer.getDt() * i,
             cfg->autoSetupHistoryW1.x[i], cfg->autoSetupHistoryW1.y[i],
             cfg->autoSetupHistoryW2.x[i], cfg->autoSetupHistoryW2.y[i]);
     }
@@ -150,18 +150,18 @@ void autosetupW2(LiaConfig* cfg) {
 		// W2をOFFにしてW1のみの状態で測定し、最新の点を基準にしてW2の振幅と位相を調整する
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { 0.0, 0.0 }, 100);
 
-        double x_ = cfg->ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].x[cfg->ringBuffer.latestIdx];
-		double y_ = cfg->ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].y[cfg->ringBuffer.latestIdx];
+        double x_ = cfg->ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].x[cfg->ringBuffer.latestIdx];
+		double y_ = cfg->ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y[cfg->ringBuffer.latestIdx];
 
 		// 位相オフセット前の座標に変換
-        const double phase_ = -cfg->post.offset[LiaConfigConst::CH_HORIZONTAL].phase * std::numbers::pi / 180.0;
+        const double phase_ = -cfg->post.offset[LiaConfigDefaultConsts::CH_HORIZONTAL].phase * std::numbers::pi / 180.0;
 		const double cos_t_ = std::cos(phase_);
 		const double sin_t_ = std::sin(phase_);
         std::tie(x_, y_) = std::tuple <double, double>(x_ * cos_t_ - y_ * sin_t_, x_ * sin_t_ + y_ * cos_t_);
 
 		// 座標オフセット前の座標に変換
-		x_ += cfg->post.offset[LiaConfigConst::CH_HORIZONTAL].x;
-		y_ += cfg->post.offset[LiaConfigConst::CH_HORIZONTAL].y;
+		x_ += cfg->post.offset[LiaConfigDefaultConsts::CH_HORIZONTAL].x;
+		y_ += cfg->post.offset[LiaConfigDefaultConsts::CH_HORIZONTAL].y;
 
 		// W1の振幅と位相を計算
         const PolarVector pvec = { std::hypot(x_, y_), std::atan2(y_, x_) * 180.0 / std::numbers::pi };

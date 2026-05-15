@@ -157,7 +157,7 @@ void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
     const auto& ch1 = pCfg->awg.ch[1];
     daq.awg.start(ch0.freq, ch0.amp, ch0.phase, ch0.func, ch1.freq, ch1.amp, ch1.phase, ch1.func);
 
-    daq.scope.open(pCfg->scope.ch[0].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
+    daq.scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
     daq.scope.trigger();
 
     pCfg->pDaq = &daq;
@@ -169,15 +169,15 @@ void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
     pCfg->statusMeasurement = true;
 
     for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
-        double t = pCfg->timer.sleepUntil(nloop * LiaConfigConst::MEASUREMENT_DT);
+        double t = pCfg->timer.sleepUntil(nloop * pCfg->ringBuffer.getDt());
 
         if (pCfg->pause.flag) continue;
 
         if (pCfg->isCh2Enabled) {
-            daq.scope.record(pCfg->raw.waveform[0].data(), pCfg->raw.waveform[1].data());
+            daq.scope.record(pCfg->raw.waveforms[0].data(), pCfg->raw.waveforms[1].data());
         }
         else {
-            daq.scope.record(pCfg->raw.waveform[0].data());
+            daq.scope.record(pCfg->raw.waveforms[0].data());
         }
 
         pCfg->update(t);
@@ -190,7 +190,7 @@ void runSimulatedMeasurement(std::stop_token st, LiaConfig* pCfg) {
     pCfg->statusMeasurement = true;
 
     for (size_t nloop = 0; !st.stop_requested(); ++nloop) {
-        double t = pCfg->timer.sleepUntil(nloop * LiaConfigConst::MEASUREMENT_DT);
+        double t = pCfg->timer.sleepUntil(nloop * pCfg->ringBuffer.getDt());
 
         if (pCfg->pause.flag) continue;
 
@@ -199,12 +199,12 @@ void runSimulatedMeasurement(std::stop_token st, LiaConfig* pCfg) {
         const auto& ch0 = pCfg->awg.ch[0];
         const auto& ch1 = pCfg->awg.ch[1];
 
-        for (size_t i = 0; i < pCfg->raw.times.size(); ++i) {
+        for (size_t i = 0; i < pCfg->raw.waveforms[0].size(); ++i) {
             double wt = 2.0 * std::numbers::pi * ch0.freq * i * pCfg->scope.getSamplingDt();
-            pCfg->raw.waveform[0][i] = ch0.amp * std::sin(wt - phaseShift);
+            pCfg->raw.waveforms[0][i] = ch0.amp * std::sin(wt - phaseShift);
 
             if (pCfg->isCh2Enabled) {
-                pCfg->raw.waveform[1][i] = ch1.amp * std::sin(wt - ch1.phase);
+                pCfg->raw.waveforms[1][i] = ch1.amp * std::sin(wt - ch1.phase);
             }
         }
 

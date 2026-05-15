@@ -1,657 +1,538 @@
 ﻿#pragma once
 #include "LiaConfig.h"
-#include <algorithm>   // std::transform
-#include <cmath>       // std::round
+#include <algorithm>
+#include <cmath>
 #include <format>
-#include <functional>  // std::function, std::bind, std::placeholders
+#include <functional>
 #include <iostream>
-#include <map>         // std::map
-#include <sstream>     // std::istringstream
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
+#include <thread> // std::this_thread, std::jthread
 
-
-const std::vector<std::string> helps = {
+// ============================================================
+// 定数定義
+// ============================================================
+const std::vector<std::string> HELPS = {
     "Available commands:",
-    "  reset or *rst               : Reset all settings to default values",
-    "  *idn?                       : Identify connected DAQ device",
-    "  error?                      : Show last error message",
-    "  end, exit, quit or close    : Exit the program",
-    "  pause or stop                 : Pause data acquisition",
-    "  run                         : Resume data acquisition",
-    "  data:raw:save [filename]    : Save raw data to file (optional filename)",
-    "  data:raw:size?              : Get size of raw data buffer",
-    "  data:raw?                   : Output raw data (time, ch1 [, ch2])",
-	"  data:fft:save [filename]    : Save FFT data to file (optional filename)",
-    "  data:fft:size?              : Get size of FFT data buffer",
-	"  data:fft?                   : Output FFT data (frequency, ch1 [, ch2])",
-    "  data:txy? [seconds]         : Output time and XY data for specified seconds (default all)",
-    "  data:xy?                    : Output latest XY data point",
-    "  disp|display:xy:limit <value>    : Set XY display limit",
-    "  disp|display:raw:limit <value>   : Set raw display limit",
-    "  chan2:disp [on|off] or chan2:disp?: Enable/disable or query CH2 display state",
-    "  acfm:disp [on|off] or acfm:disp?  : Enable/disable or query ACFM window display state",
-    "  w1|w2:freq|frequency [min|max|value] : Set or query waveform frequency",
-    "  w1|w2:amp|amplitude [min|max|value]  : Set or query waveform amplitude",
-    "  w1|w2:phase or w1|w2:phase? [value]  : Set or query waveform phase in degrees",
-    "  calc|calculate:offset:state [on|off] : Enable/disable auto offset (turns off if 'off')",
-    "  calc|calculate:offset:auto once      : Perform one-time auto offset",
-    "  calc|calculate:hpf:freq|frequency [value]: Set or query high-pass filter frequency (0 to 50 Hz)",
-    "  calc1|calc2:offset:phase or calc1|calc2:offset:phase? [value]: Set or query calculation offset phase in degrees",
-    "  help? or ?                  : Show this help message",
+    "  reset or *rst                : Reset all settings to default values",
+    "  *idn?                        : Identify connected DAQ device",
+    "  error?                       : Show last error message",
+    "  end, exit, quit or close     : Exit the program",
+    "  pause or stop                : Pause data acquisition",
+    "  run                          : Resume data acquisition",
+    "  data:raw:save [filename]     : Save raw data to file (optional filename)",
+    "  data:raw:size?               : Get size of raw data buffer",
+    "  data:raw?                    : Output raw data (time, ch1 [, ch2])",
+    "  data:fft:save [filename]     : Save FFT data to file (optional filename)",
+    "  data:fft:size?               : Get size of FFT data buffer",
+    "  data:fft?                    : Output FFT data (frequency, ch1 [, ch2])",
+    "  data:txy? [seconds]          : Output time and XY data for specified seconds (default all)",
+    "  data:xy?                     : Output latest XY data point",
+    "  disp|display:xy:limit <val>  : Set XY display limit",
+    "  disp|display:raw:limit <val> : Set raw display limit",
+    "  chan1|chan2:range [value|?]  : Set or query channel range",
+    "  chan2:disp [on|off|?]        : Enable/disable or query CH2 display state",
+    "  acfm:disp [on|off|?]         : Enable/disable or query ACFM window display state",
+    "  w1|w2:freq [min|max|value]   : Set or query waveform frequency",
+    "  w1|w2:amp [min|max|value]    : Set or query waveform amplitude",
+    "  w1|w2:phase [value|?]        : Set or query waveform phase in degrees",
+    "  calc:offset:state [on|off|?] : Enable/disable auto offset",
+    "  calc:offset:auto once        : Perform one-time auto offset",
+    "  calc:hpf:freq [value|?]      : Set or query high-pass filter frequency (0 to 50 Hz)",
+    "  calc1|calc2:offset:phase [v|?]: Set or query calculation offset phase in degrees",
+    "  help? or ?                   : Show this help message",
 };
 
 // ============================================================
-// 文字列分割ユーティリティ
+// ユーティリティ
 // ============================================================
-// 指定された区切り文字で文字列を分割し、トークンベクトルを返す
-// 空のトークンはスキップされる
-std::vector<std::string> split(const std::string& str, char delimiter = ':') {
-    std::vector<std::string> tokens;
+namespace utils {
+    // 文字列を区切り文字で分割し、空のトークンを除外する
+    inline std::vector<std::string> split(const std::string& str, char delimiter = ':') {
+        std::vector<std::string> tokens;
+        if (str.empty()) return tokens;
 
-    // 空の文字列は即座に空のベクトルを返す
-    if (str.empty()) {
+        std::string token;
+        std::istringstream tokenStream(str);
+        while (std::getline(tokenStream, token, delimiter)) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+            }
+        }
         return tokens;
     }
 
-    // ストリームを使用して文字列を区切り文字で分割
-    std::string token;
-    std::istringstream tokenStream(str);
-
-    while (std::getline(tokenStream, token, delimiter)) {
-        // 空のトークンはスキップ（連続する区切り文字の場合）
-        if (!token.empty()) {
-            tokens.push_back(token);
-        }
+    // 文字列を小文字に変換
+    inline void toLower(std::string& str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
     }
-
-    return tokens;
 }
 
+// ============================================================
+// コマンド処理クラス
+// ============================================================
+class CommandProcessor {
+public:
+    explicit CommandProcessor(LiaConfig* config) : pCfg(config) {
+        registerCommands();
+    }
 
-// ============================================================
-// パイプ処理（コマンドライン入力の処理）
-// ============================================================
-// ユーザーからのコマンド入力を受け取り、DAQ デバイスの制御を実施
-void pipe(std::stop_token st, LiaConfig* pCfg)
-{
-    pCfg->statusPipe = true;
-    std::string lastErrorCmd = "";
+    void processStream(std::stop_token st) {
+        pCfg->statusPipe = true;
+
+        while (!st.stop_requested()) {
+            std::string line;
+            if (!std::getline(std::cin, line)) {
+                break; // 入力ストリームの終了またはエラー
+            }
+
+            std::string original_line = line;
+            utils::toLower(line);
+
+            std::istringstream iss(line);
+            std::string commandPart, argumentPart;
+            iss >> commandPart;
+
+            // 終了判定
+            if (commandPart == "end" || commandPart == "exit" || commandPart == "quit" || commandPart == "close") {
+                break;
+            }
+
+            iss >> argumentPart;
+            float value = 0.0f;
+            try {
+                if (!argumentPart.empty()) {
+                    value = std::stof(argumentPart);
+                }
+            }
+            catch (...) {
+                value = 0.0f;
+            }
+
+            // 先頭の ':' を除去してコマンドを正規化 (例: ":chan1:range" -> "chan1:range")
+            if (!commandPart.empty() && commandPart.front() == ':') {
+                commandPart.erase(0, 1);
+            }
+
+            auto tokens = utils::split(commandPart, ':');
+            bool success = dispatchCommand(commandPart, tokens, argumentPart, value);
+
+            // エラー処理
+            if (!success) {
+                lastErrorCmd = original_line;
+                // クエリ (?) の場合は即座にエラーを出力
+                if (commandPart.find('?') != std::string::npos) {
+                    std::cout << std::format("Error: '{}'\n", lastErrorCmd);
+                    lastErrorCmd.clear();
+                }
+            }
+
+            // AWGの更新が必要な場合はデバイスに反映
+            if (awgUpdateRequired && pCfg->pDaq != nullptr) {
+                const auto& ch0 = pCfg->awg.ch[0];
+                const auto& ch1 = pCfg->awg.ch[1];
+                pCfg->pDaq->awg.start(
+                    ch0.freq, ch0.amp, ch0.phase, ch0.func,
+                    ch1.freq, ch1.amp, ch1.phase, ch1.func
+                );
+                awgUpdateRequired = false;
+            }
+
+            std::cout << std::flush;
+        }
+
+        pCfg->statusPipe = false;
+    }
+
+private:
+    LiaConfig* pCfg;
+    std::string lastErrorCmd;
     bool awgUpdateRequired = false;
 
-    // ============================================================
-    // 型定義
-    // ============================================================
-    // コマンドハンドラの関数型：
-    //   入力: (トークン化コマンド, 文字列引数, 数値引数)
-    //   出力: bool (成功 = true, 失敗 = false)
+    // ハンドラの型
     using CommandHandler = std::function<bool(const std::vector<std::string>&, const std::string&, float)>;
 
-    // ============================================================
-    // コマンド設定とエイリアスマップ
-    // ============================================================
-    std::map<std::string, CommandHandler> commandMap;
-
-    // コマンドエイリアスの正規化マップ
-    // 例：*rst → reset、disp → display
-    std::map<std::string, std::string> aliasMap = {
-        {"*rst", "reset"},
-        {"disp", "display"},
-        {"calc", "calculate"}
-    };
+    // 完全一致ルーティングと、プレフィックス（先頭要素）一致ルーティングを分離
+    std::map<std::string, CommandHandler> exactMatchHandlers;
+    std::map<std::string, CommandHandler> prefixMatchHandlers;
 
     // ============================================================
-    // ヘルパー関数
+    // コマンド登録 (ルーティングテーブル)
     // ============================================================
-    // トークン化されたコマンドの最初の要素をエイリアスから正規化
-    auto getNormalizedMainCommand = [&](const std::vector<std::string>& tokens, const std::string& originalCmd) -> std::string {
-        if (tokens.empty()) {
-            return originalCmd;
-        }
-        std::string mainCmd = tokens[0];
-        if (aliasMap.count(mainCmd)) {
-            return aliasMap.at(mainCmd);
-        }
-        return mainCmd;
-    };
+    void registerCommands() {
+        // --- システム・基本操作 ---
+        auto resetHandler = [this](auto&, auto&, auto) {
+            pCfg->reset();
+            lastErrorCmd.clear();
+            awgUpdateRequired = true;
+            return true;
+            };
+        exactMatchHandlers["reset"] = resetHandler;
+        exactMatchHandlers["*rst"] = resetHandler;
 
-    // ============================================================
-    // 波形設定ハンドラ（W1/W2）
-    // ============================================================
-    // W1 または W2 の周波数、振幅、位相を設定または照会
-    auto waveformHandler = [&](bool isW1, const auto& tokens, const std::string& arg, float val) -> bool {
-        if (tokens.size() < 2) {
+        exactMatchHandlers["*idn?"] = [this](auto&, auto&, auto) { return handleIdn(); };
+        exactMatchHandlers["error?"] = [this](auto&, auto&, auto) { return handleError(); };
+        exactMatchHandlers["pause"] = [this](auto&, auto&, auto) { pCfg->pause.flag = true; return true; };
+        exactMatchHandlers["stop"] = [this](auto&, auto&, auto) { pCfg->pause.flag = true; return true; };
+        exactMatchHandlers["run"] = [this](auto&, auto&, auto) { pCfg->pause.flag = false; return true; };
+
+        auto helpHandler = [this](auto&, auto&, auto) {
+            for (const auto& line : HELPS) std::cout << line << "\n";
+            return true;
+            };
+        exactMatchHandlers["help?"] = helpHandler;
+        exactMatchHandlers["?"] = helpHandler;
+        exactMatchHandlers["help"] = [this](const auto& tokens, auto&, auto) {
+            if (tokens.size() > 1 && tokens[1] == "size?") {
+                std::cout << HELPS.size() << "\n";
+                return true;
+            }
             return false;
-        }
+            };
 
-        // チャンネルの参照を取得
-        auto& ch = isW1 ? pCfg->awg.ch[0] : pCfg->awg.ch[1];
+        // --- プレフィックス(階層型)コマンド ---
+        prefixMatchHandlers["data"] = [this](auto& t, auto& a, auto v) { return handleData(t, a, v); };
+        prefixMatchHandlers["display"] = [this](auto& t, auto& a, auto v) { return handleDisplay(t, a, v); };
+        prefixMatchHandlers["disp"] = [this](auto& t, auto& a, auto v) { return handleDisplay(t, a, v); };
+        prefixMatchHandlers["w1"] = [this](auto& t, auto& a, auto v) { return handleWaveform(true, t, a, v); };
+        prefixMatchHandlers["w2"] = [this](auto& t, auto& a, auto v) { return handleWaveform(false, t, a, v); };
+        prefixMatchHandlers["calculate"] = [this](auto& t, auto& a, auto v) { return handleCalculate(t, a, v); };
+        prefixMatchHandlers["calc"] = [this](auto& t, auto& a, auto v) { return handleCalculate(t, a, v); };
 
-        std::string subCmd = tokens[1];
-        bool isQuery = (subCmd.back() == '?');
-        if (isQuery) {
-            subCmd.pop_back();  // 末尾の '?' を削除
-        }
+        // --- 完全一致による設定・照会コマンド ---
+        exactMatchHandlers["chan1:range"] = [this](auto&, auto&, float v) {
+            pCfg->scope.ch[0].range = v;
+			pCfg->scope.setMaxRange();
+            pCfg->pDaq->scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
+            pCfg->pDaq->scope.trigger();
+            pCfg->pDaq->scope.start();
+            return true;
+        };
+        exactMatchHandlers["chan1:range?"] = [this](auto&, auto&, auto) { std::cout << pCfg->scope.ch[0].range << "\n"; return true; };
+        exactMatchHandlers["chan2:range"] = [this](auto&, auto&, float v) {
+            pCfg->scope.ch[1].range = v;
+            pCfg->scope.setMaxRange();
+            pCfg->pDaq->scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
+            pCfg->pDaq->scope.trigger();
+            pCfg->pDaq->scope.start();
+            return true;
+        };
+        exactMatchHandlers["chan2:range?"] = [this](auto&, auto&, auto) { std::cout << pCfg->scope.ch[1].range << "\n"; return true; };
 
-        // ===== 位相（phase）の設定・照会 =====
-        if (subCmd == "phase") {
-            if (isQuery) {
-                std::cout << ch.phase << std::endl;
-            } else {
-                ch.phase = val;
-                awgUpdateRequired = true;
-            }
-            return true;
-        }
-        // ===== 周波数（freq/frequency）の設定・照会 =====
-        else if (subCmd == "freq" || subCmd == "frequency") {
-            if (isQuery) {
-                // min/max/current のいずれかを照会
-                if (arg == "min") {
-                    std::cout << pCfg->scope.getLowLimitFreq() << std::endl;
-                } else if (arg == "max") {
-                    std::cout << pCfg->scope.getHighLimitFreq() << std::endl;
-                } else {
-                    std::cout << ch.freq << std::endl;
-                }
-            } else if (val >= pCfg->scope.getLowLimitFreq() && val <= pCfg->scope.getHighLimitFreq()) {
-                ch.freq = val;
-                awgUpdateRequired = true;
-            } else {
-                return false;  // 周波数範囲外
-            }
-            return true;
-        }
-        // ===== 振幅（volt/amplitude）の設定・照会 =====
-        else if (subCmd == "volt" || subCmd == "voltage" || subCmd == "amp" || subCmd == "amplitude") {
-            if (isQuery) {
-                // min/max/current のいずれかを照会
-                if (arg == "min") {
-                    std::cout << pCfg->awg.AWG_AMP_MIN << std::endl;
-                } else if (arg == "max") {
-                    std::cout << pCfg->awg.AWG_AMP_MAX << std::endl;
-                } else {
-                    std::cout << ch.amp << std::endl;
-                }
-            } else if (val >= pCfg->awg.AWG_AMP_MIN && val <= pCfg->awg.AWG_AMP_MAX) {
-                ch.amp = val;
-                awgUpdateRequired = true;
-            } else {
-                return false;  // 振幅範囲外
-            }
-            return true;
-        }
+        exactMatchHandlers["chan2:disp"] = [this](auto&, const std::string& a, auto) { return handleToggle(a, pCfg->isCh2Enabled); };
+        exactMatchHandlers["chan2:disp?"] = [this](auto&, auto&, auto) { std::cout << (pCfg->isCh2Enabled ? "on\n" : "off\n"); return true; };
 
-		// === Functionの設定・照会（未実装） ===
-        else if (subCmd == "func" || subCmd == "function") {
-            if (isQuery) {
-				if (ch.func == 1) {
-					std::cout << "sine" << std::endl;
-				}
-				else if (ch.func == 2) {
-					std::cout << "square" << std::endl;
-				}
-				else if (ch.func == 3) {
-					std::cout << "triangle" << std::endl;
-				}
-				else {
-					std::cout << "unknown" << std::endl;
-				}
-            }
-            else {
-                if (arg == "sine" || arg == "sin") {
-                    ch.func = 1;  // funcSine
-                }
-                else if (arg == "square" || arg == "sq") {
-                    ch.func = 2;  // funcSquare
-                }
-                else if (arg == "triangle" || arg == "tri") {
-                    ch.func = 3;  // funcTriangle
-                }
-                else {
-                    return false;  // 不明な関数タイプ
-                }
-                awgUpdateRequired = true;
-            }
-            return true;
-        }
-        return false;  // 不明なサブコマンド
-    };
+        exactMatchHandlers["acfm:disp"] = [this](auto&, const std::string& a, auto) { return handleToggle(a, pCfg->window.acfmWindow); };
+        exactMatchHandlers["acfm:disp?"] = [this](auto&, auto&, auto) { std::cout << (pCfg->window.acfmWindow ? "on\n" : "off\n"); return true; };
+
+        exactMatchHandlers["calc1:offset:phase"] = [this](auto&, auto&, float v) { pCfg->post.offset[0].phase = v; return true; };
+        exactMatchHandlers["calc1:offset:phase?"] = [this](auto&, auto&, auto) { std::cout << pCfg->post.offset[0].phase << "\n"; return true; };
+        exactMatchHandlers["calc2:offset:phase"] = [this](auto&, auto&, float v) { pCfg->post.offset[1].phase = v; return true; };
+        exactMatchHandlers["calc2:offset:phase?"] = [this](auto&, auto&, auto) { std::cout << pCfg->post.offset[1].phase << "\n"; return true; };
+    }
 
     // ============================================================
-    // コマンドハンドラ登録
+    // ディスパッチ処理
     // ============================================================
-    // リセット：全設定をデフォルト値に戻す
-    commandMap["reset"] = [&](const auto&, const auto&, auto) {
-        pCfg->reset();
-        lastErrorCmd = "";
-        awgUpdateRequired = true;
-        return true;
-    };
+    bool dispatchCommand(const std::string& commandPart, const std::vector<std::string>& tokens, const std::string& arg, float val) {
+        // 1. 完全一致の検索 (例: "chan1:range")
+        if (auto it = exactMatchHandlers.find(commandPart); it != exactMatchHandlers.end()) {
+            return it->second(tokens, arg, val);
+        }
 
-    // 識別情報の照会：接続されたDAQ デバイスの情報を出力
-    commandMap["*idn?"] = [&](const auto&, const auto&, auto) {
+        // 2. プレフィックスによる検索 (例: "data" や "w1")
+        if (!tokens.empty()) {
+            const std::string& mainCmd = tokens[0];
+            if (auto it = prefixMatchHandlers.find(mainCmd); it != prefixMatchHandlers.end()) {
+                return it->second(tokens, arg, val);
+            }
+        }
+        return false;
+    }
+
+    // ============================================================
+    // 個別ハンドラの実装
+    // ============================================================
+    bool handleIdn() {
         if (pCfg->pDaq == nullptr) {
-            std::cout << "No DAQ is connected." << std::endl;
-        } else {
-            std::cout << std::format("{},{},{},{}\n",
-                pCfg->pDaq->device.manufacturer, pCfg->pDaq->device.name,
-                pCfg->pDaq->device.sn, pCfg->pDaq->device.version);
+            std::cout << "No DAQ is connected.\n";
+        }
+        else {
+            const auto& dev = pCfg->pDaq->device;
+            std::cout << std::format("{},{},{},{}\n", dev.manufacturer, dev.name, dev.sn, dev.version);
         }
         return true;
-    };
+    }
 
-    // エラー照会：最後に発生したエラーコマンドを出力
-    commandMap["error?"] = [&](const auto&, const auto&, auto) {
+    bool handleError() {
         if (lastErrorCmd.empty()) {
-            std::cout << "No error." << std::endl;
-        } else {
+            std::cout << "No error.\n";
+        }
+        else {
             std::cout << std::format("Last error: '{}'\n", lastErrorCmd);
             lastErrorCmd.clear();
         }
         return true;
-    };
+    }
 
-    // 一時停止・再開：データ取得を一時停止または再開
-    commandMap["pause"] = commandMap["stop"] = [&](const auto&, const auto&, auto) {
-        pCfg->pause.flag = true;
-        return true;
-    };
-    commandMap["run"] = [&](const auto&, const auto&, auto) {
-        pCfg->pause.flag = false;
-        return true;
-    };
-
-    // ヘルプ：コマンド一覧を表示
-    commandMap["help?"] = commandMap["?"] = [&](const auto&, const auto&, auto) {
-        for (const auto& line : helps) {
-            std::cout << line << std::endl;
-        }
-        return true;
-    };
-    commandMap["help"] = [&](const auto& tokens, const auto&, auto) {
-        if (tokens.size() > 1 && tokens[1] == "size?") {
-            std::cout << helps.size() << std::endl;
-            return true;
-        }
+    bool handleToggle(const std::string& arg, bool& stateFlag) {
+        if (arg == "on") { stateFlag = true; return true; }
+        if (arg == "off") { stateFlag = false; return true; }
         return false;
-    };
+    }
 
-    // データ関連：生データとXY データの照会・保存
-    commandMap["data"] = [&](const auto& tokens, const std::string& arg, float val) {
-        if (tokens.size() < 2) {
-            return false;
-        }
+    bool handleData(const std::vector<std::string>& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
         const std::string& subCmd = tokens[1];
 
-        // === 生データの処理 ===
         if (subCmd == "raw") {
             if (tokens.size() > 2) {
-                if (tokens[2] == "save") {
-                    // 生データをファイルに保存
-                    return arg.empty() ? pCfg->saveRawData() : pCfg->saveRawData(arg.c_str());
-                } else if (tokens[2] == "size?") {
-                    // 生データバッファのサイズを表示
-                    std::cout << pCfg->raw.waveform[0].size() << std::endl;
-                    return true;
-                }
+                if (tokens[2] == "save")  return arg.empty() ? pCfg->saveRawData() : pCfg->saveRawData(arg.c_str());
+                if (tokens[2] == "size?") { std::cout << pCfg->raw.waveforms[0].size() << "\n"; return true; }
             }
+            return false;
         }
-        // === 全生データの照会 ===
-        else if (subCmd == "raw?") {
-            for (int i = 0; i < static_cast<int>(pCfg->raw.waveform[0].size()); ++i) {
-                if (!pCfg->isCh2Enabled) {
-                    std::cout << std::format("{:e},{:e}\n", pCfg->scope.getSamplingDt() * i, pCfg->raw.waveform[0][i]);
-                } else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pCfg->scope.getSamplingDt() * i, pCfg->raw.waveform[0][i], pCfg->raw.waveform[1][i]);
-                }
+
+        if (subCmd == "raw?") {
+            const double dt = pCfg->scope.getSamplingDt();
+            const auto& w0 = pCfg->raw.waveforms[0];
+            const auto& w1 = pCfg->raw.waveforms[1];
+            for (size_t i = 0; i < w0.size(); ++i) {
+                if (!pCfg->isCh2Enabled) std::cout << std::format("{:e},{:e}\n", dt * i, w0[i]);
+                else                     std::cout << std::format("{:e},{:e},{:e}\n", dt * i, w0[i], w1[i]);
             }
             return true;
         }
+
         if (subCmd == "fft") {
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
-                    // 生データをファイルに保存
-                    pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());  // FFT を計算してから処理
+                    pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());
                     return arg.empty() ? pCfg->saveFftData() : pCfg->saveFftData(arg.c_str());
                 }
-                else if (tokens[2] == "size?") {
-                    // 生データバッファのサイズを表示
-                    std::cout << pCfg->raw.freqs.size() << std::endl;
+                if (tokens[2] == "size?") {
+                    std::cout << pCfg->raw.freqs.size() << "\n";
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (subCmd == "fft?") {
+            pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());
+            const auto& freqs = pCfg->raw.freqs;
+            const auto& abs0 = pCfg->raw.fftAbs[0];
+            const auto& abs1 = pCfg->raw.fftAbs[1];
+            for (size_t i = 0; i < freqs.size(); ++i) {
+                if (!pCfg->isCh2Enabled) std::cout << std::format("{:e},{:e}\n", freqs[i], abs0[i]);
+                else                     std::cout << std::format("{:e},{:e},{:e}\n", freqs[i], abs0[i], abs1[i]);
+            }
+            return true;
+        }
+
+        if (subCmd == "txy?") {
+            int size = pCfg->ringBuffer.size;
+            if (val > 0) {
+                size = static_cast<int>(val / pCfg->ringBuffer.getDt());
+                size = std::min(size, pCfg->ringBuffer.size);
+            }
+
+            int idx = pCfg->ringBuffer.writeIdx >= size ? pCfg->ringBuffer.writeIdx - size : 0;
+            if (pCfg->ringBuffer.writeIdx < size) {
+                if (pCfg->ringBuffer.nofm <= static_cast<int>(pCfg->ringBuffer.getMeasurementSize())) {
+                    idx = 0;
+                    size = pCfg->ringBuffer.writeIdx;
+                }
+                else {
+                    idx = pCfg->ringBuffer.writeIdx - size + pCfg->ringBuffer.getMeasurementSize();
+                }
+            }
+
+            std::cout << size << "\n";
+            const auto& rb = pCfg->ringBuffer;
+            for (size_t i = 0; i < size; ++i) {
+                if (!pCfg->isCh2Enabled) {
+                    std::cout << std::format("{:e},{:e},{:e}\n", rb.times[idx], rb.ch[0].x[idx], rb.ch[0].y[idx]);
+                }
+                else {
+                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n",
+                        rb.times[idx], rb.ch[0].x[idx], rb.ch[0].y[idx], rb.ch[1].x[idx], rb.ch[1].y[idx]);
+                }
+                idx = (idx + 1) % rb.getMeasurementSize();
+            }
+            return true;
+        }
+
+        if (subCmd == "xy?") {
+            const size_t idx = pCfg->ringBuffer.latestIdx;
+            const auto& rb = pCfg->ringBuffer;
+            std::cout << std::format("{:e},{:e}", rb.ch[0].x[idx], rb.ch[0].y[idx]);
+            if (pCfg->isCh2Enabled) {
+                std::cout << std::format(",{:e},{:e}", rb.ch[1].x[idx], rb.ch[1].y[idx]);
+            }
+            std::cout << "\n";
+            return true;
+        }
+
+        return false;
+    }
+
+    bool handleDisplay(const std::vector<std::string>& tokens, const std::string&, float val) {
+        if (tokens.size() < 3 || tokens[2] != "limit") return false;
+
+        if (tokens[1] == "xy" && val >= 0.01f && val <= pCfg->plot.limit) {
+            pCfg->plot.limit = val;
+            return true;
+        }
+        if (tokens[1] == "raw" && val >= 0.1f && val <= pCfg->plot.rawLimit) {
+            pCfg->plot.rawLimit = val;
+            return true;
+        }
+        return false;
+    }
+
+    bool handleWaveform(bool isW1, const std::vector<std::string>& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
+
+        auto& ch = isW1 ? pCfg->awg.ch[0] : pCfg->awg.ch[1];
+        std::string subCmd = tokens[1];
+        bool isQuery = (subCmd.back() == '?');
+        if (isQuery) subCmd.pop_back();
+
+        if (subCmd == "phase") {
+            if (isQuery) { std::cout << ch.phase << "\n"; }
+            else { ch.phase = val; awgUpdateRequired = true; }
+            return true;
+        }
+
+        if (subCmd == "freq" || subCmd == "frequency") {
+            if (isQuery) {
+                if (arg == "min")      std::cout << pCfg->scope.getLowLimitFreq() << "\n";
+                else if (arg == "max") std::cout << pCfg->scope.getHighLimitFreq() << "\n";
+                else                   std::cout << ch.freq << "\n";
+            }
+            else if (val >= pCfg->scope.getLowLimitFreq() && val <= pCfg->scope.getHighLimitFreq()) {
+                ch.freq = val;
+                awgUpdateRequired = true;
+            }
+            else return false;
+            return true;
+        }
+
+        if (subCmd == "volt" || subCmd == "voltage" || subCmd == "amp" || subCmd == "amplitude") {
+            if (isQuery) {
+                if (arg == "min")      std::cout << pCfg->awg.AWG_AMP_MIN << "\n";
+                else if (arg == "max") std::cout << pCfg->awg.AWG_AMP_MAX << "\n";
+                else                   std::cout << ch.amp << "\n";
+            }
+            else if (val >= pCfg->awg.AWG_AMP_MIN && val <= pCfg->awg.AWG_AMP_MAX) {
+                ch.amp = val;
+                awgUpdateRequired = true;
+            }
+            else return false;
+            return true;
+        }
+
+        if (subCmd == "func" || subCmd == "function") {
+            if (isQuery) {
+                if (ch.func == 1)      std::cout << "sine\n";
+                else if (ch.func == 2) std::cout << "square\n";
+                else if (ch.func == 3) std::cout << "triangle\n";
+                else                   std::cout << "unknown\n";
+            }
+            else {
+                if (arg == "sine" || arg == "sin")        ch.func = 1;
+                else if (arg == "square" || arg == "sq")  ch.func = 2;
+                else if (arg == "triangle" || arg == "tri") ch.func = 3;
+                else return false;
+                awgUpdateRequired = true;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    bool handleCalculate(const std::vector<std::string>& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
+
+        if (tokens[1] == "offset" && tokens.size() > 2) {
+            if (tokens[2] == "auto" && tokens.size() > 3 && tokens[3] == "once") {
+                pCfg->flagAutoOffset = true;
+                return true;
+            }
+            if (tokens[2] == "state") {
+                if (arg == "on") {
+                    pCfg->flagAutoOffset = true;
+                    return true;
+                }
+                if (arg == "off") {
+                    pCfg->post.offset[0] = { 0, 0, pCfg->post.offset[0].phase }; // 構造体の持ち方に合わせて適宜調整してください
+                    pCfg->post.offset[1] = { 0, 0, pCfg->post.offset[1].phase };
+                    pCfg->flagAutoOffset = false;
+                    return true;
+                }
+                if (arg == "state?") {
+                    std::cout << (pCfg->flagAutoOffset ? "on\n" : "off\n");
                     return true;
                 }
             }
         }
-        // === FFTデータの照会 ===
-        else if (subCmd == "fft?") {
-            pCfg->raw.calculateFFT(pCfg->isCh2Enabled, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt());  // FFT を計算してから処理
-            for (int i = 0; i < static_cast<int>(pCfg->raw.freqs.size()); ++i) {
-                if (!pCfg->isCh2Enabled) {
-                    std::cout << std::format("{:e},{:e}\n", pCfg->raw.freqs[i], pCfg->raw.fftAbs[0][i]);
-                }
-                else {
-                    std::cout << std::format("{:e},{:e},{:e}\n", pCfg->raw.freqs[i], pCfg->raw.fftAbs[0][i], pCfg->raw.fftAbs[1][i]);
-                }
-            }
-            return true;
-        }
-        // === 時間と XY データの照会 ===
-        else if (subCmd == "txy?") {
-            size_t size = pCfg->ringBuffer.size;
-            if (val > 0) {
-                // 指定秒数のデータサイズを計算（C4244 対策：double で計算）
-                size = static_cast<size_t>(static_cast<double>(val) / static_cast<double>(LiaConfigConst::MEASUREMENT_DT));
-                if (size > pCfg->ringBuffer.size) {
-                    size = pCfg->ringBuffer.size;
-                }
-            }
 
-            // リングバッファのインデックスを計算
-            size_t idx = pCfg->ringBuffer.writeIdx - size;
-            if (idx < 0) {
-                if (pCfg->ringBuffer.nofm <= static_cast<size_t>(LiaConfigConst::MEASUREMENT_SIZE)) {
-                    idx = 0;
-                    size = pCfg->ringBuffer.writeIdx;
-                } else {
-                    idx += static_cast<size_t>(LiaConfigConst::MEASUREMENT_SIZE);
-                }
-            }
-
-            // データ数を出力してから各データを出力
-            std::cout << size << std::endl;
-            for (size_t i = 0; i < size; ++i) {
-                if (!pCfg->isCh2Enabled) {
-                    std::cout << std::format("{:e},{:e},{:e}\n",
-                        pCfg->ringBuffer.times[idx],
-                        pCfg->ringBuffer.ch[0].x[idx],
-                        pCfg->ringBuffer.ch[0].y[idx]);
-                } else {
-                    std::cout << std::format("{:e},{:e},{:e},{:e},{:e}\n",
-                        pCfg->ringBuffer.times[idx],
-                        pCfg->ringBuffer.ch[0].x[idx],
-                        pCfg->ringBuffer.ch[0].y[idx],
-                        pCfg->ringBuffer.ch[1].x[idx],
-                        pCfg->ringBuffer.ch[1].y[idx]);
-                }
-                idx = (idx + 1) % static_cast<int>(LiaConfigConst::MEASUREMENT_SIZE);
-            }
-            return true;
-        }
-        // === 最新 XY データの照会 ===
-        else if (subCmd == "xy?") {
-            const size_t idx = pCfg->ringBuffer.latestIdx;
-            std::cout << std::format("{:e},{:e}",
-                pCfg->ringBuffer.ch[0].x[idx],
-                pCfg->ringBuffer.ch[0].y[idx]);
-            if (pCfg->isCh2Enabled) {
-                std::cout << std::format(",{:e},{:e}",
-                    pCfg->ringBuffer.ch[1].x[idx],
-                    pCfg->ringBuffer.ch[1].y[idx]);
-            }
-            std::cout << std::endl;
-            return true;
-        }
-
-        return false;
-    };
-
-    // === 表示設定：グラフ表示範囲の設定 ===
-    commandMap["display"] = [&](const auto& tokens, const auto&, float val) {
-        if (tokens.size() < 3) {
-            return false;
-        }
-
-        // XY 表示限界
-        if (tokens[1] == "xy" && tokens[2] == "limit") {
-            if (val >= 0.01 && val <= pCfg->scope.ch[0].range * 1.2) {
-                pCfg->plot.limit = val;
-                return true;
-            }
-        }
-        // 生データ表示限界
-        else if (tokens[1] == "raw" && tokens[2] == "limit") {
-            if (val >= 0.1 && val <= pCfg->scope.ch[0].range * 1.2) {
-                pCfg->plot.rawLimit = val;
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    // === CH2 表示設定の制御 ===
-    commandMap[":chan2:disp"] = commandMap["chan2:disp"] = [&](const auto&, const std::string& arg, auto) {
-        if (arg == "on") {
-            pCfg->isCh2Enabled = true;
-            return true;
-        }
-        if (arg == "off") {
-            pCfg->isCh2Enabled = false;
-            return true;
-        }
-        return false;
-    };
-    // CH2 表示状態の照会
-    commandMap[":chan2:disp?"] = commandMap["chan2:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pCfg->isCh2Enabled ? "on" : "off") << std::endl;
-        return true;
-    };
-
-    // === ACFM 表示設定の制御 ===
-    commandMap[":acfm:disp"] = commandMap["acfm:disp"] = [&](const auto&, const std::string& arg, auto) {
-        if (arg == "on") {
-            pCfg->window.acfmWindow = true;
-            return true;
-        }
-        if (arg == "off") {
-            pCfg->window.acfmWindow = false;
-            return true;
-        }
-        return false;
-    };
-    // ACFM 表示状態の照会
-    commandMap[":acfm:disp?"] = commandMap["acfm:disp?"] = [&](const auto&, const auto&, auto) {
-        std::cout << (pCfg->window.acfmWindow ? "on" : "off") << std::endl;
-        return true;
-    };
-
-    // === 波形設定（W1, W2）：std::bind で waveformHandler に委譲 ===
-    commandMap["w1"] = std::bind(waveformHandler, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    commandMap["w2"] = std::bind(waveformHandler, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-
-    // === ポスト処理（計算）設定：オフセット、フィルタ ===
-    commandMap["calculate"] = [&](const auto& tokens, const std::string& arg, float val) {
-        if (tokens.size() < 2) {
-            return false;
-        }
-
-        // オフセット制御
-        if (tokens[1] == "offset") {
-            if (tokens.size() > 2) {
-                // 自動オフセット設定
-                if (tokens[2] == "auto") {
-                    if (tokens.size() > 3 && tokens[3] == "once") {
-                        pCfg->flagAutoOffset = true;
-                        return true;
-                    }
-                }
-                // オフセット自動計算の有効/無効設定
-                else if (tokens[2] == "state") {
-                    if (arg == "on") {
-                        pCfg->flagAutoOffset = true;
-                        return true;
-                    }
-                    if (arg == "off") {
-                        // オフの場合はオフセット値もリセット
-                        pCfg->post.offset[0].x = 0;
-                        pCfg->post.offset[0].y = 0;
-                        pCfg->post.offset[1].x = 0;
-                        pCfg->post.offset[1].y = 0;
-                        pCfg->flagAutoOffset = false;
-                        return true;
-                    }
-                    if (arg == "state?") {
-                        std::cout << (pCfg->flagAutoOffset ? "on" : "off") << std::endl;
-                        return true;
-                    }
-                }
-            }
-        }
-        // === ハイパスフィルタ周波数の設定・照会 ===
-        else if (tokens[1] == "hpf" && tokens.size() > 2) {
+        if (tokens[1] == "hpf" && tokens.size() > 2) {
             std::string subCmd = tokens[2];
             bool isQuery = (subCmd.back() == '?');
-            if (isQuery) {
-                subCmd.pop_back();  // 末尾の '?' を削除
-            }
+            if (isQuery) subCmd.pop_back();
 
             if (subCmd == "freq" || subCmd == "frequency") {
                 if (isQuery) {
-                    std::cout << pCfg->post.hpFreq << std::endl;
-                } else if (val >= 0.0 && val <= 50.0) {
-                    pCfg->post.hpFreq = val;
-                } else {
-                    return false;  // 周波数範囲外
+                    std::cout << pCfg->post.hpFreq << "\n";
                 }
+                else if (val >= 0.0f && val <= 50.0f) {
+                    pCfg->post.hpFreq = val;
+                }
+                else return false;
                 return true;
             }
         }
-
         return false;
-    };
-
-    // === ポスト処理オフセット位相（Ch1・Ch2 個別設定） ===
-    commandMap[":calc1:offset:phase"] = commandMap["calc1:offset:phase"] = [&](const auto&, const auto&, float val) {
-        pCfg->post.offset[0].phase = val;
-        return true;
-    };
-    commandMap[":calc2:offset:phase"] = commandMap["calc2:offset:phase"] = [&](const auto&, const auto&, float val) {
-        pCfg->post.offset[1].phase = val;
-        return true;
-    };
-    // 位相照会
-    commandMap[":calc1:offset:phase?"] = commandMap["calc1:offset:phase?"] = [&](const auto&, const auto&, auto) {
-        std::cout << pCfg->post.offset[0].phase << std::endl;
-        return true;
-    };
-    commandMap[":calc2:offset:phase?"] = commandMap["calc2:offset:phase?"] = [&](const auto&, const auto&, auto) {
-        std::cout << pCfg->post.offset[1].phase << std::endl;
-        return true;
-    };
-
-    // ============================================================
-    // メインループ：コマンド入力処理
-    // ============================================================
-    while (!st.stop_requested()) {
-        std::string line;
-        if (!std::getline(std::cin, line)) {
-            // 入力が EOF または 読み取り不能になったら終了
-            break;
-        }
-        
-        // 元の入力行を保存（エラー出力用）
-        std::string original_line = line;
-
-        // コマンドを小文字に統一
-        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
-
-        // 入力行を "コマンド部分" と "引数部分" に分割
-        std::string commandPart, argumentPart;
-        float value = 0;
-        std::istringstream iss(line);
-        iss >> commandPart;
-
-        // ===== 終了コマンドの優先処理 =====
-        if (commandPart == "end" || commandPart == "exit" || commandPart == "quit" || commandPart == "close") {
-            break;
-        }
-
-        // 残りのテキストから引数を取得
-        iss >> argumentPart;
-
-        // 第二引数を数値に変換（失敗時は 0 を設定）
-        try {
-            value = std::stof(argumentPart);
-        } catch (const std::exception&) {
-            value = 0;  // 数値引数がない場合
-        }
-
-        // コマンドをコロン（:）で分割
-        auto tokens = split(commandPart, ':');
-
-        // ===== コマンドのディスパッチ =====
-        bool commandOk = false;
-
-        // 1. 完全一致するコマンド（例：chan2:disp, calc1:offset:phase）を検索
-        if (auto it_full = commandMap.find(commandPart); it_full != commandMap.end()) {
-            commandOk = it_full->second(tokens, argumentPart, value);
-        }
-        // 2. 正規化されたメインコマンド（例：reset, data, display）を検索
-        else if (!tokens.empty()) {
-            const std::string mainCommand = getNormalizedMainCommand(tokens, commandPart);
-            if (auto it = commandMap.find(mainCommand); it != commandMap.end()) {
-                commandOk = it->second(tokens, argumentPart, value);
-            }
-        }
-
-        // ===== エラー処理 =====
-        if (!commandOk) {
-            lastErrorCmd = original_line;
-            if (commandPart.find('?') != std::string::npos) {
-                // クエリコマンド（? を含む）が失敗した場合はエラー出力してクリア
-                std::cout << std::format("Error: '{}'\n", lastErrorCmd);
-                lastErrorCmd.clear();
-            }
-            // 設定コマンド（? なし）が失敗した場合はエラー履歴に保存
-        }
-
-        // ===== AWG 更新 =====
-        // 波形設定が変更された場合は DAQ デバイスに反映
-        if (awgUpdateRequired && pCfg->pDaq != nullptr) {
-            pCfg->pDaq->awg.start(
-                pCfg->awg.ch[0].freq, pCfg->awg.ch[0].amp, pCfg->awg.ch[0].phase, pCfg->awg.ch[0].func,
-                pCfg->awg.ch[1].freq, pCfg->awg.ch[1].amp, pCfg->awg.ch[1].phase, pCfg->awg.ch[1].func
-            );
-            awgUpdateRequired = false;
-        }
-
-
-        // 出力バッファをフラッシュ
-        std::cout << std::flush;
     }
+};
 
-    pCfg->statusPipe = false;
+// ============================================================
+// エントリーポイント（元のAPIを維持）
+// ============================================================
+void pipe(std::stop_token st, LiaConfig* pCfg) {
+    CommandProcessor processor(pCfg);
+    processor.processStream(st);
 }
 
+// ============================================================
+// テストコード
+// ============================================================
 void test_pipe() {
     std::cout << "--- Starting Fixed Pipe Test ---" << std::endl;
 
-    // 1. 準備
     LiaConfig cfg;
     std::stringstream testInput;
-
-    // 標準入力を切り替え
     auto* oldCinBuffer = std::cin.rdbuf(testInput.rdbuf());
 
-    // 2. stop_source を作成してスレッド開始
-    // jthread を使うと stop_token が自動的に第1引数に渡されます
     std::stop_source sw;
     std::jthread pipeThread(pipe, sw.get_token(), &cfg);
 
-    // pipe が起動するのを少し待つ
     while (!cfg.statusPipe) {
         std::this_thread::yield();
     }
 
-    // 3. コマンド送信用ヘルパー
     auto sendCommand = [&](const std::string& cmd) {
         testInput << cmd << "\n";
-        // 文字列ストリームに書き込んだことを認識させるために少し待機
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         };
 
-    // --- テストケース実行 ---
     const float DEFAULT_AMP = cfg.awg.ch[0].amp;
+
     std::cout << "[Test] Setting HPF..." << std::endl;
     sendCommand("calc:hpf:freq 15.0");
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -677,23 +558,15 @@ void test_pipe() {
     sendCommand("reset");
     assert(cfg.awg.ch[0].amp == DEFAULT_AMP);
 
-    // 4. 終了処理
     std::cout << "[Test] Sending exit and requesting stop..." << std::endl;
-
-    // まず exit コマンドを送る
     sendCommand("exit");
-
-    // 重要：pipe.h の continue ループを破るために stop_token をセットする
     sw.request_stop();
 
-    // jthread なのでスコープを抜ければ自動 join されますが、
-    // 明示的に待つことで「止まる」現象を確認できます
     if (pipeThread.joinable()) {
         pipeThread.join();
         std::cout << "[Test] Thread joined successfully!" << std::endl;
     }
 
-    // 標準入力を元に戻す
     std::cin.rdbuf(oldCinBuffer);
     std::cout << "--- Test Passed ---" << std::endl;
 }

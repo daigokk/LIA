@@ -195,7 +195,7 @@ inline void RawPlotWindow::show() {
         value = 0.0f;
     }
 
-    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.ch[0].range * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.getMaxRange() * 1.2f, "%4.1f V");
     if (ImGui::IsItemDeactivated()) {
         button = ButtonType::RawLimit;
         value = cfg.plot.rawLimit;
@@ -226,6 +226,7 @@ inline void RawPlotWindow::show() {
 inline void RawPlotWindow::drawWaveformTab(bool useMv) {
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
         ImPlot::SetupAxes("Time (us)", useMv ? "v (mV)" : "v (V)", 0, 0);
+        ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MicroFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
 
         ImPlot::SetupAxisLimits(ImAxis_X1, cfg.raw.times.front(), cfg.raw.times.back(), ImGuiCond_Always);
@@ -235,11 +236,11 @@ inline void RawPlotWindow::drawWaveformTab(bool useMv) {
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
         const char* ch1_label = cfg.isCh2Enabled ? "Ch1" : "##Ch1";
-        ImPlot::PlotLine(ch1_label, cfg.raw.times.data(), cfg.raw.waveform[0].data(), (int)cfg.raw.times.size(), specLine);
+        ImPlot::PlotLine(ch1_label, cfg.raw.times.data(), cfg.raw.waveforms[0].data(), (int)cfg.raw.times.size(), specLine);
 
         if (cfg.isCh2Enabled) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-            ImPlot::PlotLine("Ch2", cfg.raw.times.data(), cfg.raw.waveform[1].data(), (int)cfg.raw.times.size(), specLine);
+            ImPlot::PlotLine("Ch2", cfg.raw.times.data(), cfg.raw.waveforms[1].data(), (int)cfg.raw.times.size(), specLine);
         }
         ImPlot::EndPlot();
     }
@@ -296,7 +297,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
         if (deltaTimeMin > diffMin) { deltaTimeMin = diffMin; xyStartIdx = idx; }
         if (deltaTimeMax > diffMax) { deltaTimeMax = diffMax; xyLatestIdx = idx; }
 
-        if (deltaTimeMin < LiaConfigConst::MEASUREMENT_DT && deltaTimeMax < LiaConfigConst::MEASUREMENT_DT) {
+        if (deltaTimeMin < cfg.ringBuffer.getDt() && deltaTimeMax < cfg.ringBuffer.getDt()) {
             found = true;
             break;
         }
@@ -311,7 +312,7 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
             if (deltaTimeMin > diffMin) { deltaTimeMin = diffMin; xyStartIdx = idx; }
             if (deltaTimeMax > diffMax) { deltaTimeMax = diffMax; xyLatestIdx = idx; }
 
-            if (deltaTimeMin < LiaConfigConst::MEASUREMENT_DT && deltaTimeMax < LiaConfigConst::MEASUREMENT_DT) break;
+            if (deltaTimeMin < cfg.ringBuffer.getDt() && deltaTimeMax < cfg.ringBuffer.getDt()) break;
         }
     }
 
@@ -330,7 +331,7 @@ inline void TimeChartWindow::show() {
     ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
 
-    static float historySecMax = (float)(LiaConfigConst::MEASUREMENT_DT) * (cfg.ringBuffer.times.size() - 1);
+    static float historySecMax = (float)(cfg.ringBuffer.getDt()) * (cfg.ringBuffer.times.size() - 1);
 
     if (cfg.pause.flag) ImGui::BeginDisabled();
     ImGui::SetNextItemWidth(500.0f * cfg.window.monitorScale);
@@ -425,11 +426,11 @@ inline void TimeChartZoomWindow::analyzeSelection() {
         if (t < area.X.Min) continue;
         if (t > area.X.Max) break;
 
-        double v_x = cfg.ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].y[i];
+        double v_x = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y[i];
         if (res.vxs[0] > v_x) { res.vxs[0] = v_x; res.ts_vx[0] = t; res.vminIdx_vx = i; }
         if (res.vxs[1] < v_x) { res.vxs[1] = v_x; res.ts_vx[1] = t; res.vmaxIdx_vx = i; }
 
-        double v_z = cfg.ringBuffer.ch[LiaConfigConst::CH_VERTICAL].y[i];
+        double v_z = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y[i];
         if (res.vzs[0] > v_z) { res.vzs[0] = v_z; res.ts_vz[0] = t; }
         if (res.vzs[1] < v_z) { res.vzs[1] = v_z; res.ts_vz[1] = t; }
     }
@@ -439,7 +440,7 @@ inline void TimeChartZoomWindow::analyzeSelection() {
     res.v50s_vz[0] = res.v50s_vz[1] = (res.vzs[1] + res.vzs[0]) / 2.0;
 
     // 50% を横切る時間の探索 (vx)
-    auto& vx_y = cfg.ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].y;
+    auto& vx_y = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y;
     auto& times = cfg.ringBuffer.times;
 
     // 前方探索
@@ -545,7 +546,7 @@ inline void DeltaTimeChartWindow::show() {
     ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
 
-    static float historySecMax = (float)(LiaConfigConst::MEASUREMENT_DT)*cfg.ringBuffer.times.size();
+    static float historySecMax = (float)(cfg.ringBuffer.getDt()) * (cfg.ringBuffer.times.size() - 1);
     static float historySec = 10.0f;
     ImGui::SliderFloat("History", &historySec, 1.0f, historySecMax, "%5.1f s");
 
@@ -553,7 +554,7 @@ inline void DeltaTimeChartWindow::show() {
         double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];
         ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
         ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, (LiaConfigConst::MEASUREMENT_DT - 2e-3) * 1e3, (LiaConfigConst::MEASUREMENT_DT + 2e-3) * 1e3, ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, (cfg.ringBuffer.getDt() - 2e-3) * 1e3, (cfg.ringBuffer.getDt() + 2e-3) * 1e3, ImGuiCond_Always);
 
         ImPlotSpec specLine;
         specLine.Offset = cfg.ringBuffer.writeIdx;
@@ -687,10 +688,10 @@ inline void ACFMPlotWindow::show() {
     ImGui::SameLine();
     if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
 
-    if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, cfg.scope.ch[LiaConfigConst::CH_VERTICAL].range * 1.2f, "%4.2f V")) {
+    if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_VERTICAL].range * 1.2f, "%4.2f V")) {
         cfg.plot.Vx_limit = cfg.plot.limit / 2;
     }
-    if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, cfg.scope.ch[LiaConfigConst::CH_HORIZONTAL].range * 1.2f, "%4.2f V")) {
+    if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].range * 1.2f, "%4.2f V")) {
     }
 
     if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
@@ -708,7 +709,7 @@ inline void ACFMPlotWindow::show() {
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
 
-        plotRingBufferLine("##ACFM", cfg.ringBuffer.ch[LiaConfigConst::CH_VERTICAL].y, cfg.ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].y,
+        plotRingBufferLine("##ACFM", cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y, cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y,
             cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
 
         ImPlotSpec specScatter;
@@ -718,9 +719,9 @@ inline void ACFMPlotWindow::show() {
         specScatter.LineWeight = -1.0f;
         specScatter.MarkerLineColor = colors[Color_Chartreuse];
 
-        ImPlot::PlotScatter("##NOW", &(cfg.ringBuffer.ch[LiaConfigConst::CH_VERTICAL].y[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].y[cfg.plot.xyLatestIdx]), 1, specScatter);
+        ImPlot::PlotScatter("##NOW", &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y[cfg.plot.xyLatestIdx]), 1, specScatter);
 
-        double vhreal = cfg.ringBuffer.ch[LiaConfigConst::CH_HORIZONTAL].x[cfg.plot.xyLatestIdx];
+        double vhreal = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].x[cfg.plot.xyLatestIdx];
         double mm = std::max(0.0, cfg.acfmData.mmk[0] * vhreal * vhreal + cfg.acfmData.mmk[1] * vhreal + cfg.acfmData.mmk[2]);
 
         std::string thicknessStr = (mm <= 6.0) ? std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm) : std::format("{:5.2f}V:  out", vhreal);
