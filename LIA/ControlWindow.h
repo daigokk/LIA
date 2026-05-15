@@ -200,13 +200,13 @@ inline void ControlWindow::plot(const float nextItemWidth)
             ImGui::InputDouble((const char*)u8"Ch1 θ (Deg.)", &cfg.post.offset[0].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset1Phase, (float)cfg.post.offset[0].phase);
 
-            if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
+            if (!cfg.scope.ch[1].enable) ImGui::BeginDisabled();
 
             ImGui::SetNextItemWidth(nextItemWidth);
             ImGui::InputDouble((const char*)u8"Ch2 θ (Deg.)", &cfg.post.offset[1].phase, 1.0, 10.0, "%3.0f");
             markButtonIfItemDeactivated(button, value, ButtonType::PostOffset2Phase, (float)cfg.post.offset[1].phase);
 
-            if (!cfg.isCh2Enabled) ImGui::EndDisabled();
+            if (!cfg.scope.ch[1].enable) ImGui::EndDisabled();
             if (cfg.pause.flag) ImGui::EndDisabled();
 
             ImGui::EndTabItem();
@@ -300,9 +300,9 @@ inline void ControlWindow::post(const float nextItemWidth)
 
         ImGui::Text("Ch1 X:%5.2fV,Y:%5.2fV", cfg.post.offset[0].x, cfg.post.offset[0].y);
 
-        if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
+        if (!cfg.scope.ch[1].enable) ImGui::BeginDisabled();
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", cfg.post.offset[1].x, cfg.post.offset[1].y);
-        if (!cfg.isCh2Enabled) ImGui::EndDisabled();
+        if (!cfg.scope.ch[1].enable) ImGui::EndDisabled();
 
         ImGui::TreePop();
         if (!offsetIsValid) ImGui::EndDisabled();
@@ -325,14 +325,14 @@ inline void ControlWindow::monitor()
         ImGui::Text((const char*)u8"Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch0_x, ch0_y), std::atan2(ch0_y, ch0_x) * 180.0f / 3.14159265358979323846f);
 
         // Ch2 データ表示
-        if (!cfg.isCh2Enabled) ImGui::BeginDisabled();
+        if (!cfg.scope.ch[1].enable) ImGui::BeginDisabled();
 
         const float ch1_x = (float)cfg.ringBuffer.ch[1].x[idx];
         const float ch1_y = (float)cfg.ringBuffer.ch[1].y[idx];
         ImGui::Text("Ch2 X:%5.2fV,Y:%5.2fV", ch1_x, ch1_y);
         ImGui::Text((const char*)u8"Amp:%4.2fV, θ:%4.0fDeg.", std::hypot(ch1_x, ch1_y), std::atan2(ch1_y, ch1_x) * 180.0f / 3.14159265358979323846f);
 
-        if (!cfg.isCh2Enabled) ImGui::EndDisabled();
+        if (!cfg.scope.ch[1].enable) ImGui::EndDisabled();
 
         ImGui::TreePop();
     }
@@ -352,11 +352,11 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
 
     // ACFM有効時はCh2を強制有効化
     if (cfg.window.acfmWindow) {
-        cfg.isCh2Enabled = true;
+        cfg.scope.ch[1].enable = true;
         ImGui::BeginDisabled();
     }
-    ImGui::Checkbox("Ch2", &cfg.isCh2Enabled);
-    markButtonIfItemDeactivated(button, value, ButtonType::DispCh2, cfg.isCh2Enabled);
+    ImGui::Checkbox("Ch2", &cfg.scope.ch[1].enable);
+    markButtonIfItemDeactivated(button, value, ButtonType::DispCh2, cfg.scope.ch[1].enable);
     if (cfg.window.acfmWindow) ImGui::EndDisabled();
 
     ImGui::SameLine();

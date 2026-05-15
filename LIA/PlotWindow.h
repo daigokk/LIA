@@ -185,7 +185,7 @@ inline void RawPlotWindow::show() {
     if (ImGui::Button("Save")) {
 		std::string timestamp = cfg.getCurrentTimestamp();
         cfg.saveRawData(std::format("raw_{}.csv", timestamp));
-        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt());
+        cfg.raw.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt());
 		cfg.saveFftData(std::format("fft_{}.csv", timestamp));
         button = ButtonType::RawSave;
 		value = 1.0f; // Saveボタンが押されたことを示すフラグ
@@ -235,10 +235,10 @@ inline void RawPlotWindow::drawWaveformTab(bool useMv) {
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
-        const char* ch1_label = cfg.isCh2Enabled ? "Ch1" : "##Ch1";
+        const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
         ImPlot::PlotLine(ch1_label, cfg.raw.times.data(), cfg.raw.waveforms[0].data(), (int)cfg.raw.times.size(), specLine);
 
-        if (cfg.isCh2Enabled) {
+        if (cfg.scope.ch[1].enable) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
             ImPlot::PlotLine("Ch2", cfg.raw.times.data(), cfg.raw.waveforms[1].data(), (int)cfg.raw.times.size(), specLine);
         }
@@ -248,7 +248,7 @@ inline void RawPlotWindow::drawWaveformTab(bool useMv) {
 
 inline void RawPlotWindow::drawFftTab(bool useMv) {
     if (ImPlot::BeginPlot("##FFT", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        cfg.raw.calculateFFT(cfg.isCh2Enabled, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt()); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
+        cfg.raw.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt()); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
         ImPlot::SetupAxes("Freq. (kHz)", useMv ? "v (mV)" : "v (V)", 0, 0);
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(KiloFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
@@ -259,11 +259,11 @@ inline void RawPlotWindow::drawFftTab(bool useMv) {
 		specLine.LineWeight = 5.0f;
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
-        const char* ch1_label = cfg.isCh2Enabled ? "Ch1" : "##Ch1";
+        const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
 		ImPlot::PlotLine(ch1_label, cfg.raw.freqs.data(), cfg.raw.fftAbs[0].data(), (int)cfg.raw.freqs.size() / 80, specLine);
 
         // Ch2 FFT Calculation & Plot
-        if (cfg.isCh2Enabled) {
+        if (cfg.scope.ch[1].enable) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
             ImPlot::PlotLine("Ch2", cfg.raw.freqs.data(), cfg.raw.fftAbs[1].data(), (int)cfg.raw.freqs.size() / 80, specLine);
         }
@@ -368,7 +368,7 @@ inline void TimeChartWindow::show() {
         int count = (int)cfg.ringBuffer.size;
 
         ImPlot::PlotLine("Ch1y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[0].y[0]), count, specLine);
-        if (cfg.isCh2Enabled) {
+        if (cfg.scope.ch[1].enable) {
             ImPlot::PlotLine("Ch2y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[1].y[0]), count, specLine);
         }
 
@@ -478,7 +478,7 @@ inline void TimeChartZoomWindow::show() {
         ImPlotSpec specLine;
         specLine.Offset = cfg.ringBuffer.writeIdx;
         ImPlot::PlotLine("Ch1y", cfg.ringBuffer.times.data(), cfg.ringBuffer.ch[0].y.data(), cfg.ringBuffer.size, specLine);
-        if (cfg.isCh2Enabled) {
+        if (cfg.scope.ch[1].enable) {
             ImPlot::PlotLine("Ch2y", cfg.ringBuffer.times.data(), cfg.ringBuffer.ch[1].y.data(), cfg.ringBuffer.size, specLine);
         }
 
@@ -489,7 +489,7 @@ inline void TimeChartZoomWindow::show() {
         specScatter.LineWeight = -1.0f;
 
         // Vx Vpp マーカーと 50% ライン
-        if (cfg.isCh2Enabled && res.t50s_vx[0] < res.t50s_vx[1] && cfg.acfmData.vxpp > 2e-3) {
+        if (cfg.scope.ch[1].enable && res.t50s_vx[0] < res.t50s_vx[1] && cfg.acfmData.vxpp > 2e-3) {
             specScatter.MarkerFillColor = colors[Color_Amber];
             ImPlot::PlotScatter("##Vx_pk", res.ts_vx, res.vxs, 2, specScatter);
 
@@ -614,7 +614,7 @@ inline void XYPlotWindow::show() {
 
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
-        const char* ch1_label = cfg.isCh2Enabled ? "Ch1" : "##Ch1";
+        const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
 
         plotRingBufferLine(ch1_label, cfg.ringBuffer.ch[0].x, cfg.ringBuffer.ch[0].y,
             cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
@@ -635,7 +635,7 @@ inline void XYPlotWindow::show() {
         specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
         ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
 
-        if (cfg.isCh2Enabled) {
+        if (cfg.scope.ch[1].enable) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
             plotRingBufferLine("Ch2", cfg.ringBuffer.ch[1].x, cfg.ringBuffer.ch[1].y,
                 cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);

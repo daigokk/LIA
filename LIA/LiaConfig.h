@@ -142,6 +142,7 @@ public:
     struct ScopeCfg {
     public:
         struct Channel {
+			bool enable = true;
             float range = LiaConfigDefaultConsts::SCOPE_RANGE;
         };
         std::vector<Channel> ch;
@@ -173,8 +174,10 @@ public:
         }
         void reset() {
             for (auto& channel : ch) {
+				channel.enable = false;
                 channel.range = LiaConfigDefaultConsts::SCOPE_RANGE;
             }
+			ch[0].enable = true; // デフォルトでCh1を有効にする
             setMaxRange();
 			updateFreqLimits(bufferSize, samplingDt);
         }
@@ -346,7 +349,7 @@ public:
     std::string device_sn = "SN:XXXXXXXXXX";
     std::string dirName = ".";
 
-    bool isCh2Enabled = false;
+    //bool isCh2Enabled = false;
     std::atomic<bool> flagAutoOffset = false;
     std::atomic<bool> flagAutoSetupW2History = false;
     std::atomic<bool> flagAutoSetupW2{ false };
@@ -384,7 +387,6 @@ public:
 		plot.reset();
 		post.reset();
         window.acfmWindow = false;
-        isCh2Enabled = false;
         flagAutoOffset = false;
         pause.flag = false;
 		
@@ -448,7 +450,7 @@ public:
         // PSD計算
         auto [x1, y1] = psd.calculate(raw.waveforms[0].data());
         double x2 = 0.0, y2 = 0.0;
-        if (isCh2Enabled) {
+        if (scope.ch[1].enable) {
             std::tie(x2, y2) = psd.calculate(raw.waveforms[1].data());
         }
 
@@ -456,7 +458,7 @@ public:
         if (flagAutoOffset) {
             post.offset[0].x = x1;
             post.offset[0].y = y1;
-            if (isCh2Enabled) {
+            if (scope.ch[1].enable) {
                 post.offset[1].x = x2;
                 post.offset[1].y = y2;
                 cmds.push_back({ (float)timer.elapsedSec(), (float)ButtonType::PostAutoOffset, (float)x1, (float)y1, 0, 0 });
@@ -469,7 +471,7 @@ public:
             x1 - post.offset[0].x, y1 - post.offset[0].y, post.offset[0].phase
         );
 
-        if (isCh2Enabled) {
+        if (scope.ch[1].enable) {
             auto [final_x2, final_y2] = psd.rotate_phase(
                 x2 - post.offset[1].x, y2 - post.offset[1].y, post.offset[1].phase
             );
@@ -498,10 +500,10 @@ public:
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (isCh2Enabled ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
+        file << (scope.ch[1].enable ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
         for (size_t i = 0; i < raw.waveforms[0].size(); ++i) {
             file << std::format("{:e},{:e}", scope.getSamplingDt() * i, raw.waveforms[0][i]);
-            if (isCh2Enabled) file << std::format(",{:e}", raw.waveforms[1][i]);
+            if (scope.ch[1].enable) file << std::format(",{:e}", raw.waveforms[1][i]);
             file << "\n";
         }
         return true;
@@ -511,10 +513,10 @@ public:
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (isCh2Enabled ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
+        file << (scope.ch[1].enable ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
         for (size_t i = 0; i < raw.freqs.size(); ++i) {
             file << std::format("{:e},{:e},{:e}", raw.freqs[i], raw.fftCh[0][i].real(), raw.fftCh[0][i].imag());
-            if (isCh2Enabled) file << std::format(",{:e},{:e}", raw.fftCh[1][i].real(), raw.fftCh[1][i].imag());
+            if (scope.ch[1].enable) file << std::format(",{:e},{:e}", raw.fftCh[1][i].real(), raw.fftCh[1][i].imag());
             file << "\n";
         }
         return true;
@@ -524,7 +526,7 @@ public:
         std::ofstream file(std::format("./{}/{}", dirName, filename));
         if (!file) return false;
 
-        file << (isCh2Enabled ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
+        file << (scope.ch[1].enable ? "# t(s), x1(V), y1(V), x2(V), y2(V)\n" : "# t(s), x(V), y(V)\n");
 
         int outputSize = ringBuffer.size;
         if (sec > 0) {
@@ -538,7 +540,7 @@ public:
 
         for (int i = 0; i < outputSize; ++i) {
             file << std::format("{:e},{:e},{:e}", ringBuffer.times[idx], ringBuffer.ch[0].x[idx], ringBuffer.ch[0].y[idx]);
-            if (isCh2Enabled) file << std::format(",{:e},{:e}", ringBuffer.ch[1].x[idx], ringBuffer.ch[1].y[idx]);
+            if (scope.ch[1].enable) file << std::format(",{:e},{:e}", ringBuffer.ch[1].x[idx], ringBuffer.ch[1].y[idx]);
             file << "\n";
 
             if (++idx >= ringBuffer.getMeasurementSize()) idx = 0;
@@ -601,10 +603,10 @@ public:
         }
 
         std::stringstream ss;
-        ss << (isCh2Enabled ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
+        ss << (scope.ch[1].enable ? "# ch1x(V),ch1y(V),ch2x(V),ch2y(V)\n" : "# ch1x(V),ch1y(V)\n");
         for (size_t i = 0; i < xyRecs.ch1xys.x.size(); ++i) {
             ss << std::format("{:e},{:e}", xyRecs.ch1xys.x[i], xyRecs.ch1xys.y[i]);
-            if (isCh2Enabled) ss << std::format(",{:e},{:e}", xyRecs.ch2xys.x[i], xyRecs.ch2xys.y[i]);
+            if (scope.ch[1].enable) ss << std::format(",{:e},{:e}", xyRecs.ch2xys.x[i], xyRecs.ch2xys.y[i]);
             ss << "\n";
         }
         file << ss.str();
@@ -685,7 +687,7 @@ private:
         ini.set("Awg", "ch[1].amp", awg.ch[1].amp);
         ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
 		// Scope
-        ini.set("Scope", "flagCh2", isCh2Enabled);
+        ini.set("Scope", "flagCh2", scope.ch[1].enable);
 		for (int i = 0; i < scope.getNumChannels(); ++i) {
 			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
 		}
@@ -738,7 +740,7 @@ private:
         awg.ch[1].amp = ini.get("Awg", "ch[1].amp", awg.ch[1].amp);
         awg.ch[1].phase = ini.get("Awg", "ch[1].phase", awg.ch[1].phase);
 
-        isCh2Enabled = ini.get("Scope", "flagCh2", isCh2Enabled);
+        scope.ch[1].enable = ini.get("Scope", "flagCh2", scope.ch[1].enable);
         for (int i = 0; i < scope.getNumChannels(); ++i) {
             scope.ch[i].range = ini.get("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
         }
