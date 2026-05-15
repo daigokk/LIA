@@ -110,9 +110,9 @@ private:
     LiaConfig& cfg;
 
     struct AnalysisResult {
-        double ts_vx[2], vxs[2], t50s_vx[2], v50s_vx[2];
-        double ts_vz[2], vzs[2], v50s_vz[2];
-        int vminIdx_vx, vmaxIdx_vx;
+        double ts_vx[2] = { 0,0 }, vxs[2] = { 0,0 }, t50s_vx[2] = { 0,0 }, v50s_vx[2] = { 0,0 };
+        double ts_vz[2] = { 0,0 }, vzs[2] = { 0,0 }, v50s_vz[2] = { 0,0 };
+        int vminIdx_vx = 0, vmaxIdx_vx = 0;
         double x_min_last = -1.0, x_max_last = -1.0;
     } res;
 

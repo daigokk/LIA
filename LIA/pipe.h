@@ -15,7 +15,7 @@
 // ============================================================
 // 定数定義
 // ============================================================
-constexpr int MAX_CHANNELS = 3; // ★ 3チャンネルまで対応
+constexpr int MAX_CHANNELS = 2; // ★ 2チャンネルまで対応
 
 const std::vector<std::string> HELPS = {
     "Available commands:",
@@ -263,7 +263,7 @@ private:
 
     // ★ チャンネル処理 (chan[n]:range, chan[n]:disp)
     bool handleChan(int chIndex, const std::vector<std::string>& tokens, const std::string& arg, float val) {
-        if (tokens.size() < 2 || chIndex < 0 || chIndex >= MAX_CHANNELS) return false;
+        if (tokens.size() < 2 || chIndex < 0 || chIndex >= pCfg->scope.ch.size()) return false;
 
         std::string subCmd = tokens[1];
         bool isQuery = (subCmd.back() == '?');
@@ -317,7 +317,7 @@ private:
             const auto& w0 = pCfg->raw.waveforms[0];
             for (size_t i = 0; i < w0.size(); ++i) {
                 std::cout << std::format("{:e},{:e}", dt * i, w0[i]);
-                for (int c = 1; c < MAX_CHANNELS; ++c) {
+                for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                     if (pCfg->scope.ch[c].enable) {
                         std::cout << std::format(",{:e}", pCfg->raw.waveforms[c][i]);
                     }
@@ -346,7 +346,7 @@ private:
             const auto& freqs = pCfg->raw.freqs;
             for (size_t i = 0; i < freqs.size(); ++i) {
                 std::cout << std::format("{:e},{:e}", freqs[i], pCfg->raw.fftAbs[0][i]);
-                for (int c = 1; c < MAX_CHANNELS; ++c) {
+                for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                     if (pCfg->scope.ch[c].enable) {
                         std::cout << std::format(",{:e}", pCfg->raw.fftAbs[c][i]);
                     }
@@ -378,7 +378,7 @@ private:
             const auto& rb = pCfg->ringBuffer;
             for (size_t i = 0; i < size; ++i) {
                 std::cout << std::format("{:e},{:e},{:e}", rb.times[idx], rb.ch[0].x[idx], rb.ch[0].y[idx]);
-                for (int c = 1; c < MAX_CHANNELS; ++c) {
+                for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                     if (pCfg->scope.ch[c].enable) {
                         std::cout << std::format(",{:e},{:e}", rb.ch[c].x[idx], rb.ch[c].y[idx]);
                     }
@@ -393,7 +393,7 @@ private:
             const size_t idx = pCfg->ringBuffer.latestIdx;
             const auto& rb = pCfg->ringBuffer;
             std::cout << std::format("{:e},{:e}", rb.ch[0].x[idx], rb.ch[0].y[idx]);
-            for (int c = 1; c < MAX_CHANNELS; ++c) {
+            for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                 if (pCfg->scope.ch[c].enable) {
                     std::cout << std::format(",{:e},{:e}", rb.ch[c].x[idx], rb.ch[c].y[idx]);
                 }
@@ -421,7 +421,7 @@ private:
 
     // ★ awg (w[n]:amp, w[n]:freq など)
     bool handleAwg(int chIndex, const std::vector<std::string>& tokens, const std::string& arg, float val) {
-        if (tokens.size() < 2 || chIndex < 0 || chIndex >= MAX_CHANNELS) return false;
+        if (tokens.size() < 2 || chIndex < 0 || chIndex >= pCfg->awg.ch.size()) return false;
 
         auto& ch = pCfg->awg.ch[chIndex];
         std::string subCmd = tokens[1];
@@ -501,7 +501,7 @@ private:
                     return true;
                 }
                 if (arg == "off") {
-                    for (int i = 0; i < MAX_CHANNELS; ++i) {
+                    for (int i = 0; i < pCfg->post.offset.size(); ++i) {
                         pCfg->post.offset[i] = { 0, 0, pCfg->post.offset[i].phase };
                     }
                     pCfg->flagAutoOffset = false;
@@ -514,7 +514,7 @@ private:
             }
 
             // calc[n]:offset:phase の処理
-            if (subCmd == "phase" && chIndex >= 0 && chIndex < MAX_CHANNELS) {
+            if (subCmd == "phase" && chIndex >= 0 && chIndex < pCfg->post.offset.size()) {
                 if (isQuery) {
                     std::cout << pCfg->post.offset[chIndex].phase << "\n";
                 }

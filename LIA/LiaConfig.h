@@ -129,32 +129,32 @@ public:
             float amp = LiaConfigDefaultConsts::AWG_AMP;
             float phase = 0.0f;
         };
-        Channel ch[2];
+        std::vector<Channel> ch;
         const float AWG_AMP_MIN = 0.0f;
         const float AWG_AMP_MAX = 5.0f;
-        AwgCfg() { ch[1].amp = 0.0f; }
+        AwgCfg(int numChannels = 2) : ch(numChannels) { reset(); }
         void reset() {
-            ch[0] = Channel();
-            ch[1] = Channel();
+            for (auto& channel : ch) {
+                channel = Channel();
+            }
+            ch[1].amp = 0.0f;
         }
     } awg;
 
     struct ScopeCfg {
     public:
         struct Channel {
-			bool enable = true;
+			bool enable = false;
             float range = LiaConfigDefaultConsts::SCOPE_RANGE;
         };
         std::vector<Channel> ch;
+        ScopeCfg(int numChannels = 2) : ch(numChannels) { reset(); }
         float getMaxRange() { return maxRange; }
         int getNumChannels() const { return static_cast<int>(ch.size()); }
 		int getBufferSize() const { return bufferSize; }
         double getSamplingDt() const { return samplingDt; }
         float getLowLimitFreq() const { return lowLimitFreq; }
         float getHighLimitFreq() const { return highLimitFreq; }
-		ScopeCfg(int numChannels = 2) : ch(numChannels) {
-			updateFreqLimits(bufferSize, samplingDt);
-        }
 		void updateFreqLimits(const int bufferSize_, const double samplingDt_) {
 			bufferSize = bufferSize_;
 			samplingDt = samplingDt_;
@@ -191,12 +191,14 @@ public:
 
     struct PostCfg {
         struct Offset { double phase = 0.0, x = 0.0, y = 0.0; };
-        Offset offset[2];
+        std::vector<Offset> offset;
         float hpFreq = 0.0f;
         float lpFreq = 100.0f;
-		void reset() {
-			offset[0] = Offset();
-			offset[1] = Offset();
+		PostCfg() : offset(2) {}
+        void reset() {
+			for (auto& off : offset) {
+				off = Offset();
+			}
 			hpFreq = 0.0f;
 			lpFreq = 100.0f;
 		}
