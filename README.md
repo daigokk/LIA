@@ -165,7 +165,7 @@
         state = 'off'
       self._send(f':chan2:disp {state}\n')
     def set_chRange(self, ch, range):
-      self._send(f':chan[{ch}]:range {range}\n')
+      self._send(f':chan{ch}:range {range}\n')
   
   def makeChart(dat:np.array):
     fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
