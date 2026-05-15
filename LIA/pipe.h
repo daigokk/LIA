@@ -38,9 +38,9 @@ const std::vector<std::string> HELPS = {
     "  acfm|disp [on|off|?]         : Enable/disable or query ACFM window display state",
     "  chan[n]:range [value|?]      : Set or query channel range",
     "  chan2:disp [on|off|?]        : Enable/disable or query channel display state",
-    "  w[n]:freq [min|max|value]    : Set or query waveform frequency",
-    "  w[n]:amp [min|max|value]     : Set or query waveform amplitude",
-    "  w[n]:phase [value|?]         : Set or query waveform phase in degrees",
+    "  w[n]:freq [min|max|value]    : Set or query AWG frequency",
+    "  w[n]:amp [min|max|value]     : Set or query AWG amplitude",
+    "  w[n]:phase [value|?]         : Set or query AWG phase in degrees",
     "  post:offset:state [on|off|?] : Enable/disable offset state",
     "  post:offset:auto once        : Perform one-time auto offset",
     "  post:hpf:freq [value|?]      : Set or query high-pass filter frequency (0 to 50 Hz)",
@@ -203,7 +203,7 @@ private:
         // --- プレフィックス(階層型)コマンド ---
         prefixMatchHandlers["data"] = [this](int ch, auto& t, auto& a, auto v) { return handleData(t, a, v); }; // dataはchIndexを使わない
         prefixMatchHandlers["plot"] = [this](int ch, auto& t, auto& a, auto v) { return handlePlot(t, a, v); };
-        prefixMatchHandlers["w"] = [this](int ch, auto& t, auto& a, auto v) { return handleWaveform(ch, t, a, v); };
+        prefixMatchHandlers["w"] = [this](int ch, auto& t, auto& a, auto v) { return handleAwg(ch, t, a, v); };
         prefixMatchHandlers["post"] = [this](int ch, auto& t, auto& a, auto v) { return handlePost(ch, t, a, v); };;
         prefixMatchHandlers["chan"] = [this](int ch, auto& t, auto& a, auto v) { return handleChan(ch, t, a, v); };
     }
@@ -419,8 +419,8 @@ private:
         return false;
     }
 
-    // ★ 波形処理 (w[n]:amp, w[n]:freq など)
-    bool handleWaveform(int chIndex, const std::vector<std::string>& tokens, const std::string& arg, float val) {
+    // ★ awg (w[n]:amp, w[n]:freq など)
+    bool handleAwg(int chIndex, const std::vector<std::string>& tokens, const std::string& arg, float val) {
         if (tokens.size() < 2 || chIndex < 0 || chIndex >= MAX_CHANNELS) return false;
 
         auto& ch = pCfg->awg.ch[chIndex];
