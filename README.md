@@ -158,13 +158,13 @@
       return float(self._query(':w1:freq?'))
     def set_fgFreq(self, freq):
       self._send(f':w1:freq {freq}\n')
-    def set_ch2(self, flag):
+    def set_scopeCh2(self, flag):
       if flag:
         state = 'on'
       else:
         state = 'off'
       self._send(f':chan2:disp {state}\n')
-    def set_chRange(self, ch, range):
+    def set_scopeRange(self, ch, range):
       self._send(f':chan{ch}:range {range}\n')
   
   def makeChart(dat:np.array):
