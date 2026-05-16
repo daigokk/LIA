@@ -39,7 +39,7 @@ const std::vector<std::string> HELPS = {
     "  w[n]:freq [min|max|value]    : Set or query AWG frequency",
     "  w[n]:amp [min|max|value]     : Set or query AWG amplitude",
     "  w[n]:phase [value|?]         : Set or query AWG phase in degrees",
-    "  post:offset:state [on|off|?] : Enable/disable offset state",
+    "  post:offset:state [on|off|?] : Enable/disable or query offset state",
     "  post:offset:auto once        : Perform one-time auto offset",
     "  post:hpf:freq [value|?]      : Set or query high-pass filter frequency (0 to 50 Hz)",
     "  post:lpf:freq [value|?]      : Set or query low-pass filter frequency (10 to 100 Hz)",
@@ -275,7 +275,6 @@ private:
                 pCfg->scope.ch[chIndex].range = val;
                 pCfg->scope.setMaxRange();
 
-                // ※ scope.open関数が3chに対応する場合は引数を追加してください
                 pCfg->pDaq->scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
                 pCfg->pDaq->scope.trigger();
                 pCfg->pDaq->scope.start();
@@ -403,17 +402,25 @@ private:
         return false;
     }
 
-    bool handlePlot(const std::vector<std::string>& tokens, const std::string&, float val) {
-        if (tokens.size() < 3 || tokens[2] != "limit") return false;
+    bool handlePlot(const std::vector<std::string>& tokens, const std::string& arg, float val) {
+        if (tokens.size() < 2) return false;
 
-        if (tokens[1] == "xy" && val >= 0.01f && val <= pCfg->plot.limit) {
-            pCfg->plot.limit = val;
-            return true;
+        std::string subCmd = tokens[1];
+        bool isQuery = (subCmd.back() == '?');
+        if (isQuery) subCmd.pop_back();
+
+        // plot:raw:limit または plot:xy:limit
+        if (tokens.size() >= 3 && tokens[2] == "limit") {
+            if (subCmd == "xy" && val >= 0.01f && val <= pCfg->plot.limit) {
+                pCfg->plot.limit = val;
+                return true;
+            }
+            if (subCmd == "raw" && val >= 0.1f && val <= pCfg->plot.rawLimit) {
+                pCfg->plot.rawLimit = val;
+                return true;
+            }
         }
-        if (tokens[1] == "raw" && val >= 0.1f && val <= pCfg->plot.rawLimit) {
-            pCfg->plot.rawLimit = val;
-            return true;
-        }
+
         return false;
     }
 

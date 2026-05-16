@@ -1,5 +1,5 @@
 ﻿//#define TEST
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <array>
 #include <iostream>
 #include <string_view>

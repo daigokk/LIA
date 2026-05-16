@@ -59,9 +59,9 @@ public:
 				if (ImGui::MenuItem("Default size pos")) {
 					cfg.window.imGuiCondFlag |= ImGuiCond_Always;
 				}
-				static bool lock = (cfg.window.imGuiWindowFlag & (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) != 0;
-				if (ImGui::MenuItem("Lock", NULL, &lock)) {
-					cfg.window.imGuiWindowFlag = lock ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize : 0;
+				static bool isLock = (cfg.window.imGuiWindowFlag & (ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize)) != 0;
+				if (ImGui::MenuItem("Lock", NULL, &isLock)) {
+					cfg.window.imGuiWindowFlag = isLock ? ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize : 0;
 				}
 				ImGui::EndMenu();
 			}

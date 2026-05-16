@@ -261,6 +261,12 @@ public:
             DWF_CALL(FDwfAnalogInStatusData(getHdwf(), 0, buffer1, bufferSize));
             DWF_CALL(FDwfAnalogInStatusData(getHdwf(), 1, buffer2, bufferSize));
         }
+        double getSamplingRate()
+        {
+            double freq;
+            DWF_CALL(FDwfAnalogInFrequencyGet(getHdwf(), &freq));
+            return freq;
+        }
         // `record2` は `record(buf1, buf2)` と完全重複のため削除
     }; // --- End class Scope ---
 

@@ -16,8 +16,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "WF_SDK/WF_SDK.h"
 #include "Daq_wf.h"
-//#include "WF_SDK/WF_SDK.h"
 #include "IniWrapper.h"
 #include "Psd.h"
 #include "Timer.h"
@@ -156,7 +156,7 @@ public:
         double getSamplingDt() const { return samplingDt; }
         float getLowLimitFreq() const { return lowLimitFreq; }
         float getHighLimitFreq() const { return highLimitFreq; }
-		void updateFreqLimits(const int bufferSize_, const double samplingDt_) {
+		void update(const int bufferSize_, const double samplingDt_) {
 			bufferSize = bufferSize_;
 			samplingDt = samplingDt_;
             // ナイキスト周波数や分解能に基づく制限計算
@@ -180,7 +180,7 @@ public:
             }
 			ch[0].enable = true; // デフォルトでCh1を有効にする
             setMaxRange();
-			updateFreqLimits(bufferSize, samplingDt);
+			update(LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, LiaConfigDefaultConsts::SCOPE_DT);
         }
     private:
         double samplingDt = LiaConfigDefaultConsts::SCOPE_DT;
@@ -289,8 +289,18 @@ public:
         std::vector<std::vector<double>> fftAbs;
 		const int numHarmonics = 10; // 1倍、3倍、5倍波
         std::vector<XYs> harmonics;
+        Raw(const int numChannels = 2, const size_t newSize= LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, const double raw_dt= LiaConfigDefaultConsts::SCOPE_DT) {
+            size_t halfSize = newSize / 2 + 1;
+            for (int i = 0; i < numChannels; ++i) {
+                waveforms.push_back(std::vector<double>(newSize));
+                fftCh.push_back(std::vector<std::complex<double>>(halfSize));
+                fftAbs.push_back(std::vector<double>(halfSize));
+                harmonics.push_back(XYs{ std::vector<double>(numHarmonics), std::vector<double>(numHarmonics) });
+            }
+            update(newSize, raw_dt);
+        }
 
-        void initialize(const int numChannels, const size_t newSize, const double raw_dt) {
+        void update(const size_t newSize, const double raw_dt) {
             size_t halfSize = newSize / 2 + 1;
             times.resize(newSize);
             for (size_t i = 0; i < times.size(); i++) {
@@ -300,12 +310,6 @@ public:
             for (size_t i = 0; i < freqs.size(); i++) {
                 freqs[i] = (double)i / newSize / raw_dt;
             }
-			for (int i = 0; i < numChannels; ++i) {
-				waveforms.push_back(std::vector<double>(newSize));
-				fftCh.push_back(std::vector<std::complex<double>>(halfSize));
-				fftAbs.push_back(std::vector<double>(halfSize));
-				harmonics.push_back(XYs{ std::vector<double>(numHarmonics), std::vector<double>(numHarmonics) });
-			}
         }
 
         void calculateFFT(const bool flagCh2, const float freq, const double raw_dt) {
@@ -379,7 +383,6 @@ public:
         initializeDirectory();
         allocateBuffers();
         loadSettingsFromFile();
-        raw.initialize(scope.getNumChannels(), scope.getBufferSize(), scope.getSamplingDt());
     }
 
     ~LiaConfig() {
@@ -629,7 +632,7 @@ private:
     }
 
     void allocateBuffers() {
-        raw.initialize(scope.getNumChannels(), scope.getBufferSize(), scope.getSamplingDt());
+        raw.update(scope.getBufferSize(), scope.getSamplingDt());
         ringBuffer.update(ringBuffer.getDt(), ringBuffer.getMeasurementSize());
     }
 
@@ -696,6 +699,8 @@ private:
 		for (int i = 0; i < scope.getNumChannels(); ++i) {
 			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
 		}
+        ini.set("Scope", "bufferSize", scope.getBufferSize());
+        ini.set("Scope", "samplingDt", scope.getSamplingDt());
         // Post
         ini.set("Post", "offset[0].phase", post.offset[0].phase);
         ini.set("Post", "offset[0].x", post.offset[0].x);
@@ -750,6 +755,11 @@ private:
             scope.ch[i].range = ini.get("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
         }
         scope.setMaxRange();
+		scope.update(
+			ini.get("Scope", "bufferSize", scope.getBufferSize()),
+			ini.get("Scope", "samplingDt", scope.getSamplingDt())
+		);
+		raw.update(scope.getBufferSize(), scope.getSamplingDt());
 
         post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
         post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);

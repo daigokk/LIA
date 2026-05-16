@@ -203,7 +203,7 @@ inline void RawPlotWindow::show() {
 
     // Tabs
     if (ImGui::BeginTabBar("Raw")) {
-        bool useMv = cfg.plot.rawLimit <= MILI_VOLT;
+        bool useMv = (cfg.plot.rawLimit <= MILI_VOLT);
 
         if (ImGui::BeginTabItem("Waveform")) {
             drawWaveformTab(useMv);
@@ -223,7 +223,7 @@ inline void RawPlotWindow::show() {
     }
 }
 
-inline void RawPlotWindow::drawWaveformTab(bool useMv) {
+inline void RawPlotWindow::drawWaveformTab(const bool useMv) {
     if (ImPlot::BeginPlot("##Raw waveform", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
         ImPlot::SetupAxes("Time (us)", useMv ? "v (mV)" : "v (V)", 0, 0);
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MicroFormatter));

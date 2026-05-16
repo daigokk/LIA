@@ -179,7 +179,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
     ButtonType button = ButtonType::NON;
     bool configChanged = false;
     float value = 0;
-
+    static double rate = cfg.pDaq->scope.getSamplingRate();
     if (ImGui::BeginTabBar("Plot window")) {
         // ===== XY表示設定 =====
         if (ImGui::BeginTabItem("XY")) {
@@ -238,15 +238,39 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 else { cfg.scope.ch[1].range = 25.0f; }
                 configChanged = true;
             }
-            ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 31.0f * cfg.window.monitorScale));
+            
+			static float samplingRate = 1e-6f / (float)cfg.scope.getSamplingDt();
+            ImGui::SetNextItemWidth(nextItemWidth*0.7f);
+            ImGui::Text("%3.0f", rate / 1e6);
+            ImGui::SameLine();  ImGui::SetNextItemWidth(nextItemWidth);
+            if (ImGui::InputFloat("(MS/s)", &samplingRate, 1.0f, 10.0f, "%3.0f")) {
+                if (samplingRate < 10) { samplingRate = 10; }
+				else if (samplingRate > 100) { samplingRate = 100; }
+                static float oldSamplingRate = samplingRate;
+                if (oldSamplingRate != samplingRate) {
+                    oldSamplingRate = samplingRate;
+                    cfg.scope.update(cfg.scope.getBufferSize(), 1.0e-6 / oldSamplingRate);
+                    configChanged = true;
+                }
+                
+            }
+            //ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 1.0f * cfg.window.monitorScale));
+
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
         if (configChanged) {
+            static double rateOld = cfg.pDaq->scope.getSamplingRate();
             cfg.scope.setMaxRange();
             cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.getBufferSize(), 1.0 / cfg.scope.getSamplingDt());
             cfg.pDaq->scope.trigger();
             cfg.pDaq->scope.start();
+            rate = cfg.pDaq->scope.getSamplingRate();
+            if (rateOld != rate) {
+                rateOld = rate;
+                cfg.scope.update(cfg.scope.getBufferSize(), 1.0 / rateOld);
+                cfg.raw.update(cfg.scope.getBufferSize(), 1.0 / rateOld);
+            }
         }
         if (button != ButtonType::NON) {
             buttonPressed(button, value);
