@@ -223,15 +223,15 @@ inline void ControlWindow::plot(const float nextItemWidth)
         }
 		// ===== Scope設定 =====
         if (ImGui::BeginTabItem("Scope")) {
-            ImGui::SetNextItemWidth(nextItemWidth*0.75f);
-            static const char* rangeNames[] = { "+-2.5V", "+-25V" };
+            ImGui::SetNextItemWidth(nextItemWidth*0.7f);
+            static const char* rangeNames[] = { (const char*)u8"±2.5V", (const char*)u8"±25V" };
             int oldRange1 = ((int)(cfg.scope.ch[0].range / 25.0f));
             if (ImGui::ListBox("Ch1", &oldRange1, rangeNames, IM_ARRAYSIZE(rangeNames), 2)) {
                 if (oldRange1 == 0) { cfg.scope.ch[0].range = 2.5f; }
                 else { cfg.scope.ch[0].range = 25.0f; }
                 configChanged = true;
             }
-			ImGui::SameLine(); ImGui::SetNextItemWidth(nextItemWidth*0.75f);
+			ImGui::SameLine(); ImGui::SetNextItemWidth(nextItemWidth*0.7f);
             int oldRange2 = ((int)(cfg.scope.ch[1].range / 25.0f));
             if (ImGui::ListBox("Ch2", &oldRange2, rangeNames, IM_ARRAYSIZE(rangeNames), 2)) {
                 if (oldRange2 == 0) { cfg.scope.ch[1].range = 2.5f; }

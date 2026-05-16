@@ -17,6 +17,7 @@
 #include <string_view>
 #include <vector>
 #include "Daq_wf.h"
+//#include "WF_SDK/WF_SDK.h"
 #include "IniWrapper.h"
 #include "Psd.h"
 #include "Timer.h"
@@ -30,7 +31,7 @@ namespace LiaConfigDefaultConsts {
     constexpr float AWG_FREQ = 100e3f;
 	constexpr float AWG_AMP = 1.0f;
 	constexpr float SCOPE_RANGE = 2.5f;
-    constexpr double SCOPE_DT = 1e-8; // 100 MHz sampling rate
+    constexpr double SCOPE_DT = 1.0/100e6; // 100 MHz sampling rate
 	constexpr int SCOPE_BUFFER_SIZE = 10000; // 0.1ms分のデータを保存
     constexpr double RINGBUFFER_DT = 2e-3;
 	constexpr int RINGBUFFER_SEC = 60 * 10; // 10 minutes
@@ -348,6 +349,8 @@ public:
     // ---------------------------------------------------------
     Timer timer;
     Daq_dwf* pDaq = nullptr;
+    //wf::Device::Data* device_data = nullptr;
+
     std::string device_sn = "SN:XXXXXXXXXX";
     std::string dirName = ".";
 
@@ -463,8 +466,8 @@ public:
             if (scope.ch[1].enable) {
                 post.offset[1].x = x2;
                 post.offset[1].y = y2;
-                cmds.push_back({ (float)timer.elapsedSec(), (float)ButtonType::PostAutoOffset, (float)x1, (float)y1, 0, 0 });
             }
+            cmds.push_back({ (float)timer.elapsedSec(), (float)ButtonType::PostAutoOffset, (float)x1, (float)y1, 0, 0 });
             flagAutoOffset = false;
         }
 

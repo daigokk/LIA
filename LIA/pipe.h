@@ -15,8 +15,6 @@
 // ============================================================
 // 定数定義
 // ============================================================
-constexpr int MAX_CHANNELS = 2; // ★ 2チャンネルまで対応
-
 const std::vector<std::string> HELPS = {
     "Available commands:",
     "  reset or *rst                : Reset all settings to default values",
@@ -299,7 +297,7 @@ private:
         return false;
     }
 
-    // ★ 階層型コマンドとして集約された Data 処理
+    // ★ Data 処理
     bool handleData(const std::vector<std::string>& tokens, const std::string& arg, float val) {
         if (tokens.size() < 2) return false;
         const std::string& subCmd = tokens[1];
