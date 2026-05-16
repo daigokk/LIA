@@ -159,13 +159,11 @@
     def set_fgFreq(self, freq):
       self._send(f':w1:freq {freq}\n')
     def set_scopeCh2(self, flag):
-      if flag:
-        state = 'on'
-      else:
-        state = 'off'
-      self._send(f':chan2:disp {state}\n')
+      self._send(f':chan2:disp {'on' if flag else 'off'}\n')
     def set_scopeRange(self, ch, range):
       self._send(f':chan{ch}:range {range}\n')
+    def set_postPhase(self, ch, phaseDeg):
+      self._send(f':post{ch}:offset:phase {phaseDeg}')
   
   def makeChart(dat:np.array):
     fig, ax = plt.subplots(1, 2, figsize=(3*2,3))
