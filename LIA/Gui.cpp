@@ -78,12 +78,12 @@ bool Gui::Initialize(const GuiConfig& config) {
 
     // フォントの読み込み
 	// Defualt font: C:/Windows/Fonts/Lucon.ttf
-    ImFont* myFont = io.Fonts->AddFontFromFileTTF(config.fontPath.c_str(), config.fontSize);
+    ImFont* myFont = io.Fonts->AddFontFromFileTTF(config.fontPaths[config.idxDefaultFont].c_str(), config.fontSize);
     if (myFont) {
         ImGui::PushFont(myFont);
     }
     else {
-        std::cerr << "[Warning] Failed to load font: " << config.fontPath << "\n";
+        std::cerr << "[Warning] Failed to load font: " << config.fontPaths[config.idxDefaultFont] << "\n";
     }
 
     // スタイルのスケーリング設定
