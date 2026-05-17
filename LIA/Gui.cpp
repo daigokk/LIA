@@ -77,6 +77,7 @@ bool Gui::Initialize(const GuiConfig& config) {
     io.FontGlobalScale = 1.0f;
 
     // フォントの読み込み
+	// Defualt font: C:/Windows/Fonts/Lucon.ttf
     ImFont* myFont = io.Fonts->AddFontFromFileTTF(config.fontPath.c_str(), config.fontSize);
     if (myFont) {
         ImGui::PushFont(myFont);

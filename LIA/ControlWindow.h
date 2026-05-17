@@ -152,6 +152,11 @@ inline void ControlWindow::awg(const float nextItemWidth)
                     th_autosetup.detach();
                 }
             }
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, (float)cfg.awg.ch[0].func);
+
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Func")) {
             static const char* funcNames[] = { "Sine", "Square", "Triangle" };
             int oldFunc = cfg.awg.ch[0].func - 1;
             if (ImGui::ListBox("Func", &oldFunc, funcNames, IM_ARRAYSIZE(funcNames), 3)) {
@@ -159,8 +164,6 @@ inline void ControlWindow::awg(const float nextItemWidth)
                 cfg.awg.ch[1].func = oldFunc + 1;
                 configChanged = true;
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, (float)cfg.awg.ch[0].func);
-
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -179,7 +182,6 @@ inline void ControlWindow::plot(const float nextItemWidth)
     ButtonType button = ButtonType::NON;
     bool configChanged = false;
     float value = 0;
-    static double rate = cfg.pDaq->scope.SamplingRate;
     if (ImGui::BeginTabBar("Plot window")) {
         // ===== XY表示設定 =====
         if (ImGui::BeginTabItem("XY")) {
@@ -239,9 +241,9 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 configChanged = true;
             }
             
-			static float samplingRate = 1e-6f / (float)cfg.scope.getSamplingDt();
+			float samplingRate = 1e-6f / (float)cfg.scope.getSamplingDt();
             ImGui::SetNextItemWidth(nextItemWidth*0.7f);
-            ImGui::Text("%3.0f", rate / 1e6);
+            ImGui::Text("%3.0f", cfg.pDaq->scope.SamplingRate / 1e6);
             ImGui::SameLine();  ImGui::SetNextItemWidth(nextItemWidth);
             if (ImGui::InputFloat("(MS/s)", &samplingRate, 1.0f, 10.0f, "%3.0f")) {
                 if (samplingRate < 10) { samplingRate = 10; }
@@ -265,7 +267,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
             cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.getBufferSize(), 1.0 / cfg.scope.getSamplingDt());
             cfg.pDaq->scope.trigger();
             cfg.pDaq->scope.start();
-            rate = cfg.pDaq->scope.SamplingRate;
+            double rate = cfg.pDaq->scope.SamplingRate;
             if (rateOld != rate) {
                 rateOld = rate;
                 cfg.scope.update(cfg.scope.getBufferSize(), 1.0 / rateOld);
