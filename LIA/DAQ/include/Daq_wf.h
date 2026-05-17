@@ -170,11 +170,16 @@ public:
         HDWF getHdwf() const { return m_parent.getHdwf(); } // 親のハンドルを取得
 
     public:
-        explicit Scope(Daq_dwf& parent) : m_parent(parent) {}
+        explicit Scope(Daq_dwf& parent) : m_parent(parent), ch(2) {}
 
         // --- 設定 ---
-        double voltsRange1 = 5.0;
-        double voltsRange2 = 5.0;
+        struct Channel {
+            bool enable = false;
+            float range = 2.5;
+        };
+		std::vector<Channel> ch;
+        double voltsRange1 = 2.5;
+        double voltsRange2 = 2.5;
         int bufferSize = 5000;
         double SamplingRate = 100e6;
         double secTimeout = 0.0;
@@ -183,7 +188,12 @@ public:
         TRIGTYPE trigType = trigtypeEdge;
         double trigVoltLevel = 0.0;
         DwfTriggerSlope trigSlope = DwfTriggerSlopeRise;
-
+        void init() {
+			int numChannels;
+            DWF_CALL(FDwfAnalogInChannelCount(getHdwf(), &numChannels));
+            ch.resize(numChannels);
+			ch[0].enable = true; // デフォルトでCh1を有効にする
+        }
         // --- メソッド ---
         void open()
         {
@@ -195,6 +205,7 @@ public:
             // 実際に設定されたバッファサイズを読み戻す
             DWF_CALL(FDwfAnalogInBufferSizeGet(getHdwf(), &bufferSize));
             DWF_CALL(FDwfAnalogInFrequencySet(getHdwf(), SamplingRate));
+            DWF_CALL(FDwfAnalogInFrequencyGet(getHdwf(), &SamplingRate));
             DWF_CALL(FDwfAnalogInChannelFilterSet(getHdwf(), -1, filterAverageFit));
         }
 
@@ -261,13 +272,6 @@ public:
             DWF_CALL(FDwfAnalogInStatusData(getHdwf(), 0, buffer1, bufferSize));
             DWF_CALL(FDwfAnalogInStatusData(getHdwf(), 1, buffer2, bufferSize));
         }
-        double getSamplingRate()
-        {
-            double freq;
-            DWF_CALL(FDwfAnalogInFrequencyGet(getHdwf(), &freq));
-            return freq;
-        }
-        // `record2` は `record(buf1, buf2)` と完全重複のため削除
     }; // --- End class Scope ---
 
 
@@ -302,6 +306,7 @@ public:
             throw DwfException("No AD is connected.");
         }
         init(getIdxFirstEnabledDevice());
+		scope.init(); // Scopeクラスの初期化 (チャンネル数の取得など)
     }
 
     /**

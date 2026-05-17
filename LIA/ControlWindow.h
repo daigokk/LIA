@@ -179,7 +179,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
     ButtonType button = ButtonType::NON;
     bool configChanged = false;
     float value = 0;
-    static double rate = cfg.pDaq->scope.getSamplingRate();
+    static double rate = cfg.pDaq->scope.SamplingRate;
     if (ImGui::BeginTabBar("Plot window")) {
         // ===== XY表示設定 =====
         if (ImGui::BeginTabItem("XY")) {
@@ -216,7 +216,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
             ImGui::SetNextItemWidth(nextItemWidth);
 			float historySec = cfg.plot.historySec;
             if (ImGui::InputFloat("History (s)", &historySec, 1.0f, 10.0f, "%3.0f")) {
-                cfg.plot.historySec = std::clamp(historySec, 1.0f, (float)cfg.ringBuffer.getSec());
+                cfg.plot.historySec = std::clamp(historySec, 1.0f, (float)cfg.ringBuffer.sec);
             }
             ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 80.0f * cfg.window.monitorScale));
             ImGui::EndTabItem();
@@ -260,12 +260,12 @@ inline void ControlWindow::plot(const float nextItemWidth)
         }
         ImGui::EndTabBar();
         if (configChanged) {
-            static double rateOld = cfg.pDaq->scope.getSamplingRate();
+            static double rateOld = cfg.pDaq->scope.SamplingRate;
             cfg.scope.setMaxRange();
             cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.getBufferSize(), 1.0 / cfg.scope.getSamplingDt());
             cfg.pDaq->scope.trigger();
             cfg.pDaq->scope.start();
-            rate = cfg.pDaq->scope.getSamplingRate();
+            rate = cfg.pDaq->scope.SamplingRate;
             if (rateOld != rate) {
                 rateOld = rate;
                 cfg.scope.update(cfg.scope.getBufferSize(), 1.0 / rateOld);

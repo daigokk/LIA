@@ -331,11 +331,9 @@ inline void TimeChartWindow::show() {
     ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
 
-    static float historySecMax = (float)(cfg.ringBuffer.getDt()) * (cfg.ringBuffer.times.size() - 1);
-
     if (cfg.pause.flag) ImGui::BeginDisabled();
     ImGui::SetNextItemWidth(500.0f * cfg.window.monitorScale);
-    ImGui::SliderFloat("History", &cfg.plot.historySec, 1.0f, historySecMax, "%5.1f s");
+    ImGui::SliderFloat("History", &cfg.plot.historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
     if (ImGui::IsItemDeactivated()) {
         button = ButtonType::TimeHistory;
         value = cfg.plot.historySec;
@@ -546,9 +544,8 @@ inline void DeltaTimeChartWindow::show() {
     ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
     ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
 
-    static float historySecMax = (float)(cfg.ringBuffer.getDt()) * (cfg.ringBuffer.times.size() - 1);
     static float historySec = 10.0f;
-    ImGui::SliderFloat("History", &historySec, 1.0f, historySecMax, "%5.1f s");
+    ImGui::SliderFloat("History", &historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
 
     if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
         double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];

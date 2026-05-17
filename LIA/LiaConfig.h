@@ -16,7 +16,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "WF_SDK/WF_SDK.h"
+//#include "WF_SDK/WF_SDK.h"
 #include "Daq_wf.h"
 #include "IniWrapper.h"
 #include "Psd.h"
@@ -174,11 +174,6 @@ public:
 			}
         }
         void reset() {
-            for (auto& channel : ch) {
-				channel.enable = false;
-                channel.range = LiaConfigDefaultConsts::SCOPE_RANGE;
-            }
-			ch[0].enable = true; // デフォルトでCh1を有効にする
             setMaxRange();
 			update(LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, LiaConfigDefaultConsts::SCOPE_DT);
         }
@@ -261,10 +256,11 @@ public:
         int latestIdx = 0; // 最新データのインデックス
         int writeIdx = 0;  // 書き込み位置のインデックス 
         int size = 0;      // 有効データ数
+        double sec = LiaConfigDefaultConsts::RINGBUFFER_SEC;
 		RingBuffer() {
 			update(dt, sec);
 		}
-        void update(const double dt_, const int  sec_) {
+        void update(const double dt_, const double sec_) {
             dt = dt_;
             sec = sec_;
             int bufferSize = static_cast<int>(sec / dt + 1);
@@ -274,11 +270,10 @@ public:
             ch[1].resize(bufferSize);
         }
 		double getDt() const { return dt; }
-		int getSec() const { return sec; }
 		int getMeasurementSize() const { return static_cast<int>(times.size()); }
     private:
         double dt = LiaConfigDefaultConsts::RINGBUFFER_DT;
-        int  sec = LiaConfigDefaultConsts::RINGBUFFER_SEC;
+        
     } ringBuffer;
 
     struct Raw {
@@ -633,7 +628,7 @@ private:
 
     void allocateBuffers() {
         raw.update(scope.getBufferSize(), scope.getSamplingDt());
-        ringBuffer.update(ringBuffer.getDt(), ringBuffer.getMeasurementSize());
+        ringBuffer.update(ringBuffer.getDt(), ringBuffer.sec);
     }
 
     inline void processAndStorePoint(int chIndex, double x, double y) noexcept {
@@ -696,7 +691,7 @@ private:
         ini.set("Awg", "ch[1].phase", awg.ch[1].phase);
 		// Scope
         ini.set("Scope", "flagCh2", scope.ch[1].enable);
-		for (int i = 0; i < scope.getNumChannels(); ++i) {
+		for (size_t i = 0; i < scope.ch.size(); ++i) {
 			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
 		}
         ini.set("Scope", "bufferSize", scope.getBufferSize());

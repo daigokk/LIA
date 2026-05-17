@@ -606,11 +606,9 @@ void test_pipe() {
     sendCommand("w1:amp 1.5");
     assert(cfg.awg.ch[0].amp == 1.5f);
 
-    std::cout << "[Test] Setting CH2 & CH3 Display ON..." << std::endl;
+    std::cout << "[Test] Setting CH2 ON..." << std::endl;
     sendCommand("chan2:disp on");
-    sendCommand("chan3:disp on"); // 追加テスト
-    assert(cfg.isChEnabled[1] == true); // ★ LiaConfig側の配列化前提
-    assert(cfg.isChEnabled[2] == true);
+    assert(cfg.scope.ch[1].enable == true);
 
     std::cout << "[Test] Auto Offset (once)..." << std::endl;
     sendCommand("calc:offset:auto once");
