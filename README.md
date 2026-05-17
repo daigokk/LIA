@@ -38,7 +38,6 @@
     - LIA and retrieve data via pipe communication.
   - 🚀 Not slow
     - Default sampling period of the PSD calucration is 2 ms. The measured sampling period for the default setting is shown below.
-      - AMD Ryzen 5 PRO 5650GE: 2.00±0.02 ms (1.00±0.04 ms)
       - Intel Core i5-7300U: 2.00±0.77 ms <- For this CPU, a sampling period of 5 ms would be optimal.
       - Intel Core i5-9600K: 2.00±0.04 ms
       - Intel Core i5-1235U: 2.00±0.08 ms
