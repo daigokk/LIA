@@ -31,6 +31,11 @@ public:
         return currentFreq_;
     }
 
+    [[nodiscard]] double getSamplingDt() const noexcept
+    {
+        return samplingInterval_;
+    }
+
     void initialize(double frequency, double samplingInterval, size_t sampleSize)
     {
         if (currentFreq_ == frequency &&

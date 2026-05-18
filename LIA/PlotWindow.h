@@ -185,7 +185,7 @@ inline void RawPlotWindow::show() {
     if (ImGui::Button("Save")) {
 		std::string timestamp = cfg.getCurrentTimestamp();
         cfg.saveRawData(std::format("raw_{}.csv", timestamp));
-        cfg.raw.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt());
+        cfg.scope.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq);
 		cfg.saveFftData(std::format("fft_{}.csv", timestamp));
         button = ButtonType::RawSave;
 		value = 1.0f; // Saveボタンが押されたことを示すフラグ
@@ -195,7 +195,7 @@ inline void RawPlotWindow::show() {
         value = 0.0f;
     }
 
-    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.getMaxRange() * 1.2f, "%4.1f V");
+    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.maxRange * 1.2f, "%4.1f V");
     if (ImGui::IsItemDeactivated()) {
         button = ButtonType::RawLimit;
         value = cfg.plot.rawLimit;
@@ -229,18 +229,18 @@ inline void RawPlotWindow::drawWaveformTab(const bool useMv) {
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MicroFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
 
-        ImPlot::SetupAxisLimits(ImAxis_X1, cfg.raw.times.front(), cfg.raw.times.back(), ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, cfg.scope.times.front(), cfg.scope.times.back(), ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.rawLimit, cfg.plot.rawLimit, ImGuiCond_Always);
 
         ImPlotSpec specLine;
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
         const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
-        ImPlot::PlotLine(ch1_label, cfg.raw.times.data(), cfg.raw.waveforms[0].data(), (int)cfg.raw.times.size(), specLine);
+        ImPlot::PlotLine(ch1_label, cfg.scope.times.data(), cfg.scope.ch[0].waveform.data(), (int)cfg.scope.times.size(), specLine);
 
         if (cfg.scope.ch[1].enable) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-            ImPlot::PlotLine("Ch2", cfg.raw.times.data(), cfg.raw.waveforms[1].data(), (int)cfg.raw.times.size(), specLine);
+            ImPlot::PlotLine("Ch2", cfg.scope.times.data(), cfg.scope.ch[1].waveform.data(), (int)cfg.scope.times.size(), specLine);
         }
         ImPlot::EndPlot();
     }
@@ -248,11 +248,11 @@ inline void RawPlotWindow::drawWaveformTab(const bool useMv) {
 
 inline void RawPlotWindow::drawFftTab(bool useMv) {
     if (ImPlot::BeginPlot("##FFT", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        cfg.raw.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq, cfg.scope.getSamplingDt()); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
+        cfg.scope.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq); // FFT計算をここで行うことで、波形とスペクトルの表示が常に同期するようにする
         ImPlot::SetupAxes("Freq. (kHz)", useMv ? "v (mV)" : "v (V)", 0, 0);
         ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(KiloFormatter));
         if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
-        ImPlot::SetupAxisLimits(ImAxis_X1, 0, cfg.raw.freqs[cfg.raw.freqs.size() / 80], ImGuiCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, cfg.scope.freqs[cfg.scope.freqs.size() / 80], ImGuiCond_Always);
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0, cfg.plot.rawLimit, ImGuiCond_Always);
 
         ImPlotSpec specLine;
@@ -260,12 +260,12 @@ inline void RawPlotWindow::drawFftTab(bool useMv) {
         specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
 
         const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
-		ImPlot::PlotLine(ch1_label, cfg.raw.freqs.data(), cfg.raw.fftAbs[0].data(), (int)cfg.raw.freqs.size() / 80, specLine);
+		ImPlot::PlotLine(ch1_label, cfg.scope.freqs.data(), cfg.scope.ch[0].fftAbs.data(), (int)cfg.scope.freqs.size() / 80, specLine);
 
         // Ch2 FFT Calculation & Plot
         if (cfg.scope.ch[1].enable) {
             specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-            ImPlot::PlotLine("Ch2", cfg.raw.freqs.data(), cfg.raw.fftAbs[1].data(), (int)cfg.raw.freqs.size() / 80, specLine);
+            ImPlot::PlotLine("Ch2", cfg.scope.freqs.data(), cfg.scope.ch[1].fftAbs.data(), (int)cfg.scope.freqs.size() / 80, specLine);
         }
 
         ImPlot::EndPlot();
@@ -627,7 +627,7 @@ inline void XYPlotWindow::show() {
             specScatterFft.MarkerSize = 3.0f * cfg.window.monitorScale;
             specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
             specScatter.MarkerLineColor = colors[Color_Red];
-            ImPlot::PlotScatter("##FFT1", cfg.raw.harmonics[0].x.data(), cfg.raw.harmonics[0].y.data(), (int)cfg.raw.harmonics[0].y.size(), specScatterFft);
+            ImPlot::PlotScatter("##FFT1", cfg.scope.harmonics[0].x.data(), cfg.scope.harmonics[0].y.data(), (int)cfg.scope.harmonics[0].y.size(), specScatterFft);
         }
         specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
         ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
@@ -642,7 +642,7 @@ inline void XYPlotWindow::show() {
             ImPlot::PlotScatter("##NOW2", &(cfg.ringBuffer.ch[1].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[1].y[cfg.plot.xyLatestIdx]), 1, specScatter);
             if (cfg.awg.ch[1].func != 1) {
                 specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-                ImPlot::PlotScatter("##FFT2", cfg.raw.harmonics[1].x.data(), cfg.raw.harmonics[1].y.data(), (int)cfg.raw.harmonics[1].y.size(), specScatterFft);
+                ImPlot::PlotScatter("##FFT2", cfg.scope.harmonics[1].x.data(), cfg.scope.harmonics[1].y.data(), (int)cfg.scope.harmonics[1].y.size(), specScatterFft);
             }
 
             specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);

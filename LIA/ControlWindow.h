@@ -25,7 +25,7 @@ inline void markButtonIfItemDeactivated(ButtonType& outButton, float& outValue, 
 
 // 周波数を有効範囲内にクランプ
 inline float clampFrequency(const float freqkHz, const LiaConfig& cfg) {
-    return std::clamp(freqkHz, cfg.scope.getLowLimitFreq() * 1e-3f, cfg.scope.getHighLimitFreq() * 1e-3f);
+    return std::clamp(freqkHz, cfg.scope.lowLimitFreq * 1e-3f, cfg.scope.highLimitFreq * 1e-3f);
 }
 
 // 振幅を有効範囲内にクランプ
@@ -183,6 +183,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
     bool configChanged = false;
     float value = 0;
     if (ImGui::BeginTabBar("Plot window")) {
+        static float samplingRate = 1e-6f / (float)cfg.scope.samplingDt;
         // ===== XY表示設定 =====
         if (ImGui::BeginTabItem("XY")) {
             ImGui::SetNextItemWidth(nextItemWidth);
@@ -241,7 +242,7 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 configChanged = true;
             }
             
-			float samplingRate = 1e-6f / (float)cfg.scope.getSamplingDt();
+			
             ImGui::SetNextItemWidth(nextItemWidth*0.7f);
             ImGui::Text("%3.0f", cfg.pDaq->scope.SamplingRate / 1e6);
             ImGui::SameLine();  ImGui::SetNextItemWidth(nextItemWidth);
@@ -251,32 +252,31 @@ inline void ControlWindow::plot(const float nextItemWidth)
                 static float oldSamplingRate = samplingRate;
                 if (oldSamplingRate != samplingRate) {
                     oldSamplingRate = samplingRate;
-                    cfg.scope.update(cfg.scope.getBufferSize(), 1.0e-6 / oldSamplingRate);
                     configChanged = true;
                 }
-                
             }
             //ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 1.0f * cfg.window.monitorScale));
+
+            if (configChanged) {
+                static double rateOld = cfg.pDaq->scope.SamplingRate;
+                cfg.scope.setMaxRange();
+                cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.bufferSize, samplingRate * 1e6);
+                cfg.pDaq->scope.trigger();
+                cfg.pDaq->scope.start();
+                double rate = cfg.pDaq->scope.SamplingRate;
+                if (rateOld != rate) {
+                    rateOld = rate;
+                    cfg.scope.update(cfg.scope.bufferSize, 1.0 / rateOld);
+                }
+            }
+            if (button != ButtonType::NON) {
+                buttonPressed(button, value);
+            }
 
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
-        if (configChanged) {
-            static double rateOld = cfg.pDaq->scope.SamplingRate;
-            cfg.scope.setMaxRange();
-            cfg.pDaq->scope.open(cfg.scope.ch[0].range, cfg.scope.ch[1].range, cfg.scope.getBufferSize(), 1.0 / cfg.scope.getSamplingDt());
-            cfg.pDaq->scope.trigger();
-            cfg.pDaq->scope.start();
-            double rate = cfg.pDaq->scope.SamplingRate;
-            if (rateOld != rate) {
-                rateOld = rate;
-                cfg.scope.update(cfg.scope.getBufferSize(), 1.0 / rateOld);
-                cfg.raw.update(cfg.scope.getBufferSize(), 1.0 / rateOld);
-            }
-        }
-        if (button != ButtonType::NON) {
-            buttonPressed(button, value);
-        }
+        
     }
 }
 

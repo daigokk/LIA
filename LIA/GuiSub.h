@@ -67,7 +67,8 @@ public:
 			}
 			if (ImGui::BeginMenu("Theme")) {
 				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-				ImGui::ListBox("", &cfg.window.theme, themes, IM_ARRAYSIZE(themes), 10);
+				ImGui::SetNextItemWidth(200 * Gui::monitorScale);
+				ImGui::ListBox("Theme", &cfg.window.theme, themes, IM_ARRAYSIZE(themes), IM_ARRAYSIZE(themes));
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Tools")) {

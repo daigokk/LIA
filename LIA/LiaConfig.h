@@ -103,6 +103,13 @@ constexpr std::string_view cmdToString(ButtonType button) noexcept {
 // ================================================================================
 class LiaConfig {
 public:
+    struct XYs {
+        std::vector<double> x;
+        std::vector<double> y;
+        void clear() { x.clear(); y.clear(); }
+        void push_back(double xVal, double yVal) { x.push_back(xVal); y.push_back(yVal); }
+        void resize(size_t newSize) { x.resize(newSize); y.resize(newSize); }
+    };
     // ---------------------------------------------------------
     // [1] Settings & Configurations
     // ---------------------------------------------------------
@@ -143,46 +150,114 @@ public:
     } awg;
 
     struct ScopeCfg {
-    public:
+        // --- 設定 (Settings) ---
         struct Channel {
-			bool enable = false;
+            bool enable = false;
             float range = LiaConfigDefaultConsts::SCOPE_RANGE;
+            std::vector<double> waveform;
+            std::vector<std::complex<double>> fft;
+            std::vector<double> fftAbs;
         };
         std::vector<Channel> ch;
-        ScopeCfg(int numChannels = 2) : ch(numChannels) { reset(); }
-        float getMaxRange() { return maxRange; }
-        int getNumChannels() const { return static_cast<int>(ch.size()); }
-		int getBufferSize() const { return bufferSize; }
-        double getSamplingDt() const { return samplingDt; }
-        float getLowLimitFreq() const { return lowLimitFreq; }
-        float getHighLimitFreq() const { return highLimitFreq; }
-		void update(const int bufferSize_, const double samplingDt_) {
-			bufferSize = bufferSize_;
-			samplingDt = samplingDt_;
-            // ナイキスト周波数や分解能に基づく制限計算
-            // 0.5 / (Size * dt) は、このバッファ長で観測できる最低周波数（の半分）
-            lowLimitFreq = static_cast<float>(0.5f / (static_cast<float>(bufferSize) * samplingDt));
-            // 1.0 / (100 * dt) は、サンプリングレートの 1/100
-            highLimitFreq = static_cast<float>(1.0f / (1000.0f * samplingDt));
-		}
-        void setMaxRange() {
-			maxRange = 0.0f;
-			for (auto& channel : ch) {
-				if (maxRange < channel.range) {
-					maxRange = channel.range;
-				}
-			}
-        }
-        void reset() {
-            setMaxRange();
-			update(LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, LiaConfigDefaultConsts::SCOPE_DT);
-        }
-    private:
+
         double samplingDt = LiaConfigDefaultConsts::SCOPE_DT;
         int bufferSize = LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE;
-        float lowLimitFreq;
-        float highLimitFreq;
-		float maxRange = LiaConfigDefaultConsts::SCOPE_RANGE;
+        float lowLimitFreq = 0.0f;
+        float highLimitFreq = 0.0f;
+        float maxRange = LiaConfigDefaultConsts::SCOPE_RANGE;
+
+        // --- データバッファ (Data Buffers) ---
+        std::vector<double> times;
+        std::vector<double> freqs;
+        
+
+        const int numHarmonics = 10;
+        std::vector<XYs> harmonics;
+
+        // --- メソッド (Methods) ---
+        ScopeCfg(int numChannels = 2) : ch(numChannels) {
+            // 初期バッファの構築
+            for (int i = 0; i < numChannels; ++i) {
+                ch[i].waveform.resize(bufferSize);
+                ch[i].fft.resize(bufferSize / 2 + 1);
+                ch[i].fftAbs.resize(bufferSize / 2 + 1);
+                harmonics.push_back(XYs{ std::vector<double>(numHarmonics), std::vector<double>(numHarmonics) });
+            }
+            reset();
+        }
+
+        // 設定の更新とバッファのリサイズを一括で行う
+        void update(int newBufferSize, double newSamplingDt) {
+            bufferSize = newBufferSize;
+            samplingDt = newSamplingDt;
+
+            // 周波数制限の再計算
+            lowLimitFreq = static_cast<float>(0.5f / (static_cast<float>(bufferSize) * samplingDt));
+            highLimitFreq = static_cast<float>(1.0f / (1000.0f * samplingDt));
+
+            // 時間軸データの生成
+            times.resize(bufferSize);
+            for (size_t i = 0; i < times.size(); i++) {
+                times[i] = (double)i * samplingDt;
+            }
+
+            // 周波数軸データの生成
+            size_t halfSize = bufferSize / 2 + 1;
+            freqs.resize(halfSize);
+            for (size_t i = 0; i < freqs.size(); i++) {
+                freqs[i] = (double)i / (double)bufferSize / samplingDt;
+            }
+
+            // 各チャンネルのバッファリサイズ
+            for (auto& channel : ch) {
+                channel.waveform.resize(bufferSize);
+                channel.fft.resize(halfSize);
+                channel.fftAbs.resize(halfSize);
+            }
+        }
+
+        void setMaxRange() {
+            maxRange = 0.0f;
+            for (auto& channel : ch) {
+                if (maxRange < channel.range) maxRange = channel.range;
+            }
+        }
+
+        void reset() {
+            setMaxRange();
+            update(LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, LiaConfigDefaultConsts::SCOPE_DT);
+        }
+
+        int getNumChannels() const { return static_cast<int>(ch.size()); }
+
+        // FFT計算ロジック
+        void calculateFFT(bool flagCh2, float targetFreq) {
+            static pocketfft::detail::shape_t shape{ (size_t)bufferSize };
+            static const pocketfft::detail::stride_t stride_in{ sizeof(double) };
+            static const pocketfft::detail::stride_t stride_out{ sizeof(std::complex<double>) };
+
+            auto processChannel = [&](int chIdx) {
+                pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD,
+                    ch[chIdx].waveform.data(), ch[chIdx].fft.data(), 1.0);
+
+                for (size_t i = 0; i < ch[chIdx].fft.size(); i++) {
+                    ch[chIdx].fft[i] *= (2.0 / (double)bufferSize);
+                    ch[chIdx].fftAbs[i] = std::abs(ch[chIdx].fft[i]);
+                }
+
+                int baseIdx = static_cast<int>(bufferSize * samplingDt * targetFreq);
+                for (int m = 0; m < numHarmonics; ++m) {
+                    int hIdx = baseIdx * (1 + m * 2);
+                    if (hIdx < (int)ch[chIdx].fft.size()) {
+                        harmonics[chIdx].x[m] = ch[chIdx].fft[hIdx].real()*std::cos(std::numbers::pi/2) - ch[chIdx].fft[hIdx].imag()*std::sin(std::numbers::pi/2);
+                        harmonics[chIdx].y[m] = ch[chIdx].fft[hIdx].real()*std::sin(std::numbers::pi/2) + ch[chIdx].fft[hIdx].imag()*std::cos(std::numbers::pi/2);
+                    }
+                }
+                };
+
+            processChannel(0);
+            if (flagCh2) processChannel(1);
+        }
     } scope;
 
     struct PostCfg {
@@ -236,14 +311,7 @@ public:
     // ---------------------------------------------------------
     // [2] Data Buffers & Containers
     // ---------------------------------------------------------
-    struct XYs {
-        std::vector<double> x;
-        std::vector<double> y;
-        void clear() { x.clear(); y.clear(); }
-        void push_back(double xVal, double yVal) { x.push_back(xVal); y.push_back(yVal); }
-        void resize(size_t newSize) { x.resize(newSize); y.resize(newSize); }
-    };
-
+    
     struct XYRecs {
         XYs ch1xys, ch2xys;
     } xyRecs;
@@ -275,64 +343,6 @@ public:
         double dt = LiaConfigDefaultConsts::RINGBUFFER_DT;
         
     } ringBuffer;
-
-    struct Raw {
-        std::vector<double> times;
-        std::vector<std::vector<double>> waveforms;
-        std::vector<double> freqs;
-        std::vector<std::vector<std::complex<double>>> fftCh;
-        std::vector<std::vector<double>> fftAbs;
-		const int numHarmonics = 10; // 1倍、3倍、5倍波
-        std::vector<XYs> harmonics;
-        Raw(const int numChannels = 2, const size_t newSize= LiaConfigDefaultConsts::SCOPE_BUFFER_SIZE, const double raw_dt= LiaConfigDefaultConsts::SCOPE_DT) {
-            size_t halfSize = newSize / 2 + 1;
-            for (int i = 0; i < numChannels; ++i) {
-                waveforms.push_back(std::vector<double>(newSize));
-                fftCh.push_back(std::vector<std::complex<double>>(halfSize));
-                fftAbs.push_back(std::vector<double>(halfSize));
-                harmonics.push_back(XYs{ std::vector<double>(numHarmonics), std::vector<double>(numHarmonics) });
-            }
-            update(newSize, raw_dt);
-        }
-
-        void update(const size_t newSize, const double raw_dt) {
-            size_t halfSize = newSize / 2 + 1;
-            times.resize(newSize);
-            for (size_t i = 0; i < times.size(); i++) {
-                times[i] = (double)i * raw_dt;
-            }
-            freqs.resize(halfSize);
-            for (size_t i = 0; i < freqs.size(); i++) {
-                freqs[i] = (double)i / newSize / raw_dt;
-            }
-        }
-
-        void calculateFFT(const bool flagCh2, const float freq, const double raw_dt) {
-            static size_t N = times.size();
-            static pocketfft::detail::shape_t shape{ N };
-            static const pocketfft::detail::stride_t stride_in{ sizeof(double) };
-            static const pocketfft::detail::stride_t stride_out{ sizeof(std::complex<double>) };
-
-            auto processChannel = [&](int chIndex) {
-                pocketfft::r2c(shape, stride_in, stride_out, { 0 }, pocketfft::FORWARD, waveforms[chIndex].data(), fftCh[chIndex].data(), 1.0);
-                for (size_t i = 0; i < fftCh[chIndex].size(); i++) {
-                    fftCh[chIndex][i] *= (2.0 / (double)N);
-                    fftAbs[chIndex][i] = std::abs(fftCh[chIndex][i]);
-                }
-
-                int baseIdx = static_cast<int>(N * raw_dt * freq);
-                // 1倍、3倍、5倍波の抽出
-                for (int m = 0; m < numHarmonics; ++m) {
-                    int harmonicIdx = baseIdx * (1 + m * 2);
-                    harmonics[chIndex].x[m] = fftCh[chIndex][harmonicIdx].real() * cos(std::numbers::pi /2) - fftCh[chIndex][harmonicIdx].imag() * sin(std::numbers::pi /2);
-                    harmonics[chIndex].y[m] = fftCh[chIndex][harmonicIdx].imag() * cos(std::numbers::pi /2) + fftCh[chIndex][harmonicIdx].real() * sin(std::numbers::pi /2);
-                }
-            };
-
-            processChannel(0);
-            if (flagCh2) processChannel(1);
-        }
-    } raw;
 
     struct ACFMData {
         std::vector<double> Vhs = { 0.022, 0.023, 0.025, 0.027, 0.058, 0.067 };
@@ -397,7 +407,7 @@ public:
 		scope.reset();
 		if (pDaq) {
             pDaq->awg.start(awg.ch[0].freq, awg.ch[0].amp, awg.ch[0].phase, awg.ch[0].func, awg.ch[1].freq, awg.ch[1].amp, awg.ch[1].phase, awg.ch[1].func);
-			pDaq->scope.open(scope.ch[0].range, scope.ch[1].range, scope.getBufferSize(), 1.0 / scope.getSamplingDt());
+			pDaq->scope.open(scope.ch[0].range, scope.ch[1].range, scope.bufferSize, 1.0 / scope.samplingDt);
             pDaq->scope.trigger();
             pDaq->scope.start();
 		}
@@ -446,15 +456,15 @@ public:
 
     inline void update(double t) noexcept {
         // PSD初期化
-        if (psd.getCurrentFreq() != awg.ch[0].freq) {
-            psd.initialize(awg.ch[0].freq, scope.getSamplingDt(), raw.waveforms[0].size());
+        if (psd.getCurrentFreq() != awg.ch[0].freq || std::abs((psd.getSamplingDt() - 1.0 / pDaq->scope.SamplingRate) / psd.getSamplingDt()) > 1e-4) {
+            psd.initialize(awg.ch[0].freq, 1.0 / pDaq->scope.SamplingRate, pDaq->scope.bufferSize);
         }
 
         // PSD計算
-        auto [x1, y1] = psd.calculate(raw.waveforms[0].data());
+        auto [x1, y1] = psd.calculate(scope.ch[0].waveform.data());
         double x2 = 0.0, y2 = 0.0;
         if (scope.ch[1].enable) {
-            std::tie(x2, y2) = psd.calculate(raw.waveforms[1].data());
+            std::tie(x2, y2) = psd.calculate(scope.ch[1].waveform.data());
         }
 
         // オートオフセット処理
@@ -504,9 +514,9 @@ public:
         if (!file) return false;
 
         file << (scope.ch[1].enable ? "# t(s), ch1(V), ch2(V)\n" : "# t(s), ch1(V)\n");
-        for (size_t i = 0; i < raw.waveforms[0].size(); ++i) {
-            file << std::format("{:e},{:e}", scope.getSamplingDt() * i, raw.waveforms[0][i]);
-            if (scope.ch[1].enable) file << std::format(",{:e}", raw.waveforms[1][i]);
+        for (size_t i = 0; i < scope.ch[0].waveform.size(); ++i) {
+            file << std::format("{:e},{:e}", scope.samplingDt * i, scope.ch[0].waveform[i]);
+            if (scope.ch[1].enable) file << std::format(",{:e}", scope.ch[1].waveform[i]);
             file << "\n";
         }
         return true;
@@ -517,9 +527,9 @@ public:
         if (!file) return false;
 
         file << (scope.ch[1].enable ? "# f(Hz), ch1real(V), ch1imag(V), ch2real(V), ch2imag(V)\n" : "# f(Hz), ch1real(V), ch1imag(V)\n");
-        for (size_t i = 0; i < raw.freqs.size(); ++i) {
-            file << std::format("{:e},{:e},{:e}", raw.freqs[i], raw.fftCh[0][i].real(), raw.fftCh[0][i].imag());
-            if (scope.ch[1].enable) file << std::format(",{:e},{:e}", raw.fftCh[1][i].real(), raw.fftCh[1][i].imag());
+        for (size_t i = 0; i < scope.freqs.size(); ++i) {
+            file << std::format("{:e},{:e},{:e}", scope.freqs[i], scope.ch[0].fft[i].real(), scope.ch[0].fft[i].imag());
+            if (scope.ch[1].enable) file << std::format(",{:e},{:e}", scope.ch[1].fft[i].real(), scope.ch[1].fft[i].imag());
             file << "\n";
         }
         return true;
@@ -627,7 +637,7 @@ private:
     }
 
     void allocateBuffers() {
-        raw.update(scope.getBufferSize(), scope.getSamplingDt());
+        scope.update(scope.bufferSize, scope.samplingDt);
         ringBuffer.update(ringBuffer.getDt(), ringBuffer.sec);
     }
 
@@ -694,8 +704,8 @@ private:
 		for (size_t i = 0; i < scope.ch.size(); ++i) {
 			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
 		}
-        ini.set("Scope", "bufferSize", scope.getBufferSize());
-        ini.set("Scope", "samplingDt", scope.getSamplingDt());
+        ini.set("Scope", "bufferSize", scope.bufferSize);
+        ini.set("Scope", "samplingDt", scope.samplingDt);
         // Post
         ini.set("Post", "offset[0].phase", post.offset[0].phase);
         ini.set("Post", "offset[0].x", post.offset[0].x);
@@ -751,10 +761,9 @@ private:
         }
         scope.setMaxRange();
 		scope.update(
-			ini.get("Scope", "bufferSize", scope.getBufferSize()),
-			ini.get("Scope", "samplingDt", scope.getSamplingDt())
+			ini.get("Scope", "bufferSize", scope.bufferSize),
+			ini.get("Scope", "samplingDt", scope.samplingDt)
 		);
-		raw.update(scope.getBufferSize(), scope.getSamplingDt());
 
         post.offset[0].phase = ini.get("Post", "offset[0].phase", post.offset[0].phase);
         post.offset[0].x = ini.get("Post", "offset[0].x", post.offset[0].x);
@@ -777,7 +786,7 @@ private:
         acfmData.mmk[2] = ini.get("ACFM", "mmk[2]", acfmData.mmk[2]);
 
         // 値のクランプと初期化
-        awg.ch[0].freq = std::clamp(awg.ch[0].freq, scope.getLowLimitFreq(), scope.getHighLimitFreq());
+        awg.ch[0].freq = std::clamp(awg.ch[0].freq, scope.lowLimitFreq, scope.highLimitFreq);
         awg.ch[1].freq = awg.ch[0].freq;
         awg.ch[0].amp = std::clamp(awg.ch[0].amp, 0.1f, 5.0f);
         awg.ch[1].amp = std::clamp(awg.ch[1].amp, 0.0f, 5.0f);

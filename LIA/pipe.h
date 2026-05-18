@@ -36,8 +36,8 @@ const std::vector<std::string> HELPS = {
     "  acfm|disp [on|off|?]         : Enable/disable or query ACFM window display state",
     "  chan[n]:range [value|?]      : Set or query channel range",
     "  chan2:disp [on|off|?]        : Enable/disable or query channel display state",
-    "  w[n]:freq [min|max|value]    : Set or query AWG frequency",
-    "  w[n]:amp [min|max|value]     : Set or query AWG amplitude",
+    "  w[n]:freq [min?|max?|value]  : Set or query AWG frequency",
+    "  w[n]:amp [min?|max?|value]   : Set or query AWG amplitude",
     "  w[n]:phase [value|?]         : Set or query AWG phase in degrees",
     "  post:offset:state [on|off|?] : Enable/disable or query offset state",
     "  post:offset:auto once        : Perform one-time auto offset",
@@ -134,7 +134,6 @@ public:
             }
 
             if (awgUpdateRequired && pCfg->pDaq != nullptr) {
-                // ※ AWGのstart関数が3chに対応する場合は引数を追加してください
                 const auto& ch0 = pCfg->awg.ch[0];
                 const auto& ch1 = pCfg->awg.ch[1];
                 pCfg->pDaq->awg.start(
@@ -275,7 +274,7 @@ private:
                 pCfg->scope.ch[chIndex].range = val;
                 pCfg->scope.setMaxRange();
 
-                pCfg->pDaq->scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.getBufferSize(), 1.0 / pCfg->scope.getSamplingDt());
+                pCfg->pDaq->scope.open(pCfg->scope.ch[0].range, pCfg->scope.ch[1].range, pCfg->scope.bufferSize, 1.0 / pCfg->scope.samplingDt);
                 pCfg->pDaq->scope.trigger();
                 pCfg->pDaq->scope.start();
             }
@@ -284,7 +283,6 @@ private:
 
         if (subCmd == "disp") {
             if (isQuery) {
-                // ※ LiaConfig側を `bool isChEnabled[MAX_CHANNELS];` に変更している前提
                 std::cout << (pCfg->scope.ch[chIndex].enable ? "on\n" : "off\n");
             }
             else {
@@ -304,19 +302,19 @@ private:
         if (subCmd == "raw") {
             if (tokens.size() > 2) {
                 if (tokens[2] == "save")  return arg.empty() ? pCfg->saveRawData() : pCfg->saveRawData(arg.c_str());
-                if (tokens[2] == "size?") { std::cout << pCfg->raw.waveforms[0].size() << "\n"; return true; }
+                if (tokens[2] == "size?") { std::cout << pCfg->scope.ch[0].waveform.size() << "\n"; return true; }
             }
             return false;
         }
 
         if (subCmd == "raw?") {
-            const double dt = pCfg->scope.getSamplingDt();
-            const auto& w0 = pCfg->raw.waveforms[0];
+            const double dt = pCfg->scope.samplingDt;
+            const auto& w0 = pCfg->scope.ch[0].waveform;
             for (size_t i = 0; i < w0.size(); ++i) {
                 std::cout << std::format("{:e},{:e}", dt * i, w0[i]);
                 for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                     if (pCfg->scope.ch[c].enable) {
-                        std::cout << std::format(",{:e}", pCfg->raw.waveforms[c][i]);
+                        std::cout << std::format(",{:e}", pCfg->scope.ch[c].waveform[i]);
                     }
                 }
                 std::cout << "\n";
@@ -327,11 +325,11 @@ private:
         if (subCmd == "fft") {
             if (tokens.size() > 2) {
                 if (tokens[2] == "save") {
-                    pCfg->raw.calculateFFT(pCfg->scope.ch[1].enable, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt()); // ※引数要確認
+                    pCfg->scope.calculateFFT(pCfg->scope.ch[1].enable, pCfg->awg.ch[0].freq);
                     return arg.empty() ? pCfg->saveFftData() : pCfg->saveFftData(arg.c_str());
                 }
                 if (tokens[2] == "size?") {
-                    std::cout << pCfg->raw.freqs.size() << "\n";
+                    std::cout << pCfg->scope.freqs.size() << "\n";
                     return true;
                 }
             }
@@ -339,13 +337,13 @@ private:
         }
 
         if (subCmd == "fft?") {
-            pCfg->raw.calculateFFT(pCfg->scope.ch[1].enable, pCfg->awg.ch[0].freq, pCfg->scope.getSamplingDt()); // ※引数要確認
-            const auto& freqs = pCfg->raw.freqs;
+            pCfg->scope.calculateFFT(pCfg->scope.ch[1].enable, pCfg->awg.ch[0].freq);
+            const auto& freqs = pCfg->scope.freqs;
             for (size_t i = 0; i < freqs.size(); ++i) {
-                std::cout << std::format("{:e},{:e}", freqs[i], pCfg->raw.fftAbs[0][i]);
+                std::cout << std::format("{:e},{:e}", freqs[i], pCfg->scope.ch[0].fftAbs[i]);
                 for (int c = 1; c < pCfg->scope.ch.size(); ++c) {
                     if (pCfg->scope.ch[c].enable) {
-                        std::cout << std::format(",{:e}", pCfg->raw.fftAbs[c][i]);
+                        std::cout << std::format(",{:e}", pCfg->scope.ch[c].fftAbs[i]);
                     }
                 }
                 std::cout << "\n";
@@ -441,11 +439,11 @@ private:
 
         if (subCmd == "freq" || subCmd == "frequency") {
             if (isQuery) {
-                if (arg == "min")      std::cout << pCfg->scope.getLowLimitFreq() << "\n";
-                else if (arg == "max") std::cout << pCfg->scope.getHighLimitFreq() << "\n";
+                if (arg == "min")      std::cout << pCfg->scope.lowLimitFreq << "\n";
+                else if (arg == "max") std::cout << pCfg->scope.highLimitFreq << "\n";
                 else                   std::cout << ch.freq << "\n";
             }
-            else if (val >= pCfg->scope.getLowLimitFreq() && val <= pCfg->scope.getHighLimitFreq()) {
+            else if (val >= pCfg->scope.lowLimitFreq && val <= pCfg->scope.highLimitFreq) {
                 ch.freq = val;
                 awgUpdateRequired = true;
             }
