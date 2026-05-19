@@ -35,7 +35,7 @@ struct GuiConfig {
     int width = 1280;
     int height = 720;
     std::string fontPaths[2] = {"C:/Windows/Fonts/Lucon.ttf", "C:/Windows/Fonts/Verdana.ttf"};
-	int idxDefaultFont = 0;
+	int fontIdx = 0;
     float fontSize = 32.0f;
     bool enableVsync = true;
 };
