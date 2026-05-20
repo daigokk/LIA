@@ -456,8 +456,15 @@ public:
 
     inline void update(double t) noexcept {
         // PSD初期化
-        if (psd.getCurrentFreq() != awg.ch[0].freq || std::abs((psd.getSamplingDt() - 1.0 / pDaq->scope.SamplingRate) / psd.getSamplingDt()) > 1e-4) {
-            psd.initialize(awg.ch[0].freq, 1.0 / pDaq->scope.SamplingRate, pDaq->scope.bufferSize);
+        if (pDaq != nullptr) {
+            if (psd.getCurrentFreq() != awg.ch[0].freq || std::abs((psd.getSamplingDt() - 1.0 / pDaq->scope.SamplingRate) / psd.getSamplingDt()) > 1e-4) {
+                psd.initialize(awg.ch[0].freq, 1.0 / pDaq->scope.SamplingRate, pDaq->scope.bufferSize);
+            }
+        }
+        else {
+            if (psd.getCurrentFreq() != awg.ch[0].freq || std::abs((psd.getSamplingDt() - scope.samplingDt) / psd.getSamplingDt()) > 1e-4) {
+                psd.initialize(awg.ch[0].freq, scope.samplingDt, scope.bufferSize);
+            }
         }
 
         // PSD計算
