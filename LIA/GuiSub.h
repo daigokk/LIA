@@ -52,7 +52,7 @@ public:
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Theme")) {
+			if (ImGui::BeginMenu("Views")) {
 				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
 				ImGui::SetNextItemWidth(200 * cfg.window.monitorScale);
 				ImGui::ListBox("Theme", &cfg.window.theme, themes, IM_ARRAYSIZE(themes), IM_ARRAYSIZE(themes));
@@ -85,7 +85,7 @@ public:
 		beep.update(cfg.plot.beep, cfg.ringBuffer.ch[0].x[cfg.ringBuffer.latestIdx], cfg.ringBuffer.ch[0].y[cfg.ringBuffer.latestIdx]);
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4& col = style.Colors[ImGuiCol_WindowBg];
-		col.w = 0.4f; // RGB‚Í‚»‚Ì‚Ü‚ÜAalpha‚Ì‚İ’u‚«Š·‚¦
+		col.w = 0.4f; // RGBã¯ãã®ã¾ã¾ã€alphaã®ã¿ç½®ãæ›ãˆ
 		ShowMainMenuBar();
 
 		if (cfg.window.deltaTimeWindow) { deltaTimeChartWindow.show(); }
