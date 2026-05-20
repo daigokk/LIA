@@ -76,24 +76,23 @@ int main(int argc, char* argv[]) {
 
     // 1. GUI初期化
     std::unique_ptr<GuiSub> guiSub;
-    if (options.useGui) {
-        GuiConfig guiCfg{
+    GuiConfig guiCfg{
             .title = "Lock-in amplifier",
             .posX = settings.window.pos.x,
             .posY = settings.window.pos.y,
             .width = settings.window.size.x,
             .height = settings.window.size.y,
             .fontSize = settings.window.fontSize
-        };
-
+    };
+    if (options.useGui) {
         Gui::Initialize(guiCfg);
-        if (!Gui::GetWindow()) return -1;
+        if (!guiCfg.pWindow) return -1;
 
-        settings.window.monitorScale = Gui::monitorScale;
-        if (Gui::isSurfacePro7) {
+        settings.window.monitorScale = guiCfg.monitorScale;
+        if (guiCfg.isSurfacePro7) {
             settings.window.imGuiCondFlag = ImGuiCond_Always;
         }
-        guiSub = std::make_unique<GuiSub>(Gui::GetWindow(), settings);
+        guiSub = std::make_unique<GuiSub>(guiCfg.pWindow, settings);
     }
 
     // 2. パイプスレッド開始
@@ -117,19 +116,18 @@ int main(int argc, char* argv[]) {
 
     // 4. メインループ
     if (options.useGui) {
-        auto* window = Gui::GetWindow();
-        while (settings.statusMeasurement && !glfwWindowShouldClose(window)) {
+        while (settings.statusMeasurement && !glfwWindowShouldClose(guiCfg.pWindow)) {
             // パイプが切断された場合の終了チェック
             if (pipeThread && !settings.statusPipe) break;
 
             Gui::BeginFrame();
             guiSub->show();
-            Gui::EndFrame();
+            Gui::EndFrame(guiCfg);
         }
         // ウィンドウ情報の保存
-        glfwGetWindowSize(window, &settings.window.size.x, &settings.window.size.y);
-        glfwGetWindowPos(window, &settings.window.pos.x, &settings.window.pos.y);
-        Gui::EndFrame();
+        glfwGetWindowSize(guiCfg.pWindow, &settings.window.size.x, &settings.window.size.y);
+        glfwGetWindowPos(guiCfg.pWindow, &settings.window.pos.x, &settings.window.pos.y);
+        Gui::EndFrame(guiCfg);
     }
     else {
         // Headlessモード: 測定終了かパイプ切断まで待機

@@ -5,19 +5,6 @@
 #include "PlotWindow.h"
 #include "Beep.h"
 
-
-static void HelpMarker(const char* desc)
-{
-	ImGui::TextDisabled("(?)");
-	if (ImGui::BeginItemTooltip())
-	{
-		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-		ImGui::TextUnformatted(desc);
-		ImGui::PopTextWrapPos();
-		ImGui::EndTooltip();
-	}
-}
-
 class GuiSub {
 private:
 	LiaConfig& cfg;
@@ -67,7 +54,7 @@ public:
 			}
 			if (ImGui::BeginMenu("Theme")) {
 				const char* themes[] = { "Dark", "Classic", "Light", "Gray", "NeonBlue", "NeonGreen", "NeonRed", "Eva" };
-				ImGui::SetNextItemWidth(200 * Gui::monitorScale);
+				ImGui::SetNextItemWidth(200 * cfg.window.monitorScale);
 				ImGui::ListBox("Theme", &cfg.window.theme, themes, IM_ARRAYSIZE(themes), IM_ARRAYSIZE(themes));
 				ImGui::EndMenu();
 			}
