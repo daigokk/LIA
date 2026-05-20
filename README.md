@@ -182,7 +182,7 @@
   
   lia = Lia('./lia.exe')
   time.sleep(10)
-  makeChart(lia.get_txy()) # Save time series and XY(Lissajous) plots of X/Y components
+  makeChart(lia.get_txy(10)) # Save time series and XY(Lissajous) plots of X/Y components
   ```
   - The following figures show X/Y components when the coil is in contact with different materials in the ECT.
 
