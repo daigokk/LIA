@@ -552,7 +552,7 @@ private:
 				if (isQuery) {
 					std::cout << pCfg->post.lpFreq << "\n";
 				}
-				else if (val >= 10.0f && val <= 100.0f) {
+				else if (val >= 1.0f && val <= 100.0f) {
 					pCfg->post.lpFreq = val;
 				}
 				else return false;
