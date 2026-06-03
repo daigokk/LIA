@@ -537,7 +537,7 @@ private:
                 if (isQuery) {
                     std::cout << pCfg->post.hpFreq << "\n";
                 }
-                else if (val >= 0.0f && val <= 50.0f) {
+                else if (val >= LiaConfigDefaultConsts::POST_HPF_MIN && val <= LiaConfigDefaultConsts::POST_HPF_MAX) {
                     pCfg->post.hpFreq = val;
                 }
                 else return false;
@@ -552,7 +552,7 @@ private:
 				if (isQuery) {
 					std::cout << pCfg->post.lpFreq << "\n";
 				}
-				else if (val >= 1.0f && val <= 100.0f) {
+				else if (val >= LiaConfigDefaultConsts::POST_LPF_MIN && val <= LiaConfigDefaultConsts::POST_LPF_MAX) {
 					pCfg->post.lpFreq = val;
 				}
 				else return false;

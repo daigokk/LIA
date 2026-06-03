@@ -391,14 +391,14 @@ inline void ControlWindow::functionButtons(const float nextItemWidth)
     // フィルタ設定
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("HPF (Hz)", &cfg.post.hpFreq, 0.1f, 1.0f, "%.1f")) {
-        cfg.post.hpFreq = std::clamp(cfg.post.hpFreq, 0.0f, 10.0f);
+        cfg.post.hpFreq = std::clamp(cfg.post.hpFreq, LiaConfigDefaultConsts::POST_HPF_MIN, LiaConfigDefaultConsts::POST_HPF_MAX);
         cfg.setHPFrequency(cfg.post.hpFreq);
     }
     markButtonIfItemDeactivated(button, value, ButtonType::PostHpFreq, cfg.post.hpFreq);
 
     ImGui::SetNextItemWidth(nextItemWidth);
     if (ImGui::InputFloat("LPF (Hz)", &cfg.post.lpFreq, 1.0f, 10.0f, "%.0f")) {
-        cfg.post.lpFreq = std::clamp(cfg.post.lpFreq, 1.0f, 100.0f);
+        cfg.post.lpFreq = std::clamp(cfg.post.lpFreq, LiaConfigDefaultConsts::POST_LPF_MIN, LiaConfigDefaultConsts::POST_LPF_MAX);
         cfg.setLPFrequency(cfg.post.lpFreq);
     }
     markButtonIfItemDeactivated(button, value, ButtonType::PostLpFreq, cfg.post.lpFreq);

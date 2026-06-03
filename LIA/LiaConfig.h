@@ -36,6 +36,11 @@ namespace LiaConfigDefaultConsts {
     constexpr double RINGBUFFER_DT = 2e-3;
 	constexpr int RINGBUFFER_SEC = 60 * 10; // 10 minutes
 
+    constexpr float POST_LPF_MIN = 1.0f;
+    constexpr float POST_LPF_MAX = 100.0f;
+    constexpr float POST_HPF_MIN = 0.0f;
+    constexpr float POST_HPF_MAX = 50.0f;
+
     constexpr auto SETTINGS_FILE = "lia.ini";
     constexpr auto ACFM_SETTINGS_FILE = "acfm.ini";
     constexpr auto RESULTS_FILE = "ect.csv";
