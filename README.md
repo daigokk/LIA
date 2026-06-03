@@ -145,7 +145,7 @@
       for i in range(size):
         dat.append(list(map(float,self._recieve().split(','))))
       return np.array(dat)
-    def get_xy(self, n:int=1, waitsec:float=0.0):
+    def get_xy(self, n:int=1, waitsec:float=0.1):
       xys = np.array(list(map(float, self._query(':data:xy?').split(','))))
       for i in range(n-1):
         time.sleep(waitsec)
