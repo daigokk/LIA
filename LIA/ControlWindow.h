@@ -244,15 +244,17 @@ inline void ControlWindow::plot(const float nextItemWidth)
             
 			
             ImGui::SetNextItemWidth(nextItemWidth*0.7f);
-            ImGui::Text("%3.0f", cfg.pDaq->scope.SamplingRate / 1e6);
-            ImGui::SameLine();  ImGui::SetNextItemWidth(nextItemWidth);
-            if (ImGui::InputFloat("(MS/s)", &samplingRate, 1.0f, 10.0f, "%3.0f")) {
-                if (samplingRate < 10) { samplingRate = 10; }
-				else if (samplingRate > 100) { samplingRate = 100; }
-                static float oldSamplingRate = samplingRate;
-                if (oldSamplingRate != samplingRate) {
-                    oldSamplingRate = samplingRate;
-                    configChanged = true;
+            if (cfg.pDaq) {
+                ImGui::Text("%3.0f", cfg.pDaq->scope.SamplingRate / 1e6);
+                ImGui::SameLine();  ImGui::SetNextItemWidth(nextItemWidth);
+                if (ImGui::InputFloat("(MS/s)", &samplingRate, 1.0f, 10.0f, "%3.0f")) {
+                    if (samplingRate < 10) { samplingRate = 10; }
+                    else if (samplingRate > 100) { samplingRate = 100; }
+                    static float oldSamplingRate = samplingRate;
+                    if (oldSamplingRate != samplingRate) {
+                        oldSamplingRate = samplingRate;
+                        configChanged = true;
+                    }
                 }
             }
             //ImGui::Dummy(ImVec2(0.0f * cfg.window.monitorScale, 1.0f * cfg.window.monitorScale));
