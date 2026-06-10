@@ -450,18 +450,19 @@ inline void ControlWindow::drawContent()
 
 inline void ControlWindow::show()
 {
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-
-    if (ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag)) {
-        if (cfg.flagAutoSetupW2) {
-            ImGui::BeginDisabled();
-            drawContent();
-            ImGui::EndDisabled();
+    if (cfg.window.controlWindow) {
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+        if (ImGui::Begin(this->name, &cfg.window.controlWindow, cfg.window.imGuiWindowFlag)) {
+            if (cfg.flagAutoSetupW2) {
+                ImGui::BeginDisabled();
+                drawContent();
+                ImGui::EndDisabled();
+            }
+            else {
+                drawContent();
+            }
         }
-        else {
-            drawContent();
-        }
+        ImGui::End();
     }
-    ImGui::End();
 }

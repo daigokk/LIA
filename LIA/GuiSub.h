@@ -88,12 +88,12 @@ public:
 		col.w = 0.4f; // RGBはそのまま、alphaのみ置き換え
 		ShowMainMenuBar();
 
-		if (cfg.window.deltaTimeWindow) { deltaTimeChartWindow.show(); }
-		if (cfg.window.controlWindow) { controlWindow.show(); }
-		if (cfg.window.xyWindow) { xyPlotWindow.show(); }
-		if (cfg.window.rawWindow) { rawPlotWindow.show(); }
-		if (cfg.window.timeWindow) { timeChartWindow.show(); }
-		if (cfg.window.acfmWindow) { acfmPlotWindow.show(); }
+		deltaTimeChartWindow.show();
+		controlWindow.show();
+		xyPlotWindow.show();
+		rawPlotWindow.show();
+		timeChartWindow.show();
+		acfmPlotWindow.show();
 		if (cfg.pause.flag) {
 			col.w = 1.0f;
 			timeChartZoomWindow.show();

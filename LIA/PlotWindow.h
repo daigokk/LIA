@@ -174,52 +174,54 @@ inline RawPlotWindow::RawPlotWindow(GLFWwindow* window, LiaConfig& cfg)
 }
 
 inline void RawPlotWindow::show() {
-    ButtonType button = ButtonType::NON;
-    static float value = 0.0f;
+    if (cfg.window.rawWindow) {
+        ButtonType button = ButtonType::NON;
+        static float value = 0.0f;
 
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-    ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+        if (ImGui::Begin(this->name, &cfg.window.rawWindow, cfg.window.imGuiWindowFlag)) {
 
-    // Header Controls
-    if (ImGui::Button("Save")) {
-		std::string timestamp = cfg.getCurrentTimestamp();
-        cfg.saveRawData(std::format("raw_{}.csv", timestamp));
-        cfg.scope.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq);
-		cfg.saveFftData(std::format("fft_{}.csv", timestamp));
-        button = ButtonType::RawSave;
-		value = 1.0f; // Saveボタンが押されたことを示すフラグ
-    }
-    if (ImGui::IsItemDeactivated()) {
-        button = ButtonType::RawSave;
-        value = 0.0f;
-    }
+            // Header Controls
+            if (ImGui::Button("Save")) {
+                std::string timestamp = cfg.getCurrentTimestamp();
+                cfg.saveRawData(std::format("raw_{}.csv", timestamp));
+                cfg.scope.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq);
+                cfg.saveFftData(std::format("fft_{}.csv", timestamp));
+                button = ButtonType::RawSave;
+                value = 1.0f; // Saveボタンが押されたことを示すフラグ
+            }
+            if (ImGui::IsItemDeactivated()) {
+                button = ButtonType::RawSave;
+                value = 0.0f;
+            }
 
-    ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.maxRange * 1.2f, "%4.1f V");
-    if (ImGui::IsItemDeactivated()) {
-        button = ButtonType::RawLimit;
-        value = cfg.plot.rawLimit;
-    }
+            ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.maxRange * 1.2f, "%4.1f V");
+            if (ImGui::IsItemDeactivated()) {
+                button = ButtonType::RawLimit;
+                value = cfg.plot.rawLimit;
+            }
 
-    // Tabs
-    if (ImGui::BeginTabBar("Raw")) {
-        bool useMv = (cfg.plot.rawLimit <= MILI_VOLT);
+            // Tabs
+            if (ImGui::BeginTabBar("Raw")) {
+                bool useMv = (cfg.plot.rawLimit <= MILI_VOLT);
 
-        if (ImGui::BeginTabItem("Waveform")) {
-            drawWaveformTab(useMv);
-            ImGui::EndTabItem();
+                if (ImGui::BeginTabItem("Waveform")) {
+                    drawWaveformTab(useMv);
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("FFT")) {
+                    drawFftTab(useMv);
+                    ImGui::EndTabItem();
+                }
+                ImGui::EndTabBar();
+            }
+            // Command Logging
+            if (button != ButtonType::NON) {
+                cfg.cmds.push_back({ (float)cfg.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+            }
         }
-        if (ImGui::BeginTabItem("FFT")) {
-            drawFftTab(useMv);
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-    ImGui::End();
-
-    // Command Logging
-    if (button != ButtonType::NON) {
-        cfg.cmds.push_back({ (float)cfg.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+        ImGui::End();
     }
 }
 
@@ -324,76 +326,79 @@ inline void TimeChartWindow::calculateXYPlotIndices() {
 }
 
 inline void TimeChartWindow::show() {
-    ButtonType button = ButtonType::NON;
-    static float value = 0.0f;
+    if (cfg.window.timeWindow) {
+        ButtonType button = ButtonType::NON;
+        static float value = 0.0f;
 
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-    ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+        if (ImGui::Begin(this->name, &cfg.window.timeWindow, cfg.window.imGuiWindowFlag)) {
 
-    if (cfg.pause.flag) ImGui::BeginDisabled();
-    ImGui::SetNextItemWidth(500.0f * cfg.window.monitorScale);
-    ImGui::SliderFloat("History", &cfg.plot.historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
-    if (ImGui::IsItemDeactivated()) {
-        button = ButtonType::TimeHistory;
-        value = cfg.plot.historySec;
-    }
-    if (cfg.pause.flag) ImGui::EndDisabled();
+            if (cfg.pause.flag) ImGui::BeginDisabled();
+            ImGui::SetNextItemWidth(500.0f * cfg.window.monitorScale);
+            ImGui::SliderFloat("History", &cfg.plot.historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
+            if (ImGui::IsItemDeactivated()) {
+                button = ButtonType::TimeHistory;
+                value = cfg.plot.historySec;
+            }
+            if (cfg.pause.flag) ImGui::EndDisabled();
 
-    ImGui::SameLine();
-    if (ImGui::Button("Save")) {
-        cfg.saveResultsToFile(std::format("ect_{}.csv", cfg.getCurrentTimestamp()), cfg.plot.historySec);
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
-
-    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
-
-    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];
-        bool useMv = cfg.plot.limit <= MILI_VOLT;
-
-        ImPlot::SetupAxes("Time", useMv ? "v (mV)" : "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
-        if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
-        if (!cfg.pause.flag) {
-            ImPlot::SetupAxisLimits(ImAxis_X1, t - cfg.plot.historySec, t, ImGuiCond_Always);
-        }
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
-
-        ImPlotSpec specLine;
-        specLine.Offset = (int)cfg.ringBuffer.writeIdx;
-        int count = (int)cfg.ringBuffer.size;
-
-        ImPlot::PlotLine("Ch1y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[0].y[0]), count, specLine);
-        if (cfg.scope.ch[1].enable) {
-            ImPlot::PlotLine("Ch2y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[1].y[0]), count, specLine);
-        }
-
-        static bool isFirstPause = true;
-        if (cfg.pause.flag) {
-            if (isFirstPause) {
-                cfg.pause.set(t - cfg.plot.historySec * 0.2, t - cfg.plot.historySec * 0.1, -cfg.plot.limit * 0.9, cfg.plot.limit * 0.9);
-                isFirstPause = false;
+            ImGui::SameLine();
+            if (ImGui::Button("Save")) {
+                cfg.saveResultsToFile(std::format("ect_{}.csv", cfg.getCurrentTimestamp()), cfg.plot.historySec);
             }
 
-            bool clicked = false, hovered = false, held = false;
-            ImPlot::DragRect(0, &cfg.pause.selectArea.X.Min, &cfg.pause.selectArea.Y.Min,
-                &cfg.pause.selectArea.X.Max, &cfg.pause.selectArea.Y.Max,
-                colors[Color_Magenta], ImPlotDragToolFlags_None, &clicked, &hovered, &held);
+            ImGui::SameLine();
+            if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
 
-            calculateXYPlotIndices();
-        }
-        else {
-            isFirstPause = true;
-        }
-        ImPlot::EndPlot();
-    }
-    ImPlot::PopStyleColor();
-    ImGui::End();
+            ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
 
-    if (button != ButtonType::NON) {
-        cfg.cmds.push_back({ (float)cfg.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+            if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
+                double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];
+                bool useMv = cfg.plot.limit <= MILI_VOLT;
+
+                ImPlot::SetupAxes("Time", useMv ? "v (mV)" : "v (V)", ImPlotAxisFlags_NoTickLabels, 0);
+                if (useMv) ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+                if (!cfg.pause.flag) {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, t - cfg.plot.historySec, t, ImGuiCond_Always);
+                }
+                ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
+
+                ImPlotSpec specLine;
+                specLine.Offset = (int)cfg.ringBuffer.writeIdx;
+                int count = (int)cfg.ringBuffer.size;
+
+                ImPlot::PlotLine("Ch1y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[0].y[0]), count, specLine);
+                if (cfg.scope.ch[1].enable) {
+                    ImPlot::PlotLine("Ch2y", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.ch[1].y[0]), count, specLine);
+                }
+
+                static bool isFirstPause = true;
+                if (cfg.pause.flag) {
+                    if (isFirstPause) {
+                        cfg.pause.set(t - cfg.plot.historySec * 0.2, t - cfg.plot.historySec * 0.1, -cfg.plot.limit * 0.9, cfg.plot.limit * 0.9);
+                        isFirstPause = false;
+                    }
+
+                    bool clicked = false, hovered = false, held = false;
+                    ImPlot::DragRect(0, &cfg.pause.selectArea.X.Min, &cfg.pause.selectArea.Y.Min,
+                        &cfg.pause.selectArea.X.Max, &cfg.pause.selectArea.Y.Max,
+                        colors[Color_Magenta], ImPlotDragToolFlags_None, &clicked, &hovered, &held);
+
+                    calculateXYPlotIndices();
+                }
+                else {
+                    isFirstPause = true;
+                }
+                ImPlot::EndPlot();
+            }
+            ImPlot::PopStyleColor();
+            
+            if (button != ButtonType::NON) {
+                cfg.cmds.push_back({ (float)cfg.timer.elapsedSec(), (float)button, value, 0.0f, 0.0f, 0.0f });
+            }
+        }
+        ImGui::End();
     }
 }
 
@@ -540,25 +545,27 @@ inline DeltaTimeChartWindow::DeltaTimeChartWindow(GLFWwindow* window, LiaConfig&
 }
 
 inline void DeltaTimeChartWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-    ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
+    if (cfg.window.deltaTimeWindow) {
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+		if(ImGui::Begin(this->name, &cfg.window.deltaTimeWindow, cfg.window.imGuiWindowFlag)) {
+			static float historySec = 10.0f;
+            ImGui::SliderFloat("History", &historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
 
-    static float historySec = 10.0f;
-    ImGui::SliderFloat("History", &historySec, 1.0f, (float)cfg.ringBuffer.sec, "%5.1f s");
+            if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
+                double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];
+                ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
+                ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, (cfg.ringBuffer.getDt() - 2e-3) * 1e3, (cfg.ringBuffer.getDt() + 2e-3) * 1e3, ImGuiCond_Always);
 
-    if (ImPlot::BeginPlot("##Time chart", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        double t = cfg.ringBuffer.times[cfg.ringBuffer.latestIdx];
-        ImPlot::SetupAxes("Time", "dt (ms)", ImPlotAxisFlags_NoTickLabels, 0);
-        ImPlot::SetupAxisLimits(ImAxis_X1, t - historySec, t, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, (cfg.ringBuffer.getDt() - 2e-3) * 1e3, (cfg.ringBuffer.getDt() + 2e-3) * 1e3, ImGuiCond_Always);
-
-        ImPlotSpec specLine;
-        specLine.Offset = cfg.ringBuffer.writeIdx;
-        ImPlot::PlotLine("##dt", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.deltaTimes[0]), cfg.ringBuffer.size, specLine);
-        ImPlot::EndPlot();
+                ImPlotSpec specLine;
+                specLine.Offset = cfg.ringBuffer.writeIdx;
+                ImPlot::PlotLine("##dt", &(cfg.ringBuffer.times[0]), &(cfg.ringBuffer.deltaTimes[0]), cfg.ringBuffer.size, specLine);
+                ImPlot::EndPlot();
+            }
+        }
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 
@@ -572,95 +579,97 @@ inline XYPlotWindow::XYPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 }
 
 inline void XYPlotWindow::show() {
-    if (cfg.plot.surfaceMode) {
-        ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
-    }
-
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-    ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
-
-    // Toolbar Controls
-    if (ImGui::Button("Clear")) { cfg.buttonClear(); }
-    ImGui::SameLine();
-    if (ImGui::Button("Auto offset")) { cfg.buttonAutoOffset(); }
-    ImGui::SameLine();
-    if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
-    ImGui::SameLine();
-    if (ImGui::Button("Rec.")) { cfg.buttonRec(); }
-
-    ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
-
-    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal | cfg.window.imPlotFlag)) {
-        bool useMv = cfg.plot.limit <= MILI_VOLT;
-        ImPlot::SetupAxes(useMv ? "x (mV)" : "x (V)", useMv ? "y (mV)" : "y (V)", 0, 0);
-
-        if (useMv) {
-            ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
-            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
-        }
-
+    if (cfg.window.xyWindow) {
         if (cfg.plot.surfaceMode) {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit * 4, cfg.plot.limit * 4, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit / 4, cfg.plot.limit, ImGuiCond_Always);
-        }
-        else {
-            ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
+            ImGui::PushStyleColor(ImGuiCol_Border, ImPlot::GetColormapColor(2, ImPlotColormap_Deep));
         }
 
-        ImPlotSpec specLine;
-        specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
-        const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+        if (ImGui::Begin(this->name, &cfg.window.xyWindow, cfg.window.imGuiWindowFlag)) {
 
-        plotRingBufferLine(ch1_label, cfg.ringBuffer.ch[0].x, cfg.ringBuffer.ch[0].y,
-            cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
-        ImPlotSpec specScatter, specScatterFft;
-        specScatter.Marker = ImPlotMarker_Circle;
-        specScatter.MarkerSize = 5.0f * cfg.window.monitorScale;
-        specScatter.MarkerFillColor = colors[Color_Blue];
-        specScatter.MarkerLineColor = colors[Color_Blue];
+            // Toolbar Controls
+            if (ImGui::Button("Clear")) { cfg.buttonClear(); }
+            ImGui::SameLine();
+            if (ImGui::Button("Auto offset")) { cfg.buttonAutoOffset(); }
+            ImGui::SameLine();
+            if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
+            ImGui::SameLine();
+            if (ImGui::Button("Rec.")) { cfg.buttonRec(); }
 
-        ImPlot::PlotScatter("##NOW1", &(cfg.ringBuffer.ch[0].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[0].y[cfg.plot.xyLatestIdx]), 1, specScatter);
-		if (cfg.awg.ch[0].func != 1) { // Sin waveの場合はFFTを表示しない
-            specScatterFft.Marker = ImPlotMarker_Circle;
-            specScatterFft.MarkerSize = 3.0f * cfg.window.monitorScale;
-            specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
-            specScatter.MarkerLineColor = colors[Color_Red];
-            ImPlot::PlotScatter("##FFT1", cfg.scope.harmonics[0].x.data(), cfg.scope.harmonics[0].y.data(), (int)cfg.scope.harmonics[0].y.size(), specScatterFft);
-        }
-        specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
-        ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
+            ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
 
-        if (cfg.scope.ch[1].enable) {
-            specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-            plotRingBufferLine("Ch2", cfg.ringBuffer.ch[1].x, cfg.ringBuffer.ch[1].y,
-                cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
+            if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), ImPlotFlags_Equal | cfg.window.imPlotFlag)) {
+                bool useMv = cfg.plot.limit <= MILI_VOLT;
+                ImPlot::SetupAxes(useMv ? "x (mV)" : "x (V)", useMv ? "y (mV)" : "y (V)", 0, 0);
 
-            specScatter.MarkerFillColor = colors[Color_Amber];
-            specScatter.MarkerLineColor = colors[Color_Amber];
-            ImPlot::PlotScatter("##NOW2", &(cfg.ringBuffer.ch[1].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[1].y[cfg.plot.xyLatestIdx]), 1, specScatter);
-            if (cfg.awg.ch[1].func != 1) {
-                specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
-                ImPlot::PlotScatter("##FFT2", cfg.scope.harmonics[1].x.data(), cfg.scope.harmonics[1].y.data(), (int)cfg.scope.harmonics[1].y.size(), specScatterFft);
+                if (useMv) {
+                    ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
+                    ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+                }
+
+                if (cfg.plot.surfaceMode) {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit * 4, cfg.plot.limit * 4, ImGuiCond_Always);
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit / 4, cfg.plot.limit, ImGuiCond_Always);
+                }
+                else {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
+                }
+
+                ImPlotSpec specLine;
+                specLine.LineColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+                const char* ch1_label = cfg.scope.ch[1].enable ? "Ch1" : "##Ch1";
+
+                plotRingBufferLine(ch1_label, cfg.ringBuffer.ch[0].x, cfg.ringBuffer.ch[0].y,
+                    cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
+                ImPlotSpec specScatter, specScatterFft;
+                specScatter.Marker = ImPlotMarker_Circle;
+                specScatter.MarkerSize = 5.0f * cfg.window.monitorScale;
+                specScatter.MarkerFillColor = colors[Color_Blue];
+                specScatter.MarkerLineColor = colors[Color_Blue];
+
+                ImPlot::PlotScatter("##NOW1", &(cfg.ringBuffer.ch[0].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[0].y[cfg.plot.xyLatestIdx]), 1, specScatter);
+                if (cfg.awg.ch[0].func != 1) { // Sin waveの場合はFFTを表示しない
+                    specScatterFft.Marker = ImPlotMarker_Circle;
+                    specScatterFft.MarkerSize = 3.0f * cfg.window.monitorScale;
+                    specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(0, ImPlotColormap_Deep);
+                    specScatter.MarkerLineColor = colors[Color_Red];
+                    ImPlot::PlotScatter("##FFT1", cfg.scope.harmonics[0].x.data(), cfg.scope.harmonics[0].y.data(), (int)cfg.scope.harmonics[0].y.size(), specScatterFft);
+                }
+                specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
+                ImPlot::PlotScatter("##REC1", cfg.xyRecs.ch1xys.x.data(), cfg.xyRecs.ch1xys.y.data(), (int)cfg.xyRecs.ch1xys.x.size(), specScatter);
+
+                if (cfg.scope.ch[1].enable) {
+                    specLine.LineColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+                    plotRingBufferLine("Ch2", cfg.ringBuffer.ch[1].x, cfg.ringBuffer.ch[1].y,
+                        cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
+
+                    specScatter.MarkerFillColor = colors[Color_Amber];
+                    specScatter.MarkerLineColor = colors[Color_Amber];
+                    ImPlot::PlotScatter("##NOW2", &(cfg.ringBuffer.ch[1].x[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[1].y[cfg.plot.xyLatestIdx]), 1, specScatter);
+                    if (cfg.awg.ch[1].func != 1) {
+                        specScatterFft.MarkerFillColor = ImPlot::GetColormapColor(1, ImPlotColormap_Deep);
+                        ImPlot::PlotScatter("##FFT2", cfg.scope.harmonics[1].x.data(), cfg.scope.harmonics[1].y.data(), (int)cfg.scope.harmonics[1].y.size(), specScatterFft);
+                    }
+
+                    specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
+                    ImPlot::PlotScatter("##REC2", cfg.xyRecs.ch2xys.x.data(), cfg.xyRecs.ch2xys.y.data(), (int)cfg.xyRecs.ch2xys.x.size(), specScatter);
+                }
+
+                if (cfg.flagAutoSetupW2History) {
+                    specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
+                    ImPlot::PlotLine("##HISTORY W1", cfg.autoSetupHistoryW1.x.data(), cfg.autoSetupHistoryW1.y.data(), (int)cfg.autoSetupHistoryW1.x.size(), specLine);
+                    specLine.LineColor = ImPlot::GetColormapColor(3, ImPlotColormap_Deep);
+                    ImPlot::PlotLine("##HISTORY W2", cfg.autoSetupHistoryW2.x.data(), cfg.autoSetupHistoryW2.y.data(), (int)cfg.autoSetupHistoryW2.x.size(), specLine);
+                }
+                ImPlot::EndPlot();
             }
-
-            specScatter.MarkerFillColor = ImVec4(0, 0, 0, 0);
-            ImPlot::PlotScatter("##REC2", cfg.xyRecs.ch2xys.x.data(), cfg.xyRecs.ch2xys.y.data(), (int)cfg.xyRecs.ch2xys.x.size(), specScatter);
+            ImPlot::PopStyleColor();
+            if (cfg.plot.surfaceMode) ImGui::PopStyleColor();
         }
-
-        if (cfg.flagAutoSetupW2History) {
-            specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
-            ImPlot::PlotLine("##HISTORY W1", cfg.autoSetupHistoryW1.x.data(), cfg.autoSetupHistoryW1.y.data(), (int)cfg.autoSetupHistoryW1.x.size(), specLine);
-            specLine.LineColor = ImPlot::GetColormapColor(3, ImPlotColormap_Deep);
-            ImPlot::PlotLine("##HISTORY W2", cfg.autoSetupHistoryW2.x.data(), cfg.autoSetupHistoryW2.y.data(), (int)cfg.autoSetupHistoryW2.x.size(), specLine);
-        }
-        ImPlot::EndPlot();
+        ImGui::End();
     }
-    ImPlot::PopStyleColor();
-    ImGui::End();
-
-    if (cfg.plot.surfaceMode) ImGui::PopStyleColor();
 }
 
 
@@ -674,59 +683,62 @@ inline ACFMPlotWindow::ACFMPlotWindow(GLFWwindow* window, LiaConfig& liaConfig)
 }
 
 inline void ACFMPlotWindow::show() {
-    ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
-    ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
-    ImGui::Begin(this->name, nullptr, cfg.window.imGuiWindowFlag);
+    if (cfg.window.acfmWindow) {
+        ImGui::SetNextWindowPos(windowPos, cfg.window.imGuiCondFlag);
+        ImGui::SetNextWindowSize(windowSize, cfg.window.imGuiCondFlag);
+        if (ImGui::Begin(this->name, &cfg.window.acfmWindow, cfg.window.imGuiWindowFlag)) {
 
-    // Toolbar Controls
-    if (ImGui::Button("Clear")) { cfg.buttonClear(); }
-    ImGui::SameLine();
-    if (ImGui::Button("Auto offset")) { cfg.buttonAutoOffset(); }
-    ImGui::SameLine();
-    if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
+            // Toolbar Controls
+            if (ImGui::Button("Clear")) { cfg.buttonClear(); }
+            ImGui::SameLine();
+            if (ImGui::Button("Auto offset")) { cfg.buttonAutoOffset(); }
+            ImGui::SameLine();
+            if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
 
-    if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_VERTICAL].range * 1.2f, "%4.2f V")) {
-        cfg.plot.Vx_limit = cfg.plot.limit / 2;
-    }
-    if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].range * 1.2f, "%4.2f V")) {
-    }
+            if (ImGui::SliderFloat("Vz limit", &(cfg.plot.limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_VERTICAL].range * 1.2f, "%4.2f V")) {
+                cfg.plot.Vx_limit = cfg.plot.limit / 2;
+            }
+            if (ImGui::SliderFloat("Vx limit", &(cfg.plot.Vx_limit), 0.01f, cfg.scope.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].range * 1.2f, "%4.2f V")) {
+            }
 
-    if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
-        bool useMv = cfg.plot.limit <= MILI_VOLT;
-        ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
+            if (ImPlot::BeginPlot("##XY", ImVec2(-1, -1), cfg.window.imPlotFlag)) {
+                bool useMv = cfg.plot.limit <= MILI_VOLT;
+                ImPlot::SetupAxes(useMv ? "Vz (mV)" : "Vz (V)", useMv ? "Vx (mV)" : "Vx (V)", 0, 0);
 
-        if (useMv) {
-            ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
-            ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+                if (useMv) {
+                    ImPlot::SetupAxisFormat(ImAxis_X1, ImPlotFormatter(MiliFormatter));
+                    ImPlot::SetupAxisFormat(ImAxis_Y1, ImPlotFormatter(MiliFormatter));
+                }
+
+                ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.Vx_limit, cfg.plot.Vx_limit, ImGuiCond_Always);
+
+                ImPlotSpec specLine;
+                specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
+
+                plotRingBufferLine("##ACFM", cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y, cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y,
+                    cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
+
+                ImPlotSpec specScatter;
+                specScatter.Marker = ImPlotMarker_Circle;
+                specScatter.MarkerSize = 5 * cfg.window.monitorScale;
+                specScatter.MarkerFillColor = colors[Color_Chartreuse];
+                specScatter.LineWeight = -1.0f;
+                specScatter.MarkerLineColor = colors[Color_Chartreuse];
+
+                ImPlot::PlotScatter("##NOW", &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y[cfg.plot.xyLatestIdx]), 1, specScatter);
+
+                double vhreal = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].x[cfg.plot.xyLatestIdx];
+                double mm = std::max(0.0, cfg.acfmData.mmk[0] * vhreal * vhreal + cfg.acfmData.mmk[1] * vhreal + cfg.acfmData.mmk[2]);
+
+                std::string thicknessStr = (mm <= 6.0) ? std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm) : std::format("{:5.2f}V:  out", vhreal);
+                ImPlot::PlotText(thicknessStr.c_str(), 0.0, cfg.plot.Vx_limit * 0.9);
+
+                ImPlot::EndPlot();
+            }
         }
-
-        ImPlot::SetupAxisLimits(ImAxis_X1, -cfg.plot.limit, cfg.plot.limit, ImGuiCond_Always);
-        ImPlot::SetupAxisLimits(ImAxis_Y1, -cfg.plot.Vx_limit, cfg.plot.Vx_limit, ImGuiCond_Always);
-
-        ImPlotSpec specLine;
-        specLine.LineColor = ImPlot::GetColormapColor(2, ImPlotColormap_Deep);
-
-        plotRingBufferLine("##ACFM", cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y, cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y,
-            cfg.plot.xyStartIdx, cfg.plot.xySize, specLine);
-
-        ImPlotSpec specScatter;
-        specScatter.Marker = ImPlotMarker_Circle;
-        specScatter.MarkerSize = 5 * cfg.window.monitorScale;
-        specScatter.MarkerFillColor = colors[Color_Chartreuse];
-        specScatter.LineWeight = -1.0f;
-        specScatter.MarkerLineColor = colors[Color_Chartreuse];
-
-        ImPlot::PlotScatter("##NOW", &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_VERTICAL].y[cfg.plot.xyLatestIdx]), &(cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].y[cfg.plot.xyLatestIdx]), 1, specScatter);
-
-        double vhreal = cfg.ringBuffer.ch[LiaConfigDefaultConsts::CH_HORIZONTAL].x[cfg.plot.xyLatestIdx];
-        double mm = std::max(0.0, cfg.acfmData.mmk[0] * vhreal * vhreal + cfg.acfmData.mmk[1] * vhreal + cfg.acfmData.mmk[2]);
-
-        std::string thicknessStr = (mm <= 6.0) ? std::format("{:5.2f}V:{:3.1f}mm", vhreal, mm) : std::format("{:5.2f}V:  out", vhreal);
-        ImPlot::PlotText(thicknessStr.c_str(), 0.0, cfg.plot.Vx_limit * 0.9);
-
-        ImPlot::EndPlot();
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 
