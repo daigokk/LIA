@@ -48,7 +48,7 @@ public:
         : ImGuiWindowBase(window, "Control panel"), cfg(cfg)
     {
         this->windowPos = ImVec2(1000 * cfg.window.monitorScale, 37 * cfg.window.monitorScale);
-        this->windowSize = ImVec2(455 * cfg.window.monitorScale, 923 * cfg.window.monitorScale);
+        this->windowSize = ImVec2(445 * cfg.window.monitorScale, 923 * cfg.window.monitorScale);
     }
 
     // ボタンイベント（時刻、ボタンID、値）をコマンド履歴に記録
