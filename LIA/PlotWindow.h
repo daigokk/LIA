@@ -541,7 +541,7 @@ inline void TimeChartZoomWindow::show() {
 inline DeltaTimeChartWindow::DeltaTimeChartWindow(GLFWwindow* window, LiaConfig& liaConfig)
     : ImGuiWindowBase(window, "DeltTime chart"), cfg(liaConfig) {
     this->windowPos = ImVec2(1000 * liaConfig.window.monitorScale, 750 * liaConfig.window.monitorScale);
-    this->windowSize = ImVec2(450 * liaConfig.window.monitorScale, 210 * liaConfig.window.monitorScale);
+    this->windowSize = ImVec2(445 * liaConfig.window.monitorScale, 210 * liaConfig.window.monitorScale);
 }
 
 inline void DeltaTimeChartWindow::show() {
