@@ -200,7 +200,7 @@
     - [WaveForms-SDK-Getting-Started-Cpp](https://github.com/Digilent/WaveForms-SDK-Getting-Started-Cpp)
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
-    - [pocketfft](https://github.com/hayguen/pocketfft)
+    - [pocketfft](https://github.com/mreineck/pocketfft)
 
 ## References 📚
 <a id="ref1"></a>
