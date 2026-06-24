@@ -201,6 +201,7 @@
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [pocketfft](https://github.com/mreineck/pocketfft)
+    - [Eigen](https://libeigen.gitlab.io/)
 
 ## References 📚
 <a id="ref1"></a>
