@@ -197,7 +197,6 @@
   - Development: Microsoft Visual Studio 2026 (C++20)
   - Dependencies:
     - [Digilent WaveForms SDK](https://digilent.com/reference/software/waveforms/waveforms-sdk/start)
-    - [WaveForms-SDK-Getting-Started-Cpp](https://github.com/Digilent/WaveForms-SDK-Getting-Started-Cpp)
     - [GLFW](https://www.glfw.org/)
     - [Dear ImGui](https://github.com/ocornut/imgui) & [ImPlot](https://github.com/epezent/implot)
     - [pocketfft](https://github.com/mreineck/pocketfft)
