@@ -258,7 +258,7 @@ public:
                         harmonics[chIdx].y[m] = ch[chIdx].fft[hIdx].real()*std::sin(std::numbers::pi/2) + ch[chIdx].fft[hIdx].imag()*std::cos(std::numbers::pi/2);
                     }
                 }
-                };
+            };
 
             processChannel(0);
             if (flagCh2) processChannel(1);

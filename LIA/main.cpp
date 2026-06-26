@@ -30,6 +30,7 @@ struct LaunchOptions {
 // --- 関数プロトタイプ ---
 void runMeasurement(std::stop_token st, LiaConfig* cfg);
 void runSimulatedMeasurement(std::stop_token st, LiaConfig* cfg);
+void fftLoop(std::stop_token st, LiaConfig* pCfg);
 LaunchOptions parseArguments(int argc, char* argv[]);
 
 // --- ユーティリティ ---
@@ -147,7 +148,7 @@ int main(int argc, char* argv[]) {
 // --- 測定処理の実装 ---
 
 void runMeasurement(std::stop_token st, LiaConfig* pCfg) {
-    Daq_dwf daq;
+    static Daq_dwf daq;
 
     // DAQ初期設定
     daq.powerSupply(5.0);

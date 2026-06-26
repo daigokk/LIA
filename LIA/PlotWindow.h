@@ -3,6 +3,7 @@
 #include "ImGuiWindowBase.h"
 #include "LiaConfig.h"
 
+#include "pocketfft_hdronly.h"
 // ============================================================================
 // Constants & Enums
 // ============================================================================
@@ -183,25 +184,21 @@ inline void RawPlotWindow::show() {
         if (ImGui::Begin(this->name, &cfg.window.rawWindow, cfg.window.imGuiWindowFlag)) {
 
             // Header Controls
+            ImGui::SetNextItemWidth(250 * cfg.window.monitorScale);
+            ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.maxRange * 1.2f, "%4.1f V");
+            if (ImGui::IsItemDeactivated()) {
+                button = ButtonType::RawLimit;
+                value = cfg.plot.rawLimit;
+            }
+            ImGui::SameLine();
             if (ImGui::Button("Save")) {
                 std::string timestamp = cfg.getCurrentTimestamp();
                 cfg.saveRawData(std::format("raw_{}.csv", timestamp));
                 cfg.scope.calculateFFT(cfg.scope.ch[1].enable, cfg.awg.ch[0].freq);
                 cfg.saveFftData(std::format("fft_{}.csv", timestamp));
                 button = ButtonType::RawSave;
-                value = 1.0f; // Saveボタンが押されたことを示すフラグ
+                value = 1.0f;
             }
-            if (ImGui::IsItemDeactivated()) {
-                button = ButtonType::RawSave;
-                value = 0.0f;
-            }
-
-            ImGui::SliderFloat("Y limit", &(cfg.plot.rawLimit), 0.1f, cfg.scope.maxRange * 1.2f, "%4.1f V");
-            if (ImGui::IsItemDeactivated()) {
-                button = ButtonType::RawLimit;
-                value = cfg.plot.rawLimit;
-            }
-
             // Tabs
             if (ImGui::BeginTabBar("Raw")) {
                 bool useMv = (cfg.plot.rawLimit <= MILI_VOLT);

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "LiaConfig.h"
-
+#include <Eigen/Dense>
+#include <complex>
 // ============================================================
 // 型定義
 // ============================================================
@@ -10,7 +11,7 @@ struct Point {
 };
 
 // 極座標を表す構造体（振幅と位相（度数法））
-struct PolarVector {
+struct PolarVectorDeg {
     double amplitude;
     double phaseDeg;
 };
@@ -27,7 +28,7 @@ inline double getSquaredDistance(const Point& a, const Point& b) {
 }
 
 // 2点間のベクトルから振幅と位相（度数法）を計算
-inline PolarVector calculatePolarVector(const Point& p1, const Point& p2) {
+inline PolarVectorDeg calculatePolarVector(const Point& p1, const Point& p2) {
     const double dx = p2.x - p1.x;
     const double dy = p2.y - p1.y;
     return {
@@ -82,7 +83,7 @@ void offsetHistory(LiaConfig::XYs& history, const Point& basePoint) {
 // ============================================================
 
 // AWGの設定を適用し、指定時間だけ待機する
-void applyAwgSettingsAndWait(LiaConfig* cfg, const PolarVector& ch0, const PolarVector& ch1, const int record_ms) {
+void applyAwgSettingsAndWait(LiaConfig* cfg, const PolarVectorDeg& ch0, const PolarVectorDeg& ch1, const int record_ms) {
     cfg->awg.ch[0].amp = (float)ch0.amplitude;
     cfg->awg.ch[0].phase = (float)ch0.phaseDeg;
     cfg->awg.ch[1].amp = (float)ch1.amplitude;
@@ -139,6 +140,12 @@ void exportHistoryToCsv(const LiaConfig* cfg) {
 // ============================================================
 // W2の自動設定 (メインロジック)
 // ============================================================
+struct FftResult {
+	double freq;
+	std::complex<double> value;
+};
+
+FftResult analyzeFft(LiaConfig* pCfg, const double historySec);
 
 void autosetupW2(LiaConfig* cfg) {
     constexpr int RECORD_MS = 3000;
@@ -164,7 +171,7 @@ void autosetupW2(LiaConfig* cfg) {
 		y_ += cfg->post.offset[LiaConfigDefaultConsts::CH_HORIZONTAL].y;
 
 		// W1の振幅と位相を計算
-        const PolarVector pvec = { std::hypot(x_, y_), std::atan2(y_, x_) * 180.0 / std::numbers::pi };
+        const PolarVectorDeg pvec = { std::hypot(x_, y_), std::atan2(y_, x_) * 180.0 / std::numbers::pi };
 
 		// W2の振幅と位相をW1と反転させる
         applyAwgSettingsAndWait(cfg, { original_amp, 0.0 }, { pvec.amplitude, pvec.phaseDeg + 90 }, 0);
@@ -179,7 +186,7 @@ void autosetupW2(LiaConfig* cfg) {
         auto [w1p1, w1p2] = findMaxDistancePoints(cfg->autoSetupHistoryW1.x, cfg->autoSetupHistoryW1.y);
         offsetHistory(cfg->autoSetupHistoryW1, w1p1); // W1は点1をベースにオフセット
 
-        const PolarVector w1 = calculatePolarVector(w1p1, w1p2);
+        const PolarVectorDeg w1 = calculatePolarVector(w1p1, w1p2);
         printf("  w1 abs:%f, theta:%f\n", w1.amplitude, w1.phaseDeg);
 
         // ------------------------------------------------------------
@@ -191,7 +198,7 @@ void autosetupW2(LiaConfig* cfg) {
         auto [w2p1, w2p2] = findMaxDistancePoints(cfg->autoSetupHistoryW2.x, cfg->autoSetupHistoryW2.y);
         offsetHistory(cfg->autoSetupHistoryW2, w2p2); // W2は点2をベースにオフセット
 
-        const PolarVector w2 = calculatePolarVector(w2p1, w2p2);
+        const PolarVectorDeg w2 = calculatePolarVector(w2p1, w2p2);
         printf("  w2 abs:%f, theta:%f\n", w2.amplitude, w2.phaseDeg);
 
         // ------------------------------------------------------------
@@ -220,7 +227,7 @@ void test_w2autosetup() {
     // [1] 極座標変換のテスト
     Point p1 = { 0.0, 0.0 };
     Point p2 = { 1.0, 1.0 }; // 距離 sqrt(2), 位相 45度
-    PolarVector pv = calculatePolarVector(p1, p2);
+    PolarVectorDeg pv = calculatePolarVector(p1, p2);
 
     assert(std::abs(pv.amplitude - std::sqrt(2.0)) < 1e-6);
     assert(std::abs(pv.phaseDeg - 45.0) < 1e-6);
@@ -261,4 +268,99 @@ void test_w2autosetup() {
     std::cout << "  offsetHistory logic: OK" << std::endl;
 
     std::cout << "W2autosetup Utility Tests Passed!" << std::endl;
+}
+
+void autosetupW2_new(LiaConfig* pCfg) {
+    static int period = 10;
+    static int callCount = 0;
+    static int bufferSize = period / pCfg->ringBuffer.getDt();
+
+    // [1] 現在の設定(W1とW2の振幅と位相)でFFT
+    PolarVectorDeg w1 = { pCfg->awg.ch[0].amp, pCfg->awg.ch[0].phase };
+    PolarVectorDeg w2_1 = { pCfg->awg.ch[1].amp, pCfg->awg.ch[1].phase };
+    auto fftResult1 = analyzeFft(pCfg, pCfg->plot.historySec);
+    
+	// [2] 設定を変更(W2の振幅と位相)してFFT
+    PolarVectorDeg w2_2 = { pCfg->awg.ch[1].amp, pCfg->awg.ch[1].phase };
+    applyAwgSettingsAndWait(pCfg, w1, w2_2, 0);
+    auto fftResult2 = analyzeFft(pCfg, pCfg->plot.historySec);
+
+    // [3] 最適なW2の振幅と位相を求めてW2に設定
+
+
+    pCfg->flagAutoSetupW2 = false;
+}
+
+FftResult analyzeFft(LiaConfig* pCfg, const double historySec) {
+    int chIdx = 0;
+    double t = pCfg->ringBuffer.times[pCfg->ringBuffer.latestIdx];
+    static std::vector<double> xs, ys;
+    static std::vector<std::complex<double>> xfft, yfft, fft;
+
+    while (t + historySec > pCfg->ringBuffer.times[pCfg->ringBuffer.latestIdx]) {
+        pCfg->timer.sleepFor(0.1);
+    }
+    int latestIdx = pCfg->ringBuffer.latestIdx;
+    t = pCfg->ringBuffer.times[latestIdx];
+
+    int bufferSize = historySec / pCfg->ringBuffer.getDt();
+    static double inv_historySec = 0;
+    if (bufferSize != xs.size()) {
+        xs.resize(bufferSize);
+        ys.resize(bufferSize);
+        xfft.resize(bufferSize / 2 + 1);
+        yfft.resize(bufferSize / 2 + 1);
+		fft.resize(bufferSize / 2 + 1);
+        inv_historySec = 1.0 / historySec;
+    }
+    for (int i = 0; i < bufferSize; i++) {
+        int idx = latestIdx + 1 - bufferSize + i;
+        if (idx < 0) {
+            idx += pCfg->ringBuffer.times.size();
+        }
+        xs[i] = pCfg->ringBuffer.ch[chIdx].x[idx];
+        ys[i] = pCfg->ringBuffer.ch[chIdx].y[idx];
+    }
+
+    pocketfft::r2c(
+        { (size_t)bufferSize }, { sizeof(double) }, { sizeof(std::complex<double>) }, { 0 }, pocketfft::FORWARD, xs.data(), xfft.data(), 1.0
+    );
+    pocketfft::r2c(
+        { (size_t)bufferSize }, { sizeof(double) }, { sizeof(std::complex<double>) }, { 0 }, pocketfft::FORWARD, ys.data(), yfft.data(), 1.0
+    );
+
+    size_t index = 0;
+    double maxVal = 0.0;
+    double scale = 2.0 / (double)bufferSize;
+    fft[0] = 0;
+    for (size_t i = 1; i < xfft.size(); i++) {
+        fft[i].real((xfft[i].real() - yfft[i].imag()) * scale);
+        fft[i].imag((xfft[i].imag() + yfft[i].real()) * scale);
+        double absVal = std::abs(fft[i]);
+        if (maxVal < absVal) {
+            maxVal = absVal;
+            index = i;
+        }
+    }
+    if (maxVal < 1e-3) { index = 0; }
+    printf("\r%s", std::format("Max frequency: {} Hz, {}V\n", index * inv_historySec, maxVal).c_str());
+
+    std::string timestamp = pCfg->getCurrentTimestamp();
+    std::ofstream fileBuffer(std::format("./{}/autosetup_ect_{}.csv", pCfg->dirName, timestamp));
+    if (fileBuffer) {
+        fileBuffer << "Time(s), x(V), y(V)\n";
+        for (int i = 0; i < xs.size(); ++i) {
+            fileBuffer << std::format("{:e},{:e},{:e}\n", i * pCfg->ringBuffer.getDt(), xs[i], ys[i]);
+        }
+        fileBuffer.close();
+    }
+    std::ofstream fileFft(std::format("./{}/autosetup_fft_{}.csv", pCfg->dirName, timestamp));
+    fileFft << "Freq(Hz), x(V), y(V)\n";
+    if (fileFft) {
+        for (int i = 0; i < fft.size(); ++i) {
+            fileFft << std::format("{:e},{:e},{:e}\n", i * inv_historySec, fft[i].real(), fft[i].imag());
+        }
+        fileFft.close();
+    }
+    return { index * inv_historySec, fft[index]};
 }

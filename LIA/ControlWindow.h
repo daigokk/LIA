@@ -142,18 +142,24 @@ inline void ControlWindow::awg(const float nextItemWidth)
             ImGui::SetNextItemWidth(nextItemWidth);
             if (cfg.flagAutoSetupW2) {
                 ImGui::BeginDisabled();
-                ImGui::Button("W2 Autosetup in progress");
+                ImGui::Button("Autosetup in progress");
                 ImGui::EndDisabled();
             }
             else {
-                if (ImGui::Button("W2 Autosetup")) {
+                if (ImGui::Button("Autosetup")) {
                     cfg.flagAutoSetupW2 = true;
                     std::thread th_autosetup{ autosetupW2, &cfg };
                     th_autosetup.detach();
                 }
+				ImGui::SameLine();
+                if (ImGui::Button("Autosetup2")) {
+                    cfg.flagAutoSetupW2 = true;
+                    std::thread th_autosetup{ autosetupW2_new, &cfg };
+                    th_autosetup.detach();
+                }
             }
-            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, (float)cfg.awg.ch[0].func);
-
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW2AutoSetup, 0.0f);
+            
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Func")) {
@@ -164,6 +170,7 @@ inline void ControlWindow::awg(const float nextItemWidth)
                 cfg.awg.ch[1].func = oldFunc + 1;
                 configChanged = true;
             }
+            markButtonIfItemDeactivated(button, value, ButtonType::AwgW1Func, (float)cfg.awg.ch[0].func);
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
