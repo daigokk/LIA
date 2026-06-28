@@ -273,7 +273,7 @@ void test_w2autosetup() {
 void autosetupW2_new(LiaConfig* pCfg) {
     static int period = 10;
     static int callCount = 0;
-    static int bufferSize = period / pCfg->ringBuffer.getDt();
+    static int bufferSize = (int)(period / pCfg->ringBuffer.getDt());
 
     // [1] 現在の設定(W1とW2の振幅と位相)でFFT
     PolarVectorDeg w1 = { pCfg->awg.ch[0].amp, pCfg->awg.ch[0].phase };
@@ -303,7 +303,7 @@ FftResult analyzeFft(LiaConfig* pCfg, const double historySec) {
     int latestIdx = pCfg->ringBuffer.latestIdx;
     t = pCfg->ringBuffer.times[latestIdx];
 
-    int bufferSize = historySec / pCfg->ringBuffer.getDt();
+    int bufferSize = (int)(historySec / pCfg->ringBuffer.getDt());
     static double inv_historySec = 0;
     if (bufferSize != xs.size()) {
         xs.resize(bufferSize);
@@ -316,7 +316,7 @@ FftResult analyzeFft(LiaConfig* pCfg, const double historySec) {
     for (int i = 0; i < bufferSize; i++) {
         int idx = latestIdx + 1 - bufferSize + i;
         if (idx < 0) {
-            idx += pCfg->ringBuffer.times.size();
+            idx += (int)pCfg->ringBuffer.times.size();
         }
         xs[i] = pCfg->ringBuffer.ch[chIdx].x[idx];
         ys[i] = pCfg->ringBuffer.ch[chIdx].y[idx];
