@@ -64,8 +64,8 @@ private:
         DWF_CALL(FDwfEnumDeviceName(idxDevice, device.name));
         DWF_CALL(FDwfEnumSN(idxDevice, device.sn));
 
-        // m_hdwf (プライベートメンバー) にハンドルを格納
-        DWF_CALL(FDwfDeviceOpen(idxDevice, &m_hdwf));
+        // m_hdwf (プライベートメンバー) にハンドルを格納 idxCfg=1のときアナログ入力バッファを拡大可能
+        DWF_CALL(FDwfDeviceConfigOpen(idxDevice, 0, &m_hdwf));
     }
 
     // getHdwf() はネストクラスからのみフレンドアクセスを許可
