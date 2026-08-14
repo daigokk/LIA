@@ -286,6 +286,15 @@ public:
         float Vx_limit = 1.5f;
         int size = 0;
         int xyStartIdx = 0, xySize = 0, xyLatestIdx = 0;
+        struct Trigger {
+            bool flag = false;
+            //bool slope = true; // true:+, flase:-
+            double level = 0;
+            int sourceCh = 0;
+            bool readyFlag = false;
+            bool countFlag = false;
+            int triggerNofm = 0;
+        } trigger;
 		void reset() {
 			limit = 1.5f;
 			rawLimit = 1.5f;
@@ -297,6 +306,13 @@ public:
 			xyStartIdx = 0;
 			xySize = 0;
 			xyLatestIdx = 0;
+            trigger.flag = false;
+            //trigger.slope = true;
+            trigger.level = 0;
+            trigger.sourceCh = 0;
+            trigger.readyFlag = false;
+            trigger.countFlag = false;
+            trigger.triggerNofm = 0;
 		}
     } plot;
 
@@ -504,6 +520,53 @@ public:
         }
         else {
             AddPoint(t, final_x1, final_y1);
+        }
+
+        // トリガー処理
+        if (plot.trigger.flag) {
+            if (plot.trigger.level >= 0) {
+                // slope:+
+                if (!plot.trigger.readyFlag && ringBuffer.ch[plot.trigger.sourceCh].y[ringBuffer.latestIdx] <= plot.trigger.level) {
+                    plot.trigger.readyFlag = true;
+                }
+                if (plot.trigger.readyFlag && ringBuffer.ch[plot.trigger.sourceCh].y[ringBuffer.latestIdx] >= plot.trigger.level) {
+                    plot.trigger.countFlag = true;
+                }
+                if(plot.trigger.countFlag){
+                    if (plot.trigger.triggerNofm == 0) {
+                        plot.trigger.triggerNofm = ringBuffer.nofm;
+                    }
+                    if (plot.trigger.triggerNofm + plot.historySec / 2 / ringBuffer.getDt() <= ringBuffer.nofm) {
+                        pause.flag = true;
+                        plot.trigger.triggerNofm = 0;
+                        plot.trigger.readyFlag = false;
+                        plot.trigger.countFlag = false;
+                    }
+                }
+            }
+            else {
+                // slope: -
+                if (!plot.trigger.readyFlag && ringBuffer.ch[plot.trigger.sourceCh].y[ringBuffer.latestIdx] >= plot.trigger.level) {
+                    plot.trigger.readyFlag = true;
+                }
+                if (plot.trigger.readyFlag && ringBuffer.ch[plot.trigger.sourceCh].y[ringBuffer.latestIdx] <= plot.trigger.level) {
+                    plot.trigger.countFlag = true;
+                }
+                if (plot.trigger.countFlag) {
+                    if (plot.trigger.triggerNofm == 0) {
+                        plot.trigger.triggerNofm = ringBuffer.nofm;
+                    }
+                    if (plot.trigger.triggerNofm + plot.historySec / 2 / ringBuffer.getDt() <= ringBuffer.nofm) {
+                        pause.flag = true;
+                        plot.trigger.triggerNofm = 0;
+                        plot.trigger.readyFlag = false;
+                        plot.trigger.countFlag = false;
+                    }
+                }
+            }
+        }
+        else {
+            plot.trigger.triggerNofm = 0;
         }
     }
 

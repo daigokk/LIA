@@ -347,6 +347,9 @@ inline void TimeChartWindow::show() {
 
             ImGui::SameLine();
             if (ImGui::Button(cfg.pause.flag ? "Run" : "Pause")) { cfg.buttonPause(); }
+            
+            ImGui::SameLine();
+            ImGui::Checkbox("Trigger", &cfg.plot.trigger.flag);
 
             ImPlot::PushStyleColor(ImPlotCol_LegendBg, ImVec4(0, 0, 0, 0));
 
@@ -373,7 +376,7 @@ inline void TimeChartWindow::show() {
                 static bool isFirstPause = true;
                 if (cfg.pause.flag) {
                     if (isFirstPause) {
-                        cfg.pause.set(t - cfg.plot.historySec * 0.2, t - cfg.plot.historySec * 0.1, -cfg.plot.limit * 0.9, cfg.plot.limit * 0.9);
+                        cfg.pause.set(t - cfg.plot.historySec * 0.6, t - cfg.plot.historySec * 0.4, -cfg.plot.limit * 0.9, cfg.plot.limit * 0.9);
                         isFirstPause = false;
                     }
 
@@ -387,6 +390,24 @@ inline void TimeChartWindow::show() {
                 else {
                     isFirstPause = true;
                 }
+
+                if (cfg.plot.trigger.flag) {
+                    specLine.LineColor = ImVec4(1, 0, 0, 1);
+                    double triggerXs[2] = { 0.0, cfg.ringBuffer.times[count - 1] };
+                    double triggerYs[2] = { cfg.plot.trigger.level, cfg.plot.trigger.level };
+                    ImPlot::PlotLine("Trigger", triggerXs, triggerYs, 2, specLine);
+                }
+                // Event
+                if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    ImPlotPoint mousePos = ImPlot::GetPlotMousePos();
+                    if (cfg.plot.trigger.flag) {
+                        cfg.plot.trigger.level = mousePos.y;
+                        cfg.plot.trigger.readyFlag = false;
+                        cfg.plot.trigger.countFlag = false;
+                        cfg.plot.trigger.triggerNofm = 0;
+                    }
+                }
+
                 ImPlot::EndPlot();
             }
             ImPlot::PopStyleColor();
