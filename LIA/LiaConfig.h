@@ -779,7 +779,7 @@ private:
 		for (size_t i = 0; i < scope.ch.size(); ++i) {
 			ini.set("Scope", "ch[" + std::to_string(i) + "].range", scope.ch[i].range);
 		}
-        ini.set("Scope", "bufferSize", scope.bufferSize);
+        //ini.set("Scope", "bufferSize", scope.bufferSize);
         ini.set("Scope", "samplingDt", scope.samplingDt);
         // Post
         ini.set("Post", "offset[0].phase", post.offset[0].phase);
