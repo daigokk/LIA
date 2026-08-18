@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     const int adIdx = Daq_dwf::getIdxFirstEnabledDevice();
     const bool isDeviceConnected = (adIdx != -1);
 
-    std::cout << (isDeviceConnected ? "Analog Discovery detected." : "DAQ not connected.") << std::endl;
+    std::cout << (isDeviceConnected ? "Analog Discovery found." : "No supported devices found.") << std::endl;
 
     // 1. GUI初期化
     std::unique_ptr<GuiSub> guiSub;
