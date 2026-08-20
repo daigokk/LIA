@@ -393,6 +393,7 @@ public:
 
     XYs autoSetupHistoryW1, autoSetupHistoryW2;
     std::vector<std::array<float, 6>> cmds;
+    bool flag_save = false; // 日付のディレクトリを作り、commands.csv等のファイルを保存する
 
 private:
     Psd psd;
@@ -406,15 +407,17 @@ public:
     // [4] Constructor & Lifecycle Methods
     // ---------------------------------------------------------
     LiaConfig() {
-        initializeDirectory();
+        if(flag_save){ initializeDirectory(); }
         allocateBuffers();
         loadSettingsFromFile();
     }
 
     ~LiaConfig() {
-        saveResultsToFile();
         saveSettingsToFile();
-        saveCmdRecordsToFile();
+        if (flag_save) {
+            saveResultsToFile();
+            saveCmdRecordsToFile();
+        }
     }
 
     void reset() {
