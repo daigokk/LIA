@@ -105,8 +105,8 @@ bool Gui::Initialize(GuiConfig& config) {
         config.pWindow = glfwCreateWindow(config.monitorWidth, 1920, config.title.c_str(), monitor, NULL);
     }
     else {
-        int scaledWidth = static_cast<int>(config.width * config.monitorScale);
-        int scaledHeight = static_cast<int>(config.height * config.monitorScale);
+        int scaledWidth = static_cast<int>(config.width);
+        int scaledHeight = static_cast<int>(config.height);
         config.pWindow = glfwCreateWindow(scaledWidth, scaledHeight, config.title.c_str(), NULL, NULL);
 
         if (config.pWindow) {
