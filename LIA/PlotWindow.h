@@ -393,7 +393,8 @@ inline void TimeChartWindow::show() {
 
                 if (cfg.plot.trigger.flag) {
                     specLine.LineColor = ImVec4(1, 0, 0, 1);
-                    double triggerXs[2] = { 0.0, cfg.ringBuffer.times[count - 1] };
+                    const ImPlotRect limits = ImPlot::GetPlotLimits();
+                    double triggerXs[2] = { limits.X.Min, limits.X.Max };
                     double triggerYs[2] = { cfg.plot.trigger.level, cfg.plot.trigger.level };
                     ImPlot::PlotLine("Trigger", triggerXs, triggerYs, 2, specLine);
                 }
