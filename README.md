@@ -1,7 +1,7 @@
 # LIA: Dual-Channel Real-time Software Lock-in Amplifier with Digilent Analog Discovery
   ![Hard copy](./docs/images/HardCopy.png)
 ## Overview 🔍
-  - This software lock-in amplifier is a Windows-based lock-in amplifier implemented in C++ for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research[[1](#ref1),[2](#ref2)], education, and experimental applications in measurement engineering.
+  - This software lock-in amplifier is a Windows-based lock-in amplifier implemented in C++ for precision signal measurement and analysis. It interfaces seamlessly with Digilent Analog Discovery 2/3 devices, enabling real-time amplitude and phase detection up to 100 kHz. Ideal for research[[1](#ref1),[2](#ref2),[3](#ref3)], education, and experimental applications in measurement engineering.
   - Hardware lock-in amplifiers, such as [NF LI5660](https://www.nfcorp.co.jp/english/pro/mi/loc/loc/index.html) or [Stanford Research Systems SR844](https://thinksrs.com/products/sr844.html), are instruments that measure the amplitude $A$ and phase $\theta$ of sinusoidal signals using a technique known as Phase-Sensitive Detection (PSD) or synchronous detection.
   - The principle of this detection technique is shown in the following diagram and is also explained on [Youtube (in Japanese)](https://www.youtube.com/watch?v=pHyuB1YW4qY).
   <img src="./docs/images/PSD.png" width="100%" alt="PSD">
@@ -207,6 +207,7 @@
   1. [Kosaka, D., Hoshiba, M., Nakamoto, H.  (2023). Quantitative Assessment of Eddy Current Inspection Technician Skills. In: Tareq Ahram and Waldemar Karwowski (eds) Emerging Technologies and Future of Work. AHFE (2023) International Conference. AHFE Open Access, vol 117. AHFE International, USA.](http://doi.org/10.54941/ahfe1004427)
 <a id="ref2"></a>
   2. [D. Kosaka, H. Hanawa and K. Hirano, "Method for Estimating Crack Length and Depth Using Radial Basis Function in Eddy Current Testing," 2025 Joint MMM-Intermag Conference (INTERMAG), New Orleans, LA, USA, 2025, pp. 1-6](https://doi.org/10.1109/INTERMAG49787.2025.11087788)
-  3. [Daigo Kosaka and Hiroyuki Nakamoto, "Virtual ACFM-Type Butterfly Plot Analysis Based on Signal Synthesis using Uniform Eddy Current Probe Signals for Detecting Cracks in Coated Welds," Journal of Nondestructive Evaluation, Vol. 45, No. 154 (2026)](https://doi.org/10.1007/s10921-026-01449-0)
+<a id="ref3"></a>
+3. [Daigo Kosaka and Hiroyuki Nakamoto, "Virtual ACFM-Type Butterfly Plot Analysis Based on Signal Synthesis using Uniform Eddy Current Probe Signals for Detecting Cracks in Coated Welds," Journal of Nondestructive Evaluation, Vol. 45, No. 154 (2026)](https://doi.org/10.1007/s10921-026-01449-0)
 ## Acknowledgments 🙏
   This software was supported in part from the [Hazardous Materials Safety Techniques Association](http://khk-syoubou.or.jp/). It was also developed with the Analog Discovery, a high-performance hardware platform, user-friendly yet powerful software such as the ImPlot, and Github. The author would like to express their gratitude to Digilent, NI, and the OSS communities, and remain hopeful that NI, a titan in the measurement industry, will continue to supply the excellent measurement instrument "Analog Discovery."
